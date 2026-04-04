@@ -14,7 +14,7 @@ pub fn app_about() -> String {
 {} - fast code indexer with AST analysis for OpenSearch MCP.
 
 {}"#,
-        "Vibe Indexer".bright_green().bold(),
+        "Vibe Analyzer".bright_green().bold(),
         "Tool for code analysis and search across codebase".italic()
     )
 }
