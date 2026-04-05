@@ -100,10 +100,10 @@ static PARSERS: Lazy<HashMap<String, Box<dyn LanguageParser>>> = Lazy::new(|| {
 });
 
 /// Parses source code and returns AST data for the specified language
-pub fn parse_ast(content: &str, extension: &str) -> Result<AstData> {
-    if let Some(parser) = PARSERS.get(extension) {
-        parser.parse(content)
-    } else {
-        Ok(AstData::default())
-    }
+/// Returns `None` if no parser is registered for this extension
+pub fn parse_ast(content: &str, extension: &str) -> Result<Option<AstData>> {
+    let Some(parser) = PARSERS.get(extension) else {
+        return Ok(None);
+    };
+    parser.parse(content).map(Some)
 }

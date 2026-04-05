@@ -8,12 +8,11 @@ use crate::scanner::data::file_info::FileInfo;
 use crate::utils::constants::{CONFIG_DIR_NAME, CONFIG_FILE_NAME};
 use crate::utils::matcher;
 
-/// Returns file extension without the dot
-pub fn get_extension(path: &Path) -> String {
+/// Returns file extension
+pub fn get_extension(path: &Path) -> Option<String> {
     path.extension()
         .and_then(|ext| ext.to_str())
-        .unwrap_or("")
-        .to_lowercase()
+        .map(|ext| ext.to_lowercase())
 }
 
 /// Get config directory path: ~/.vibe-analyzer/

@@ -9,6 +9,7 @@ use crate::{
             file_analysis::FileAnalysis, project_analysis::ProjectAnalysis,
             project_stats::ProjectStats,
         },
+        detectors,
     },
     utils::{self, constants, hash, path},
 };
@@ -31,10 +32,14 @@ pub async fn scan_project(
 
     let files = path::project_files(&canonical_path)?;
     let total = files.len();
+    let readme = detectors::readme::detect_readme(&files);
+    let license = detectors::license::detect_license(&files).await;
 
     let mut analysis = ProjectAnalysis {
         project: project_display.to_string_lossy().to_string(),
         indexed_at: Local::now().to_rfc3339(),
+        readme,
+        license,
         stats: ProjectStats::default(),
         files: Vec::with_capacity(total),
     };
@@ -44,53 +49,76 @@ pub async fn scan_project(
         on_progress(percent as usize, i + 1, total);
 
         let mime = utils::mime::detect_mime(&file_info.path)?;
-        let mime_type = mime.to_string();
         let text_file = utils::mime::is_text(&mime, &file_info.path);
 
         let hash = hash::from_file(&file_info.path)?;
 
         let extension = path::get_extension(&file_info.path);
-        let language = if text_file && !extension.is_empty() {
-            Some(extension.clone())
-        } else {
-            None
-        };
 
-        let ast = if text_file && file_info.size < constants::MAX_AST_FILE_SIZE {
+        let (lines_of_code, size_chars) = if text_file {
             match std::fs::read_to_string(&file_info.path) {
-                Ok(content) => match parse_ast(&content, &extension) {
-                    Ok(ast_data) => Some(ast_data),
-                    Err(e) => {
-                        on_warning(format!(
-                            "Failed to parse AST for {}: {}",
-                            file_info.path.display(),
-                            e
-                        ));
-                        None
-                    }
-                },
+                Ok(content) => (Some(content.lines().count()), Some(content.chars().count())),
                 Err(e) => {
                     on_warning(format!(
                         "Failed to read file {}: {}",
                         file_info.path.display(),
                         e
                     ));
-                    None
+                    (None, None)
                 }
+            }
+        } else {
+            (None, None)
+        };
+
+        if let Some(loc) = lines_of_code {
+            analysis.stats.add_lines_of_code(loc);
+        }
+        if let Some(chars) = size_chars {
+            analysis.stats.add_chars(chars);
+        }
+
+        let ast = if let Some(ext) = &extension {
+            if text_file && file_info.size < constants::MAX_AST_FILE_SIZE {
+                match std::fs::read_to_string(&file_info.path) {
+                    Ok(content) => match parse_ast(&content, ext) {
+                        Ok(ast_data) => ast_data,
+                        Err(e) => {
+                            on_warning(format!(
+                                "Failed to parse AST for {}: {}",
+                                file_info.path.display(),
+                                e
+                            ));
+                            None
+                        }
+                    },
+                    Err(e) => {
+                        on_warning(format!(
+                            "Failed to read file {}: {}",
+                            file_info.path.display(),
+                            e
+                        ));
+                        None
+                    }
+                }
+            } else {
+                None
             }
         } else {
             None
         };
 
         analysis.stats.update(ast.as_ref());
+        analysis.stats.add_size_bytes(file_info.size);
 
         analysis.files.push(FileAnalysis {
             path: file_info.relative_path.to_string_lossy().to_string(),
-            mime_type,
-            language,
+            extension,
             size_bytes: file_info.size,
             content_hash: hash,
             is_text: text_file,
+            lines_of_code,
+            size_chars,
             ast,
         });
     }

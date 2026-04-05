@@ -1,14 +1,15 @@
 use anyhow::Result;
-use blake3::Hasher;
+use std::collections::hash_map::DefaultHasher;
 use std::fs::File;
+use std::hash::Hasher;
 use std::io::{BufReader, Read};
 use std::path::Path;
 
-/// Вычисляет BLAKE3 хэш файла
-pub fn from_file(path: &Path) -> Result<String> {
+/// Computes a fast non-cryptographic hash of file content for change detection
+pub fn from_file(path: &Path) -> Result<u64> {
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
-    let mut hasher = Hasher::new();
+    let mut hasher = DefaultHasher::new();
     let mut buffer = [0; 8192];
 
     loop {
@@ -16,9 +17,8 @@ pub fn from_file(path: &Path) -> Result<String> {
         if bytes_read == 0 {
             break;
         }
-        hasher.update(&buffer[..bytes_read]);
+        hasher.write(&buffer[..bytes_read]);
     }
 
-    let hash = hasher.finalize();
-    Ok(hash.to_hex().to_string())
+    Ok(hasher.finish())
 }

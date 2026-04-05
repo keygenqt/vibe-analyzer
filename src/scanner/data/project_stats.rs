@@ -23,6 +23,14 @@ pub struct ProjectStats {
     pub total_traits: usize,
     /// Total number of import statements extracted from all files
     pub total_imports: usize,
+    /// Total number of lines of code across all text files
+    pub total_lines_of_code: usize,
+    /// Total number of characters across all text files
+    pub total_chars: usize,
+    /// Total size of all files in bytes
+    pub total_size_bytes: u64,
+    /// Human readable total size (e.g., "1.23 MB", "456 KB")
+    pub total_size_human: String,
 }
 
 impl ProjectStats {
@@ -40,6 +48,39 @@ impl ProjectStats {
             self.total_imports += ast_data.imports.len();
         } else {
             self.binary_files += 1;
+        }
+    }
+
+    /// Adds lines of code to the total
+    pub fn add_lines_of_code(&mut self, lines: usize) {
+        self.total_lines_of_code += lines;
+    }
+
+    /// Adds characters to the total
+    pub fn add_chars(&mut self, chars: usize) {
+        self.total_chars += chars;
+    }
+
+    /// Adds file size to the total and updates human readable format
+    pub fn add_size_bytes(&mut self, size: u64) {
+        self.total_size_bytes += size;
+        self.total_size_human = Self::format_size(self.total_size_bytes);
+    }
+
+    /// Formats bytes into human readable string (KB, MB, GB)
+    pub fn format_size(bytes: u64) -> String {
+        const KB: u64 = 1024;
+        const MB: u64 = KB * 1024;
+        const GB: u64 = MB * 1024;
+
+        if bytes >= GB {
+            format!("{:.2} GB", bytes as f64 / GB as f64)
+        } else if bytes >= MB {
+            format!("{:.2} MB", bytes as f64 / MB as f64)
+        } else if bytes >= KB {
+            format!("{:.2} KB", bytes as f64 / KB as f64)
+        } else {
+            format!("{} B", bytes)
         }
     }
 }

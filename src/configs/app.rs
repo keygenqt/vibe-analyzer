@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+use crate::configs::spdx::SpdxConfig;
 use crate::print_info;
 use crate::utils::path::{self, convert_relative};
 
@@ -13,6 +14,7 @@ use super::opensearch::OpenSearchConfig;
 pub struct AppConfig {
     pub opensearch: OpenSearchConfig,
     pub ollama: OllamaConfig,
+    pub spdx: SpdxConfig,
     pub projects: Vec<PathBuf>,
 }
 
@@ -21,6 +23,7 @@ impl Default for AppConfig {
         Self {
             opensearch: OpenSearchConfig::default(),
             ollama: OllamaConfig::default(),
+            spdx: SpdxConfig::default(),
             projects: vec![],
         }
     }

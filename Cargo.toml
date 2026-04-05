@@ -32,6 +32,10 @@ dunce = "1"
 dirs = "6"
 once_cell = "1.19"
 uuid = { version = "1.18.1", features = ["v4"] }
+askalono = "0.5.0"
+reqwest = { version = "0.13", features = ["stream"] }
+zip = "8.5"
+tempfile = "3.27"
 
 # Tree-sitter grammars
 tree-sitter = "0.25.1"
