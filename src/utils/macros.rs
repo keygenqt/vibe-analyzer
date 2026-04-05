@@ -1,3 +1,10 @@
+//! Pretty printing macros for CLI output
+//!
+//! This module defines macros for formatted console output with colors:
+//! - `print_info!`, `print_warning!`, `print_error!`, `print_success!`
+//! - `print_progress!` (updates same line)
+//! - `exit_info!`, `exit_error!` (print and exit)
+
 /// Pretty print error
 #[macro_export]
 macro_rules! print_error {
@@ -47,7 +54,7 @@ macro_rules! exit_info {
     }};
 }
 
-/// Pretty print progress (same line)
+/// Pretty print progress (same line, overwrites)
 #[macro_export]
 macro_rules! print_progress {
     ($($arg:tt)*) => {{

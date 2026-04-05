@@ -1,12 +1,20 @@
+//! Python language AST parser
+//!
+//! This module provides tree-sitter based AST parsing for Python files,
+//! extracting functions, classes, imports, variables, comments, and doc comments
+//! (including triple-quoted docstrings).
+
 use anyhow::Result;
 use tree_sitter::{Node, Parser};
 
 use crate::scanner::ast::{parser::AstData, traits::LanguageParser};
 
+/// Parser for Python language files
 #[derive(Default)]
 pub struct PythonParser;
 
 impl LanguageParser for PythonParser {
+    /// Parses Python source code and extracts AST data
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_python::LANGUAGE.into())?;
@@ -26,10 +34,12 @@ impl LanguageParser for PythonParser {
     }
 }
 
+/// Recursively traverses the AST and extracts relevant nodes
 fn visit_node(node: &Node, content: &str, data: &mut AstData) {
     let kind = node.kind();
 
     match kind {
+        // Regular comments
         "comment" => {
             if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                 let cleaned = comment.trim().to_string();
@@ -38,6 +48,8 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
                 }
             }
         }
+
+        // Docstrings (triple-quoted strings as expression statements)
         "expression_statement" => {
             if let Some(string_node) = node.child(0) {
                 if string_node.kind() == "string" {
@@ -50,35 +62,46 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
                 }
             }
         }
+
+        // Variables
         "assignment" => {
             if let Some(name) = extract_variable_name(node, content) {
                 data.variables.push(name);
             }
         }
+
+        // Functions
         "function_definition" => {
             if let Some(name) = extract_name(node, content) {
                 data.functions.push(name);
             }
         }
+
+        // Classes
         "class_definition" => {
             if let Some(name) = extract_name(node, content) {
                 data.classes.push(name);
             }
         }
+
+        // Imports
         "import_statement" | "import_from_statement" => {
             if let Some(path) = extract_import_path(node, content) {
                 data.imports.push(path);
             }
         }
+
         _ => {}
     }
 
+    // Recursively process children
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(&child, content, data);
     }
 }
 
+/// Extracts identifier name from a declaration node
 fn extract_name(node: &Node, content: &str) -> Option<String> {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
@@ -94,11 +117,11 @@ fn extract_name(node: &Node, content: &str) -> Option<String> {
     None
 }
 
+/// Extracts variable name from an assignment node
 fn extract_variable_name(node: &Node, content: &str) -> Option<String> {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        let kind = child.kind();
-        if kind == "identifier" {
+        if child.kind() == "identifier" {
             if let Ok(name) = child.utf8_text(content.as_bytes()) {
                 let cleaned = name.trim().to_string();
                 if !cleaned.is_empty() && cleaned != "_" {
@@ -110,6 +133,7 @@ fn extract_variable_name(node: &Node, content: &str) -> Option<String> {
     None
 }
 
+/// Extracts import path from import statement
 fn extract_import_path(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let cleaned = text
@@ -124,6 +148,7 @@ fn extract_import_path(node: &Node, content: &str) -> Option<String> {
     None
 }
 
+/// Sorts and deduplicates all extracted data
 fn clean_data(data: &mut AstData) {
     let fields = [
         &mut data.functions,

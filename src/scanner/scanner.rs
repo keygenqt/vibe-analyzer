@@ -1,3 +1,8 @@
+//! Core scanning functionality
+//!
+//! This module provides the main `scan_project` function for analyzing
+//! a codebase, extracting metadata, AST data, and project statistics.
+
 use anyhow::Result;
 use chrono::Local;
 use std::path::Path;
@@ -14,6 +19,15 @@ use crate::{
     utils::{self, constants, hash, path},
 };
 
+/// Scans a project and returns complete analysis results
+///
+/// # Arguments
+/// * `project_path` - Path to the project directory or file to scan
+/// * `on_progress` - Callback for progress updates (percent, processed, total)
+/// * `on_warning` - Callback for non-critical warnings
+///
+/// # Returns
+/// * `Result<ProjectAnalysis>` - Complete project analysis on success
 pub async fn scan_project(
     project_path: &Path,
     on_progress: fn(usize, usize, usize),
@@ -52,7 +66,6 @@ pub async fn scan_project(
         let text_file = utils::mime::is_text(&mime, &file_info.path);
 
         let file_id = hash::file_id_from_file(&file_info.path)?;
-
         let extension = path::get_extension(&file_info.path);
 
         let (lines_of_code, size_chars) = if text_file {

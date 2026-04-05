@@ -1,13 +1,28 @@
+//! Ollama LLM configuration
+//!
+//! This module defines configuration settings for connecting to
+//! a local Ollama instance for LLM-based code analysis.
+
 use serde::{Deserialize, Serialize};
 
+/// Configuration for Ollama LLM connection
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OllamaConfig {
+    /// Ollama API endpoint URL
     pub host: String,
+
+    /// Model name to use for inference
     pub model: String,
+
+    /// Maximum chunk size in characters for LLM context
     pub max_chunk_chars: usize,
 }
 
 impl Default for OllamaConfig {
+    /// Creates default Ollama configuration
+    ///
+    /// # Returns
+    /// * `OllamaConfig` with default host, model, and chunk size
     fn default() -> Self {
         Self {
             host: "http://localhost:11434".to_string(),

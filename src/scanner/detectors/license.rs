@@ -1,3 +1,8 @@
+//! License detection using SPDX data and askalono
+//!
+//! This module provides lazy initialization of the license store,
+//! automatic SPDX data download on first use, and caching for performance.
+
 use askalono::{Store, TextData};
 use std::fs::File;
 use tokio::sync::OnceCell;
@@ -13,14 +18,16 @@ static LICENSE_STORE: OnceCell<Store> = OnceCell::const_new();
 
 /// Returns a reference to the globally initialized license store
 ///
-/// # Initialization logic
-/// 1. If cache exists at `~/.vibe-analyzer/askalono-cache.bin.zstd` -> load from cache (fast, ~300ms)
-/// 2. Otherwise -> download SPDX data, parse JSON files, create cache (slow on first run)
+/// # Returns
+/// * `&'static Store` - Reference to the license store
 async fn get_license_store() -> &'static Store {
     LICENSE_STORE.get_or_init(init_license_store).await
 }
 
 /// Initializes the license store from cache or downloads SPDX data
+///
+/// # Returns
+/// * `Store` - Initialized license store
 async fn init_license_store() -> Store {
     let cache_path = get_config_dir().join("askalono-cache.bin.zstd");
 
@@ -41,12 +48,10 @@ async fn init_license_store() -> Store {
         let mut store = Store::new();
         let details_path = config.spdx.get_spdx_path();
 
-        // Parse all SPDX JSON license files
         store
             .load_spdx(&details_path, false)
             .expect("Failed to load SPDX data");
 
-        // Save cache for future runs
         let cache_file = File::create(cache_path).expect("Failed to create cache file");
         store.to_cache(cache_file).expect("Failed to save cache");
 
@@ -54,16 +59,17 @@ async fn init_license_store() -> Store {
     }
 }
 
-/// License detector using askalono library
+/// License detector
 pub struct LicenseDetector;
 
 impl LicenseDetector {
-    /// Searches for license files in the file list and detects license type
+    /// Searches for license file and detects license type
     ///
-    /// # File name patterns recognized
-    /// - license, LICENSE, License
-    /// - copying, COPYING, Copying
-    /// - licence, LICENCE, Licence
+    /// # Arguments
+    /// * `files` - List of files to search for license
+    ///
+    /// # Returns
+    /// * `Option<LicenseInfo>` - License information if found and detected
     pub async fn find_license(files: &[FileInfo]) -> Option<LicenseInfo> {
         let license_patterns = [
             "license", "LICENSE", "License", "copying", "COPYING", "Copying", "licence", "LICENCE",
@@ -91,17 +97,18 @@ impl LicenseDetector {
         None
     }
 
-    /// Detects license type by analyzing file content
+    /// Detects license from content, returns (spdx_id, name, confidence) if confidence > 0.5
+    ///
+    /// # Arguments
+    /// * `content` - License text content
     ///
     /// # Returns
-    /// - `(spdx_id, license_name, confidence)` if confidence > 0.5
-    /// - `None` if confidence is too low or no match found
+    /// * `Option<(String, String, f64)>` - SPDX ID, license name, and confidence score
     pub async fn detect_from_content(content: &str) -> Option<(String, String, f64)> {
         let store = get_license_store().await;
         let text_data = TextData::from(content);
         let result = store.analyze(&text_data);
 
-        // Only accept matches with high confidence
         if result.score > 0.5 {
             Some((
                 result.name.to_string(),
@@ -115,6 +122,12 @@ impl LicenseDetector {
 }
 
 /// Convenience function for license detection
+///
+/// # Arguments
+/// * `files` - List of files to search for license
+///
+/// # Returns
+/// * `Option<LicenseInfo>` - License information if found and detected
 pub async fn detect_license(files: &[FileInfo]) -> Option<LicenseInfo> {
     LicenseDetector::find_license(files).await
 }

@@ -1,12 +1,20 @@
+//! Swift language AST parser
+//!
+//! This module provides tree-sitter based AST parsing for Swift files,
+//! extracting functions, classes, structs, enums, protocols (as traits),
+//! imports, variables, comments, and doc comments.
+
 use anyhow::Result;
 use tree_sitter::{Node, Parser};
 
 use crate::scanner::ast::{parser::AstData, traits::LanguageParser};
 
+/// Parser for Swift language files
 #[derive(Default)]
 pub struct SwiftParser;
 
 impl LanguageParser for SwiftParser {
+    /// Parses Swift source code and extracts AST data
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_swift::LANGUAGE.into())?;
@@ -26,10 +34,12 @@ impl LanguageParser for SwiftParser {
     }
 }
 
+/// Recursively traverses the AST and extracts relevant nodes
 fn visit_node(node: &Node, content: &str, data: &mut AstData) {
     let kind = node.kind();
 
     match kind {
+        // Comments
         "comment" => {
             if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                 let cleaned = comment.trim().to_string();
@@ -42,16 +52,22 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
                 }
             }
         }
+
+        // Variables
         "variable_declaration" => {
             if let Some(name) = extract_variable_name(node, content) {
                 data.variables.push(name);
             }
         }
+
+        // Functions
         "function_declaration" => {
             if let Some(name) = extract_name(node, content) {
                 data.functions.push(name);
             }
         }
+
+        // Types
         "class_declaration" => {
             if let Some(name) = extract_name(node, content) {
                 data.classes.push(name);
@@ -72,20 +88,25 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
                 data.traits.push(name);
             }
         }
+
+        // Imports
         "import_declaration" => {
             if let Some(path) = extract_import_path(node, content) {
                 data.imports.push(path);
             }
         }
+
         _ => {}
     }
 
+    // Recursively process children
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(&child, content, data);
     }
 }
 
+/// Extracts identifier/type name from a declaration node
 fn extract_name(node: &Node, content: &str) -> Option<String> {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
@@ -102,11 +123,11 @@ fn extract_name(node: &Node, content: &str) -> Option<String> {
     None
 }
 
+/// Extracts variable name from a declaration node
 fn extract_variable_name(node: &Node, content: &str) -> Option<String> {
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        let kind = child.kind();
-        if kind == "identifier" {
+        if child.kind() == "identifier" {
             if let Ok(name) = child.utf8_text(content.as_bytes()) {
                 let cleaned = name.trim();
                 if !cleaned.is_empty() && cleaned != "_" {
@@ -118,6 +139,7 @@ fn extract_variable_name(node: &Node, content: &str) -> Option<String> {
     None
 }
 
+/// Extracts import path from import declaration
 fn extract_import_path(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let cleaned = text.replace("import ", "").trim().to_string();
@@ -128,6 +150,7 @@ fn extract_import_path(node: &Node, content: &str) -> Option<String> {
     None
 }
 
+/// Sorts and deduplicates all extracted data
 fn clean_data(data: &mut AstData) {
     let fields = [
         &mut data.functions,

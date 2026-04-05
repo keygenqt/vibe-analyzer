@@ -1,10 +1,13 @@
+//! Application constants and configuration defaults
+//!
+//! This module defines global constants used throughout the application,
+//! including config paths, ignore patterns, and size limits.
+
 /// Config directory name
 pub const CONFIG_DIR_NAME: &str = ".vibe-analyzer";
 
 /// Config file name
 pub const CONFIG_FILE_NAME: &str = "config.json";
-
-// src/tools/app/constants.rs
 
 /// Default ignore directories (if no .gitignore)
 pub const DEFAULT_IGNORE_DIRS: &[&str] = &[

@@ -1,40 +1,51 @@
+//! Project statistics aggregation
+//!
+//! This module defines [`ProjectStats`] for aggregating metrics
+//! across all files in a project.
+
 use serde::{Deserialize, Serialize};
 
 use crate::scanner::ast::parser::AstData;
 
-/// Aggregated statistics for a project analysis
+/// Aggregated project statistics
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ProjectStats {
-    /// Total number of files processed
+    /// Total number of files
     pub total_files: usize,
-    /// Number of text files (source code, configs, etc.)
+    /// Number of text files
     pub text_files: usize,
-    /// Number of binary files (images, compiled binaries, etc.)
+    /// Number of binary files
     pub binary_files: usize,
-    /// Total number of functions extracted from all files
+    /// Total functions across all files
     pub total_functions: usize,
-    /// Total number of classes extracted from all files
+    /// Total classes across all files
     pub total_classes: usize,
-    /// Total number of structs extracted from all files
+    /// Total structs across all files
     pub total_structs: usize,
-    /// Total number of enums extracted from all files
+    /// Total enums across all files
     pub total_enums: usize,
-    /// Total number of traits/interfaces extracted from all files
+    /// Total traits/interfaces across all files
     pub total_traits: usize,
-    /// Total number of import statements extracted from all files
+    /// Total import statements across all files
     pub total_imports: usize,
-    /// Total number of lines of code across all text files
+    /// Total lines of code across all text files
     pub total_lines_of_code: usize,
-    /// Total number of characters across all text files
+    /// Total characters across all text files
     pub total_chars: usize,
-    /// Total size of all files in bytes
+    /// Total size in bytes
     pub total_size_bytes: u64,
-    /// Human readable total size (e.g., "1.23 MB", "456 KB")
+    /// Human readable size (e.g., "1.23 MB")
     pub total_size_human: String,
 }
 
 impl ProjectStats {
-    /// Updates statistics based on AST data from a single file
+    /// Update stats with AST data from a single file
+    ///
+    /// # Arguments
+    /// * `ast` - Optional AST data from a file
+    ///
+    /// # Returns
+    /// * `()` - Unit type (updates struct in place)
     pub fn update(&mut self, ast: Option<&AstData>) {
         self.total_files += 1;
 
@@ -51,23 +62,47 @@ impl ProjectStats {
         }
     }
 
-    /// Adds lines of code to the total
+    /// Add lines of code to total
+    ///
+    /// # Arguments
+    /// * `lines` - Number of lines to add
+    ///
+    /// # Returns
+    /// * `()` - Unit type (updates struct in place)
     pub fn add_lines_of_code(&mut self, lines: usize) {
         self.total_lines_of_code += lines;
     }
 
-    /// Adds characters to the total
+    /// Add characters to total
+    ///
+    /// # Arguments
+    /// * `chars` - Number of characters to add
+    ///
+    /// # Returns
+    /// * `()` - Unit type (updates struct in place)
     pub fn add_chars(&mut self, chars: usize) {
         self.total_chars += chars;
     }
 
-    /// Adds file size to the total and updates human readable format
+    /// Add file size and update human readable format
+    ///
+    /// # Arguments
+    /// * `size` - File size in bytes to add
+    ///
+    /// # Returns
+    /// * `()` - Unit type (updates struct in place)
     pub fn add_size_bytes(&mut self, size: u64) {
         self.total_size_bytes += size;
         self.total_size_human = Self::format_size(self.total_size_bytes);
     }
 
-    /// Formats bytes into human readable string (KB, MB, GB)
+    /// Format bytes as human readable string
+    ///
+    /// # Arguments
+    /// * `bytes` - Size in bytes to format
+    ///
+    /// # Returns
+    /// * `String` - Human readable size string (e.g., "1.23 MB")
     pub fn format_size(bytes: u64) -> String {
         const KB: u64 = 1024;
         const MB: u64 = KB * 1024;

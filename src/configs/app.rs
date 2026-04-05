@@ -1,3 +1,13 @@
+//! Application configuration management
+//!
+//! This module handles loading, saving, and manipulating the application configuration,
+//! including OpenSearch settings, Ollama settings, SPDX data paths, and project lists.
+//!
+//! # See Also
+//! * [`crate::configs::opensearch`] - OpenSearch connection configuration
+//! * [`crate::configs::ollama`] - Ollama LLM configuration
+//! * [`crate::configs::spdx`] - SPDX license data configuration
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs;
@@ -10,6 +20,7 @@ use crate::utils::path::{self, convert_relative};
 use super::ollama::OllamaConfig;
 use super::opensearch::OpenSearchConfig;
 
+/// Main application configuration structure
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub opensearch: OpenSearchConfig,
@@ -31,6 +42,10 @@ impl Default for AppConfig {
 
 impl AppConfig {
     /// Load config from file, create default if not exists
+    ///
+    /// # Returns
+    /// * `Ok(AppConfig)` on success
+    /// * `Err` if file reading or parsing fails
     pub fn load() -> Result<Self> {
         let config_path = path::get_config_path();
 
@@ -56,6 +71,10 @@ impl AppConfig {
     }
 
     /// Save config to file
+    ///
+    /// # Returns
+    /// * `Ok(())` on success
+    /// * `Err` if directory creation or file writing fails
     pub fn save(&self) -> Result<()> {
         let config_dir = path::get_config_dir();
         if !config_dir.exists() {
@@ -68,6 +87,9 @@ impl AppConfig {
     }
 
     /// Add project to config
+    ///
+    /// # Arguments
+    /// * `path` - Path to the project to add (can be relative or absolute)
     pub fn add_project(&mut self, path: PathBuf) {
         let path_str = path.to_string_lossy();
         let absolute_path = match convert_relative(&path_str) {
@@ -82,6 +104,13 @@ impl AppConfig {
     }
 
     /// Delete project from config
+    ///
+    /// # Arguments
+    /// * `path` - Path of the project to delete
+    ///
+    /// # Returns
+    /// * `Ok(PathBuf)` - The removed project path
+    /// * `Err` - If project not found in the list
     pub fn del_project(&mut self, path: PathBuf) -> Result<PathBuf> {
         let path_str = path.to_string_lossy();
         let normalized_path = match convert_relative(&path_str) {
@@ -101,6 +130,10 @@ impl AppConfig {
         }
     }
 
+    /// Get list of valid projects
+    ///
+    /// # Returns
+    /// * `Vec<PathBuf>` - List of existing project paths (absolute)
     pub fn get_projects(&self) -> Vec<PathBuf> {
         self.projects
             .iter()

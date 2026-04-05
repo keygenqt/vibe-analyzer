@@ -1,3 +1,8 @@
+//! JSON export functionality
+//!
+//! This module handles exporting project analysis results to JSON files
+//! in the user's Downloads folder.
+
 use anyhow::Result;
 use chrono::Local;
 use std::fs;
@@ -8,6 +13,12 @@ use crate::scanner::data::project_analysis::ProjectAnalysis;
 use crate::utils::path;
 
 /// Exports project analyses to a single JSON file in Downloads folder
+///
+/// # Arguments
+/// * `projects` - List of project analyses to export
+///
+/// # Returns
+/// * `Result<PathBuf>` - Path to the created JSON file on success
 pub fn export_project(projects: Vec<ProjectAnalysis>) -> Result<PathBuf> {
     let timestamp = Local::now().format("%Y%Y%m%d_%H%M%S");
     let filename = format!("vibe-analyzer_{}.json", timestamp);

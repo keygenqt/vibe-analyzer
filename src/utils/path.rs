@@ -1,3 +1,8 @@
+//! File system path utilities
+//!
+//! This module provides functions for path resolution, file system scanning,
+//! and directory management (config, downloads, etc.).
+
 use anyhow::Result;
 use dirs::home_dir;
 use ignore::WalkBuilder;
@@ -8,7 +13,13 @@ use crate::scanner::data::file_info::FileInfo;
 use crate::utils::constants::{CONFIG_DIR_NAME, CONFIG_FILE_NAME};
 use crate::utils::matcher;
 
-/// Returns file extension
+/// Returns file extension (lowercase)
+///
+/// # Arguments
+/// * `path` - Path to extract extension from
+///
+/// # Returns
+/// * `Option<String>` - Lowercase file extension if present
 pub fn get_extension(path: &Path) -> Option<String> {
     path.extension()
         .and_then(|ext| ext.to_str())
@@ -16,22 +27,37 @@ pub fn get_extension(path: &Path) -> Option<String> {
 }
 
 /// Get config directory path: ~/.vibe-analyzer/
+///
+/// # Returns
+/// * `PathBuf` - Absolute path to config directory
 pub fn get_config_dir() -> PathBuf {
     let home = home_dir().expect("Failed to get home directory");
     home.join(CONFIG_DIR_NAME)
 }
 
 /// Get config file path: ~/.vibe-analyzer/config.json
+///
+/// # Returns
+/// * `PathBuf` - Absolute path to config file
 pub fn get_config_path() -> PathBuf {
     get_config_dir().join(CONFIG_FILE_NAME)
 }
 
 /// Get Downloads directory path
+///
+/// # Returns
+/// * `PathBuf` - Absolute path to Downloads directory
 pub fn get_downloads_dir() -> PathBuf {
     dirs::download_dir().expect("Failed to get downloads directory")
 }
 
 /// Resolves a path to absolute form, expanding ~, ., ..
+///
+/// # Arguments
+/// * `path` - Path string to resolve (supports ~, ., ..)
+///
+/// # Returns
+/// * `Option<PathBuf>` - Resolved absolute path if valid
 pub fn convert_relative(path: &str) -> Option<PathBuf> {
     let path = path.trim();
     if path.is_empty() {
@@ -88,6 +114,12 @@ pub fn convert_relative(path: &str) -> Option<PathBuf> {
 }
 
 /// Returns list of files in a project (supports both single file and directory)
+///
+/// # Arguments
+/// * `project_path` - Path to project file or directory
+///
+/// # Returns
+/// * `Result<Vec<FileInfo>>` - List of file metadata on success
 pub fn project_files(project_path: &Path) -> Result<Vec<FileInfo>> {
     let project_path_abs = dunce::canonicalize(project_path)?;
 
@@ -114,12 +146,12 @@ pub fn project_files(project_path: &Path) -> Result<Vec<FileInfo>> {
     // Scan directory recursively
     let mut files = Vec::new();
     let walker = WalkBuilder::new(&project_path_abs)
-        .require_git(false) // Apply gitignore even without .git folder
-        .git_ignore(true) // Respect .gitignore rules
-        .hidden(true) // Skip hidden files (.DS_Store, etc.)
+        .require_git(false)
+        .git_ignore(true)
+        .hidden(true)
         .git_global(false)
         .git_exclude(false)
-        .follow_links(false) // Don't follow symlinks
+        .follow_links(false)
         .build();
 
     for entry in walker {

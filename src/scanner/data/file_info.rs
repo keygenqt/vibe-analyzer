@@ -1,11 +1,16 @@
+//! Internal file information structure
+//!
+//! This module defines [`FileInfo`] used during directory scanning
+//! before full analysis is performed.
+
 use std::path::PathBuf;
 
-/// Represents a file discovered during directory scanning
+/// File discovered during directory scanning
 #[derive(Debug, Clone)]
 pub struct FileInfo {
-    /// Absolute path to the file on disk
+    /// Absolute path on disk
     pub path: PathBuf,
-    /// Path relative to the project root being scanned
+    /// Path relative to project root
     pub relative_path: PathBuf,
     /// File size in bytes
     pub size: u64,

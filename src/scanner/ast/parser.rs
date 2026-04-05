@@ -1,3 +1,10 @@
+//! AST parsing infrastructure and data structures
+//!
+//! This module provides:
+//! - [`AstData`] - Container for extracted AST information (functions, classes, imports, etc.)
+//! - Language parser registry mapping file extensions to parsers
+//! - [`parse_ast`] - Main entry point for parsing source code
+
 use super::langs::arkts::ArkTSParser;
 use super::langs::bash::BashParser;
 use super::langs::batch::BatchParser;
@@ -25,32 +32,60 @@ use std::collections::HashMap;
 use super::traits::LanguageParser;
 
 /// Abstract Syntax Tree data extracted from source files
+///
+/// Contains various code elements extracted by language parsers.
+/// Empty fields are automatically omitted during JSON serialization.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct AstData {
+    /// Function/method names
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub functions: Vec<String>,
+
+    /// Class names
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub classes: Vec<String>,
+
+    /// Import/use/include statements
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub imports: Vec<String>,
+
+    /// Struct/record names
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub structs: Vec<String>,
+
+    /// Enum names
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub enums: Vec<String>,
+
+    /// Trait/interface/protocol names
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub traits: Vec<String>,
+
+    /// Database table names (SQL)
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tables: Vec<String>,
+
+    /// Database view names (SQL)
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub views: Vec<String>,
+
+    /// Regular comments
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub comments: Vec<String>,
+
+    /// Documentation comments (///, /**), docstrings
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub doc_comments: Vec<String>,
+
+    /// Variable names
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub variables: Vec<String>,
+
+    /// XML/HTML tag names
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub tags: Vec<String>,
+
+    /// XML/HTML attribute names
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub attributes: Vec<String>,
 }
@@ -100,7 +135,17 @@ static PARSERS: Lazy<HashMap<String, Box<dyn LanguageParser>>> = Lazy::new(|| {
 });
 
 /// Parses source code and returns AST data for the specified language
-/// Returns `None` if no parser is registered for this extension
+///
+/// Returns `None` if no parser is registered for this extension.
+///
+/// # Arguments
+/// * `content` - Source code content as string
+/// * `extension` - File extension (e.g., "rs", "py") to determine parser
+///
+/// # Returns
+/// * `Ok(Some(AstData))` - Successfully parsed AST data
+/// * `Ok(None)` - No parser found for this extension (not an error)
+/// * `Err` - Parser error (invalid syntax, etc.)
 pub fn parse_ast(content: &str, extension: &str) -> Result<Option<AstData>> {
     let Some(parser) = PARSERS.get(extension) else {
         return Ok(None);

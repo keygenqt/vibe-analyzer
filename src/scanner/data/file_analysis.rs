@@ -1,28 +1,40 @@
+//! File-level analysis data structure
+//!
+//! This module defines [`FileAnalysis`] containing all collected
+//! information about a single file in the project.
+
 use serde::{Deserialize, Serialize};
 
 use crate::scanner::ast::parser::AstData;
 
-/// Represents analysis results for a single file
+/// Analysis results for a single file
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileAnalysis {
     /// Relative path from project root
     pub path: String,
-    /// File extension (e.g., "rs", "toml", "md") without the dot
+
+    /// File extension without dot (e.g., "rs", "toml")
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
+
     /// File size in bytes
     pub size_bytes: u64,
-    /// Whether the file is text-based (true) or binary (false)
+
+    /// Whether the file is text-based
     pub is_text: bool,
-    /// Number of lines in the file (only for text files)
+
+    /// Number of lines (text files only)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub lines_of_code: Option<usize>,
-    /// Number of characters in the file (only for text files)
+
+    /// Number of characters (text files only)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub size_chars: Option<usize>,
-    /// AST data extracted from the file (if text and parsable)
+
+    /// AST data (if text and parsable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ast: Option<AstData>,
-    /// Unique file identifier (BLAKE3) for content linking
+
+    /// Unique file identifier (BLAKE3 hash)
     pub file_id: String,
 }

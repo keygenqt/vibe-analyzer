@@ -1,3 +1,8 @@
+//! Vibe Analyzer - Main entry point
+//!
+//! A CLI tool for scanning and analyzing codebases with AST extraction,
+//! license detection, and JSON export for LLM integration.
+
 use clap::{CommandFactory, Parser, Subcommand};
 use colored::Colorize;
 use std::path::PathBuf;
@@ -12,8 +17,8 @@ mod utils;
 
 #[derive(Parser)]
 #[command(name = "vibe-analyzer")]
-#[command(about=utils::app::app_about())]
-#[command(styles=utils::app::app_styles())]
+#[command(about = utils::app::app_about())]
+#[command(styles = utils::app::app_styles())]
 #[command(version = utils::app::app_version())]
 struct App {
     #[command(subcommand)]
@@ -52,6 +57,7 @@ async fn main() {
             }
             Err(e) => exit_error!("{}", e),
         },
+
         // Delete project from configuration
         Some(Commands::Del { path }) => match AppConfig::load() {
             Ok(mut config) => match config.del_project(path) {
@@ -60,6 +66,7 @@ async fn main() {
             },
             Err(e) => exit_error!("{}", e),
         },
+
         // List all configured projects
         Some(Commands::List) => match AppConfig::load() {
             Ok(config) => {
@@ -74,12 +81,14 @@ async fn main() {
             }
             Err(e) => exit_error!("{}", e),
         },
+
         // Scan and index project(s)
         Some(Commands::Scan { path }) => {
             if let Err(e) = cli::scan::exec(cli::scan::ScanOptions { custom_path: path }).await {
                 exit_error!("{}", e);
             }
         }
+
         // Show help when no command is provided
         None => {
             let _ = App::command().print_help();

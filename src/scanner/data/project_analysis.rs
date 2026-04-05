@@ -1,3 +1,8 @@
+//! Project-level analysis results
+//!
+//! This module defines [`ProjectAnalysis`] containing complete
+//! analysis data for a single project.
+
 use super::file_analysis::FileAnalysis;
 use super::license_info::LicenseInfo;
 use super::project_stats::ProjectStats;
@@ -7,18 +12,18 @@ use serde::{Deserialize, Serialize};
 /// Complete analysis results for a single project
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectAnalysis {
-    /// Absolute path to the project root directory
+    /// Absolute path to project root
     pub project: String,
-    /// ISO 8601 timestamp of when the analysis was performed
+    /// ISO 8601 timestamp of analysis
     pub indexed_at: String,
     /// README file content (if found)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub readme: Option<ReadmeInfo>,
-    /// Detected license information
+    /// Detected license information (if found)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub license: Option<LicenseInfo>,
-    /// Aggregated statistics across all files in the project
+    /// Aggregated project statistics
     pub stats: ProjectStats,
-    /// Detailed analysis for each file in the project
+    /// Per-file analysis results
     pub files: Vec<FileAnalysis>,
 }

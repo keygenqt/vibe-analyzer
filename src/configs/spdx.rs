@@ -1,3 +1,8 @@
+//! SPDX license data management
+//!
+//! This module handles downloading, extracting, and managing SPDX license data
+//! from the official SPDX license list repository.
+
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 use std::fs::File;
@@ -20,9 +25,12 @@ pub struct SpdxConfig {
 }
 
 impl Default for SpdxConfig {
+    /// Creates default SPDX configuration
+    ///
+    /// # Returns
+    /// * `SpdxConfig` with default data path
     fn default() -> Self {
         Self {
-            // Default location: ~/.vibe-analyzer/spdx/
             data_path: get_config_dir().join("spdx").to_string_lossy().to_string(),
         }
     }
@@ -30,22 +38,26 @@ impl Default for SpdxConfig {
 
 impl SpdxConfig {
     /// Returns the path to the directory containing license JSON files
-    /// Structure: {data_path}/json/details/
+    ///
+    /// # Returns
+    /// * `PathBuf` pointing to `{data_path}/json/details/`
     pub fn get_spdx_path(&self) -> PathBuf {
         Path::new(&self.data_path).join("json").join("details")
     }
 
     /// Checks if the configured path is the default one
+    ///
+    /// # Returns
+    /// * `bool` - true if using default path
     fn is_default_path(&self) -> bool {
         self.data_path == SpdxConfig::default().data_path
     }
 
     /// Ensures SPDX data is available, downloading if necessary
     ///
-    /// # Behavior
-    /// - If data exists at configured path -> returns immediately
-    /// - If custom path has no data -> exits with error
-    /// - If default path has no data -> downloads automatically
+    /// # Returns
+    /// * `Ok(())` if data exists or was downloaded
+    /// * `Err` if custom path has no data or download fails
     pub async fn ensure_data(&self) -> Result<()> {
         let spdx_path = self.get_spdx_path();
 
@@ -79,14 +91,16 @@ impl SpdxConfig {
     }
 
     /// Downloads and extracts SPDX license data from GitHub
+    ///
+    /// # Returns
+    /// * `Ok(())` on successful download and extraction
+    /// * `Err` if download, extraction, or copy fails
     async fn download_spdx_data(&self) -> Result<()> {
         let target_dir = Path::new(&self.data_path);
         let details_path = self.get_spdx_path();
 
-        // Create target directory
         std::fs::create_dir_all(target_dir)?;
 
-        // Download to temporary directory
         let temp_dir = tempdir()?;
         let zip_path = temp_dir.path().join("spdx-data.zip");
 
@@ -96,12 +110,10 @@ impl SpdxConfig {
         let mut file = File::create(&zip_path)?;
         file.write_all(&bytes)?;
 
-        // Extract archive
         let zip_file = File::open(&zip_path)?;
         let mut archive = ZipArchive::new(zip_file)?;
         archive.extract(temp_dir.path())?;
 
-        // Find the extracted directory (name varies by branch/tag)
         let extracted_dir = std::fs::read_dir(temp_dir.path())?
             .filter_map(|entry| entry.ok())
             .find(|entry| {
@@ -113,7 +125,6 @@ impl SpdxConfig {
             })
             .ok_or_else(|| anyhow::anyhow!("Failed to find extracted SPDX directory"))?;
 
-        // Copy json/details to target location
         let source_details = extracted_dir.path().join("json").join("details");
         if source_details.exists() {
             self.copy_dir_all(&source_details, &details_path)?;
@@ -125,6 +136,14 @@ impl SpdxConfig {
     }
 
     /// Recursively copies a directory and all its contents
+    ///
+    /// # Arguments
+    /// * `src` - Source directory path
+    /// * `dst` - Destination directory path
+    ///
+    /// # Returns
+    /// * `Ok(())` on successful copy
+    /// * `Err` if directory reading or copying fails
     fn copy_dir_all(&self, src: &Path, dst: &Path) -> Result<()> {
         std::fs::create_dir_all(dst)?;
         for entry in std::fs::read_dir(src)? {

@@ -1,12 +1,20 @@
+//! SQL language AST parser (PostgreSQL dialect)
+//!
+//! This module provides tree-sitter based AST parsing for SQL files,
+//! extracting tables, indexes (as structs), columns (as variables), and comments.
+//! Uses PostgreSQL grammar for parsing.
+
 use anyhow::Result;
 use tree_sitter::{Node, Parser};
 
 use crate::scanner::ast::{parser::AstData, traits::LanguageParser};
 
+/// Parser for SQL language files (PostgreSQL dialect)
 #[derive(Default)]
 pub struct SqlParser;
 
 impl LanguageParser for SqlParser {
+    /// Parses SQL source code and extracts AST data
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_postgres::LANGUAGE.into())?;
@@ -20,17 +28,18 @@ impl LanguageParser for SqlParser {
         let mut data = AstData::default();
 
         visit_node(&root_node, content, &mut data);
-
         clean_data(&mut data);
 
         Ok(data)
     }
 }
 
+/// Recursively traverses the AST and extracts relevant nodes
 fn visit_node(node: &Node, content: &str, data: &mut AstData) {
     let kind = node.kind();
 
     match kind {
+        // Comments
         "comment" => {
             if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                 let cleaned = comment.trim().to_string();
@@ -39,6 +48,8 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
                 }
             }
         }
+
+        // Column definitions (variables)
         "columnDef" => {
             if let Some(name_node) = node.child(0) {
                 if let Ok(name) = name_node.utf8_text(content.as_bytes()) {
@@ -49,6 +60,8 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
                 }
             }
         }
+
+        // Relations (tables) and qualified names
         "RelationExpr" | "qualified_name" | "any_name" => {
             if let Some(name) = extract_name(node, content) {
                 if !is_sql_keyword(&name.to_uppercase()) {
@@ -62,6 +75,8 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
                 }
             }
         }
+
+        // Index names
         "IndexName" | "opt_single_name" => {
             if let Some(name) = extract_name(node, content) {
                 if !is_sql_keyword(&name.to_uppercase()) {
@@ -69,15 +84,18 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
                 }
             }
         }
+
         _ => {}
     }
 
+    // Recursively process children
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(&child, content, data);
     }
 }
 
+/// Gets the statement text (CREATE, ALTER, SELECT, etc.) containing this node
 fn get_stmt_text(node: &Node, content: &str) -> String {
     let mut current = node.parent();
     while let Some(parent) = current {
@@ -100,6 +118,7 @@ fn get_stmt_text(node: &Node, content: &str) -> String {
     String::new()
 }
 
+/// Extracts identifier name from a node
 fn extract_name(node: &Node, content: &str) -> Option<String> {
     let kind = node.kind();
     if kind == "identifier" || kind == "ColId" || kind == "any_name" {
@@ -120,6 +139,7 @@ fn extract_name(node: &Node, content: &str) -> Option<String> {
     None
 }
 
+/// Checks if a name is a reserved SQL keyword
 fn is_sql_keyword(name: &str) -> bool {
     let kw = name.to_uppercase();
     matches!(
@@ -143,6 +163,7 @@ fn is_sql_keyword(name: &str) -> bool {
     )
 }
 
+/// Sorts and deduplicates all extracted data
 fn clean_data(data: &mut AstData) {
     let fields = [
         &mut data.functions,

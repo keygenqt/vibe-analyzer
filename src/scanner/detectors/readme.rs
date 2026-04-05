@@ -1,26 +1,24 @@
+//! README file detection
+//!
+//! This module provides functionality to find and extract README files
+//! from a list of project files, with priority for .md over .txt.
+
 use crate::scanner::data::{file_info::FileInfo, readme_info::ReadmeInfo};
 
-/// Detects and extracts README files from a list of project files
+/// README file detector
 pub struct ReadmeDetector;
 
 impl ReadmeDetector {
-    /// Finds the best README file in the file list
+    /// Finds the best README file (priority: .md > .txt > no extension)
     ///
-    /// # Priority order (highest to lowest)
-    /// 1. `README.md` - Markdown files have highest priority
-    /// 2. `README.txt` - Plain text files
-    /// 3. `README` - Files without extension
-    ///
-    /// # Recognized patterns
-    /// - `readme`, `README`, `Readme`
+    /// # Arguments
+    /// * `files` - List of files to search for README
     ///
     /// # Returns
-    /// Returns `Some(ReadmeInfo)` for the first matching file,
-    /// `None` if no README file is found.
+    /// * `Option<ReadmeInfo>` - README information if found
     pub fn find_readme(files: &[FileInfo]) -> Option<ReadmeInfo> {
         let readme_patterns = ["readme", "README", "Readme"];
 
-        // Collect all files matching README patterns
         let mut candidates: Vec<_> = files
             .iter()
             .filter(|f| {
@@ -29,17 +27,15 @@ impl ReadmeDetector {
             })
             .collect();
 
-        // Sort by priority: .md > .txt > no extension
         candidates.sort_by_key(|f| {
             let ext = f.path.extension().and_then(|e| e.to_str()).unwrap_or("");
             match ext {
-                "md" => 1,  // Highest priority
-                "txt" => 2, // Medium priority
-                _ => 3,     // Lowest priority
+                "md" => 1,
+                "txt" => 2,
+                _ => 3,
             }
         });
 
-        // Take the best candidate and read its content
         candidates.first().and_then(|file| {
             std::fs::read_to_string(&file.path)
                 .ok()
@@ -53,6 +49,12 @@ impl ReadmeDetector {
 }
 
 /// Convenience function for README detection
+///
+/// # Arguments
+/// * `files` - List of files to search for README
+///
+/// # Returns
+/// * `Option<ReadmeInfo>` - README information if found
 pub fn detect_readme(files: &[FileInfo]) -> Option<ReadmeInfo> {
     ReadmeDetector::find_readme(files)
 }

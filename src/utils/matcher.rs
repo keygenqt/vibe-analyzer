@@ -1,8 +1,19 @@
+//! Default ignore pattern matcher
+//!
+//! This module provides functions to check if files or directories
+//! match default ignore patterns (build artifacts, system files, logs).
+
 use std::path::Path;
 
 use crate::utils::constants::{DEFAULT_IGNORE_DIRS, DEFAULT_IGNORE_FILES};
 
-/// Checks if file/dir matches default ignore patterns (build artifacts, system files, logs)
+/// Checks if file/dir matches default ignore patterns
+///
+/// # Arguments
+/// * `path` - Path to the file or directory to check
+///
+/// # Returns
+/// * `bool` - `true` if path matches an ignore pattern, `false` otherwise
 pub fn is_ignore(path: &Path) -> bool {
     if path.is_dir() {
         for ignore_dir in DEFAULT_IGNORE_DIRS {
