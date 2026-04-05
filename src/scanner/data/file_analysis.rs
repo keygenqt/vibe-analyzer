@@ -23,6 +23,6 @@ pub struct FileAnalysis {
     /// AST data extracted from the file (if text and parsable)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ast: Option<AstData>,
-    /// Fast hash of file content for change detection (u64)
-    pub content_hash: u64,
+    /// Unique file identifier (BLAKE3) for content linking
+    pub file_id: String,
 }

@@ -51,7 +51,7 @@ pub async fn scan_project(
         let mime = utils::mime::detect_mime(&file_info.path)?;
         let text_file = utils::mime::is_text(&mime, &file_info.path);
 
-        let hash = hash::from_file(&file_info.path)?;
+        let file_id = hash::file_id_from_file(&file_info.path)?;
 
         let extension = path::get_extension(&file_info.path);
 
@@ -115,7 +115,7 @@ pub async fn scan_project(
             path: file_info.relative_path.to_string_lossy().to_string(),
             extension,
             size_bytes: file_info.size,
-            content_hash: hash,
+            file_id,
             is_text: text_file,
             lines_of_code,
             size_chars,
