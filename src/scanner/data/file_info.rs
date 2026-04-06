@@ -1,7 +1,4 @@
 //! Internal file information structure
-//!
-//! This module defines [`FileInfo`] used during directory scanning
-//! before full analysis is performed.
 
 use std::path::PathBuf;
 

@@ -1,20 +1,22 @@
 //! TypeScript language AST parser
-//!
-//! This module provides tree-sitter based AST parsing for TypeScript files,
-//! extracting functions, classes, interfaces (as traits), enums, imports,
-//! variables, comments, and doc comments.
 
 use anyhow::Result;
 use tree_sitter::{Node, Parser};
 
-use crate::scanner::ast::{parser::AstData, traits::LanguageParser};
+use crate::scanner::ast::{
+    data::{
+        ast_data::AstData, ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
+        ast_data_function::AstDataFunction, ast_data_interface::AstDataInterface,
+        ast_data_struct::AstDataStruct, ast_data_variable::AstDataVariable,
+    },
+    traits::LanguageParser,
+};
 
 /// Parser for TypeScript language files
 #[derive(Default)]
 pub struct TypeScriptParser;
 
 impl LanguageParser for TypeScriptParser {
-    /// Parses TypeScript source code and extracts AST data
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_typescript::LANGUAGE_TYPESCRIPT.into())?;
@@ -26,153 +28,342 @@ impl LanguageParser for TypeScriptParser {
 
         let root_node = tree.root_node();
         let mut data = AstData::default();
+        let mut functions = Vec::new();
+        let mut structs = Vec::new();
+        let mut classes = Vec::new();
+        let mut enums = Vec::new();
+        let mut interfaces = Vec::new();
+        let mut variables = Vec::new();
 
-        visit_node(&root_node, content, &mut data);
-        clean_data(&mut data);
+        visit_node(
+            &root_node,
+            content,
+            &mut data,
+            &mut functions,
+            &mut structs,
+            &mut classes,
+            &mut enums,
+            &mut interfaces,
+            &mut variables,
+        );
+
+        data.functions = functions;
+        data.structs = structs;
+        data.classes = classes;
+        data.enums = enums;
+        data.interfaces = interfaces;
+        data.variables = variables;
 
         Ok(data)
     }
 }
 
 /// Recursively traverses the AST and extracts relevant nodes
-fn visit_node(node: &Node, content: &str, data: &mut AstData) {
-    let kind = node.kind();
-
-    match kind {
-        // Comments
+fn visit_node(
+    node: &Node,
+    content: &str,
+    data: &mut AstData,
+    functions: &mut Vec<AstDataFunction>,
+    structs: &mut Vec<AstDataStruct>,
+    classes: &mut Vec<AstDataClass>,
+    enums: &mut Vec<AstDataEnum>,
+    interfaces: &mut Vec<AstDataInterface>,
+    variables: &mut Vec<AstDataVariable>,
+) {
+    match node.kind() {
+        // Module comments
         "comment" => {
-            if let Ok(comment) = node.utf8_text(content.as_bytes()) {
-                let cleaned = comment.trim().to_string();
-                if !cleaned.is_empty() {
+            if node.prev_sibling().is_none() && !is_inside_function(node) {
+                if let Ok(comment) = node.utf8_text(content.as_bytes()) {
+                    let cleaned = comment.trim().to_string();
                     if cleaned.starts_with("/**") {
-                        data.doc_comments.push(cleaned);
-                    } else {
-                        data.comments.push(cleaned);
+                        let content = cleaned[3..cleaned.len() - 2].trim();
+                        let lines: Vec<String> = content
+                            .lines()
+                            .map(|line| line.trim_start_matches('*').trim_start().to_string())
+                            .collect();
+                        let comment_text = lines.join(" ").trim().to_string();
+                        if !comment_text.is_empty() {
+                            data.comments.push(comment_text);
+                        }
                     }
                 }
             }
         }
 
-        // Variables
-        "variable_declaration" => {
-            if let Some(name) = extract_variable_name(node, content) {
-                data.variables.push(name);
+        // Arrow functions and variables
+        "lexical_declaration" => {
+            if !is_inside_class(node) && !is_inside_function(node) {
+                let search_node = if node
+                    .parent()
+                    .map_or(false, |p| p.kind() == "export_statement")
+                {
+                    node.parent().unwrap()
+                } else {
+                    *node
+                };
+
+                let comments = extract_ts_doc_comments(&search_node, content);
+
+                let mut cursor = node.walk();
+                for child in node.children(&mut cursor) {
+                    if child.kind() == "variable_declarator" {
+                        if let Some(signature) = extract_ts_arrow_signature(&child, content) {
+                            functions.push(AstDataFunction {
+                                signature,
+                                comments: comments.clone(),
+                            });
+                        } else if let Some(signature) =
+                            extract_ts_variable_signature(node, &child, content)
+                        {
+                            variables.push(AstDataVariable {
+                                signature,
+                                comments: comments.clone(),
+                            });
+                        }
+                    }
+                }
             }
         }
 
-        // Functions and methods
-        "function_declaration" | "method_definition" => {
-            if let Some(name) = extract_name(node, content) {
-                data.functions.push(name);
-            }
-        }
-
-        // Types
+        // Classes
         "class_declaration" => {
-            if let Some(name) = extract_name(node, content) {
-                data.classes.push(name);
+            let search_node = if node
+                .parent()
+                .map_or(false, |p| p.kind() == "export_statement")
+            {
+                node.parent().unwrap()
+            } else {
+                *node
+            };
+
+            let comments = extract_ts_doc_comments(&search_node, content);
+
+            if let Some(signature) = extract_ts_signature_with_export(node, content) {
+                classes.push(AstDataClass {
+                    signature,
+                    comments,
+                });
             }
         }
+
+        // Interfaces
         "interface_declaration" => {
-            if let Some(name) = extract_name(node, content) {
-                data.traits.push(name);
+            let search_node = if node
+                .parent()
+                .map_or(false, |p| p.kind() == "export_statement")
+            {
+                node.parent().unwrap()
+            } else {
+                *node
+            };
+
+            let comments = extract_ts_doc_comments(&search_node, content);
+
+            if let Some(signature) = extract_ts_signature_with_export(node, content) {
+                interfaces.push(AstDataInterface {
+                    signature,
+                    comments,
+                });
             }
         }
+
+        // Enums
         "enum_declaration" => {
-            if let Some(name) = extract_name(node, content) {
-                data.enums.push(name);
+            let search_node = if node
+                .parent()
+                .map_or(false, |p| p.kind() == "export_statement")
+            {
+                node.parent().unwrap()
+            } else {
+                *node
+            };
+
+            let comments = extract_ts_doc_comments(&search_node, content);
+
+            if let Some(signature) = extract_ts_signature_with_export(node, content) {
+                enums.push(AstDataEnum {
+                    signature,
+                    comments,
+                });
+            }
+        }
+
+        // Functions
+        "function_declaration" => {
+            if let Some(signature) = extract_ts_signature_with_export(node, content) {
+                functions.push(AstDataFunction {
+                    signature,
+                    comments: extract_ts_doc_comments(node, content),
+                });
             }
         }
 
         // Imports
-        "import_statement" | "import_specifier" => {
-            if let Some(path) = extract_import_path(node, content) {
-                data.imports.push(path);
+        "import_statement" => {
+            if let Ok(text) = node.utf8_text(content.as_bytes()) {
+                if let Some(start) = text.find('\'') {
+                    let rest = &text[start + 1..];
+                    if let Some(end) = rest.find('\'') {
+                        let path = rest[..end].to_string();
+                        if !path.is_empty() && !data.imports.contains(&path) {
+                            data.imports.push(path);
+                        }
+                    }
+                } else if let Some(start) = text.find('"') {
+                    let rest = &text[start + 1..];
+                    if let Some(end) = rest.find('"') {
+                        let path = rest[..end].to_string();
+                        if !path.is_empty() && !data.imports.contains(&path) {
+                            data.imports.push(path);
+                        }
+                    }
+                }
             }
         }
 
         _ => {}
     }
 
-    // Recursively process children
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        visit_node(&child, content, data);
+        visit_node(
+            &child, content, data, functions, structs, classes, enums, interfaces, variables,
+        );
     }
 }
 
-/// Extracts identifier/type name from a declaration node
-fn extract_name(node: &Node, content: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        let kind = child.kind();
-        if kind == "identifier" || kind == "type_identifier" || kind == "property_identifier" {
-            if let Ok(name) = child.utf8_text(content.as_bytes()) {
-                let cleaned = name.trim();
-                if !cleaned.is_empty() && cleaned != "_" {
-                    return Some(cleaned.to_string());
-                }
-            }
-        }
-    }
-    None
-}
-
-/// Extracts variable name from a declaration node
-fn extract_variable_name(node: &Node, content: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        let kind = child.kind();
-        if kind == "identifier" {
-            if let Ok(name) = child.utf8_text(content.as_bytes()) {
-                let cleaned = name.trim().to_string();
-                if !cleaned.is_empty() && cleaned != "_" {
-                    return Some(cleaned);
-                }
-            }
-        }
-        if kind == "variable_declarator" {
-            if let Some(name) = extract_variable_name(&child, content) {
-                return Some(name);
-            }
-        }
-    }
-    None
-}
-
-/// Extracts import path from import statement
-fn extract_import_path(node: &Node, content: &str) -> Option<String> {
+/// Extracts arrow function signature from variable declarator
+fn extract_ts_arrow_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
-        let cleaned = text
-            .replace("import ", "")
-            .replace("from ", "")
-            .replace(";", "")
-            .replace("\"", "")
-            .replace("'", "")
-            .trim()
-            .to_string();
-        if !cleaned.is_empty() && cleaned.len() < 200 {
-            return Some(cleaned);
+        if text.contains("=>") {
+            if let Some(arrow_pos) = text.find("=>") {
+                let before_arrow = &text[..arrow_pos].trim();
+                let parts: Vec<&str> = before_arrow.split('=').collect();
+                if parts.len() >= 2 {
+                    let name = parts[0].trim();
+                    let arrow_part = parts[1].trim();
+                    return Some(format!("const {} = {}", name, arrow_part));
+                }
+                return Some(format!("const {}", before_arrow));
+            }
         }
     }
     None
 }
 
-/// Sorts and deduplicates all extracted data
-fn clean_data(data: &mut AstData) {
-    let fields = [
-        &mut data.functions,
-        &mut data.classes,
-        &mut data.structs,
-        &mut data.imports,
-        &mut data.comments,
-        &mut data.doc_comments,
-        &mut data.variables,
-        &mut data.traits,
-        &mut data.enums,
-    ];
-    for field in fields {
-        field.sort();
-        field.dedup();
+/// Extracts variable signature (const/let/var name)
+fn extract_ts_variable_signature(parent: &Node, child: &Node, content: &str) -> Option<String> {
+    let mut prefix = String::new();
+
+    if let Some(grandparent) = parent.parent() {
+        if grandparent.kind() == "export_statement" {
+            prefix = "export ".to_string();
+        }
     }
+
+    if let Ok(text) = parent.utf8_text(content.as_bytes()) {
+        let parts: Vec<&str> = text.split_whitespace().collect();
+        if !parts.is_empty() && (parts[0] == "const" || parts[0] == "let" || parts[0] == "var") {
+            prefix.push_str(parts[0]);
+        }
+    }
+
+    let name = if let Ok(text) = child.utf8_text(content.as_bytes()) {
+        text.split('=').next().unwrap_or(text).trim().to_string()
+    } else {
+        String::new()
+    };
+
+    let signature = format!("{} {}", prefix, name).trim().to_string();
+    if !signature.is_empty() && signature.len() < 100 {
+        Some(signature)
+    } else {
+        None
+    }
+}
+
+/// Extracts signature with export prefix and without body
+fn extract_ts_signature_with_export(node: &Node, content: &str) -> Option<String> {
+    let mut has_export = false;
+    let mut prev = node.prev_sibling();
+    while let Some(sibling) = prev {
+        if sibling.kind() == "export" {
+            has_export = true;
+            break;
+        }
+        prev = sibling.prev_sibling();
+    }
+
+    let prefix = if has_export { "export " } else { "" };
+
+    if let Ok(text) = node.utf8_text(content.as_bytes()) {
+        if let Some(pos) = text.find('{') {
+            let signature = text[..pos].trim().to_string();
+            if !signature.is_empty() {
+                return Some(format!("{}{}", prefix, signature));
+            }
+        }
+        let first_line = text.lines().next().unwrap_or(text);
+        let signature = first_line.trim().to_string();
+        if !signature.is_empty() {
+            return Some(format!("{}{}", prefix, signature));
+        }
+    }
+    None
+}
+
+/// Extracts doc comments before a node
+fn extract_ts_doc_comments(node: &Node, content: &str) -> Vec<String> {
+    let mut comments = Vec::new();
+
+    let mut prev = node.prev_sibling();
+    while let Some(sibling) = prev {
+        if sibling.kind() != "comment" {
+            break;
+        }
+
+        if let Ok(text) = sibling.utf8_text(content.as_bytes()) {
+            let cleaned = text.trim().to_string();
+            if cleaned.starts_with("/**") {
+                let body = cleaned[3..cleaned.len() - 2].trim();
+                let lines: Vec<String> = body
+                    .lines()
+                    .map(|line| line.trim().trim_start_matches('*').trim_start().to_string())
+                    .filter(|line| !line.is_empty())
+                    .collect();
+                for line in lines {
+                    comments.push(line);
+                }
+            }
+        }
+
+        prev = sibling.prev_sibling();
+    }
+
+    comments
+}
+
+/// Checks if a node is inside a class
+fn is_inside_class(node: &Node) -> bool {
+    let mut parent = node.parent();
+    while let Some(p) = parent {
+        if p.kind() == "class_declaration" {
+            return true;
+        }
+        parent = p.parent();
+    }
+    false
+}
+
+/// Checks if a node is inside a function
+fn is_inside_function(node: &Node) -> bool {
+    let mut parent = node.parent();
+    while let Some(p) = parent {
+        if p.kind() == "function_declaration" || p.kind() == "arrow_function" {
+            return true;
+        }
+        parent = p.parent();
+    }
+    false
 }

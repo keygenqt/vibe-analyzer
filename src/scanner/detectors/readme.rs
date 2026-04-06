@@ -1,7 +1,4 @@
 //! README file detection
-//!
-//! This module provides functionality to find and extract README files
-//! from a list of project files, with priority for .md over .txt.
 
 use crate::scanner::data::{file_info::FileInfo, readme_info::ReadmeInfo};
 
@@ -10,12 +7,6 @@ pub struct ReadmeDetector;
 
 impl ReadmeDetector {
     /// Finds the best README file (priority: .md > .txt > no extension)
-    ///
-    /// # Arguments
-    /// * `files` - List of files to search for README
-    ///
-    /// # Returns
-    /// * `Option<ReadmeInfo>` - README information if found
     pub fn find_readme(files: &[FileInfo]) -> Option<ReadmeInfo> {
         let readme_patterns = ["readme", "README", "Readme"];
 
@@ -49,12 +40,6 @@ impl ReadmeDetector {
 }
 
 /// Convenience function for README detection
-///
-/// # Arguments
-/// * `files` - List of files to search for README
-///
-/// # Returns
-/// * `Option<ReadmeInfo>` - README information if found
 pub fn detect_readme(files: &[FileInfo]) -> Option<ReadmeInfo> {
     ReadmeDetector::find_readme(files)
 }

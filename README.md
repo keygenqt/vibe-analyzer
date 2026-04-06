@@ -38,7 +38,7 @@ JSON file in `~/Downloads/` with the following structure:
 
 ## Supported Languages
 
-Rust, Python, JS/TS, Java, Go, C++, C#, PHP, Ruby, Swift, Kotlin, Dart, SQL, Haskell, Bash, XML, ArkTS
+Rust, Python, JavaScript, TypeScript, Java, Go, C#, Kotlin, Swift, Dart, Bash, Batch, ArkTS
 
 ## Config
 

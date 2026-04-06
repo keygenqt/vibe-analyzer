@@ -1,0 +1,68 @@
+{
+  "functions": [
+    {
+      "signature": "fn add(a: i32, b: i32) -> i32",
+      "comments": ["Adds two numbers", "# Examples", "```", "let result = add(2, 3);", "```"]
+    },
+    {
+      "signature": "pub fn multiply(a: i32, b: i32) -> i32",
+      "comments": ["Multiplies two numbers"]
+    },
+    {
+      "signature": "pub async fn fetch_data(url: &str) -> Result<String, std::io::Error>",
+      "comments": ["Async function example"]
+    },
+    {
+      "signature": "pub unsafe fn dangerous()",
+      "comments": ["Unsafe function example"]
+    }
+  ],
+  "structs": [
+    {
+      "signature": "pub struct User",
+      "comments": ["User structure with fields"]
+    },
+    {
+      "signature": "struct Config",
+      "comments": ["Internal struct"]
+    }
+  ],
+  "enums": [
+    {
+      "signature": "pub enum Color",
+      "comments": ["Color enum"]
+    },
+    {
+      "signature": "pub enum Result<T, E>",
+      "comments": ["Result enum with values"]
+    }
+  ],
+  "interfaces": [
+    {
+      "signature": "pub trait Display",
+      "comments": ["Display trait"]
+    },
+    {
+      "signature": "pub trait Debug",
+      "comments": ["Debug trait"]
+    }
+  ],
+  "variables": [
+    {
+      "signature": "pub const MAX_SIZE: usize",
+      "comments": ["Global constants"]
+    },
+    {
+      "signature": "const DEFAULT_TIMEOUT: u64"
+    },
+    {
+      "signature": "pub static APP_NAME: &str",
+      "comments": ["Static variables"]
+    },
+    {
+      "signature": "static mut COUNTER: u32"
+    }
+  ],
+  "imports": ["crate::utils::path", "std::collections::HashMap", "std::fs::{self, File}"],
+  "comments": ["Module documentation for testing", "This module contains various Rust constructs"]
+}

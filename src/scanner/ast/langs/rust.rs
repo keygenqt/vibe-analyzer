@@ -1,13 +1,17 @@
 //! Rust language AST parser
-//!
-//! This module provides tree-sitter based AST parsing for Rust files,
-//! extracting functions, structs, enums, traits, use declarations (imports),
-//! variables, comments, and doc comments (///, //!, /**).
 
 use anyhow::Result;
 use tree_sitter::{Node, Parser};
 
-use crate::scanner::ast::{parser::AstData, traits::LanguageParser};
+use crate::scanner::ast::{
+    data::{
+        ast_data::AstData, ast_data_enum::AstDataEnum, ast_data_function::AstDataFunction,
+        ast_data_interface::AstDataInterface, ast_data_struct::AstDataStruct,
+        ast_data_variable::AstDataVariable,
+    },
+    traits::LanguageParser,
+    utils::{extract_import_path, extract_signature},
+};
 
 /// Parser for Rust language files
 #[derive(Default)]
@@ -26,151 +30,183 @@ impl LanguageParser for RustParser {
 
         let root_node = tree.root_node();
         let mut data = AstData::default();
+        let mut functions = Vec::new();
+        let mut structs = Vec::new();
+        let mut enums = Vec::new();
+        let mut interfaces = Vec::new();
+        let mut variables = Vec::new();
 
-        visit_node(&root_node, content, &mut data);
-        clean_data(&mut data);
+        visit_node(
+            &root_node,
+            content,
+            &mut data,
+            &mut functions,
+            &mut structs,
+            &mut enums,
+            &mut interfaces,
+            &mut variables,
+        );
+
+        data.functions = functions;
+        data.structs = structs;
+        data.enums = enums;
+        data.interfaces = interfaces;
+        data.variables = variables;
 
         Ok(data)
     }
 }
 
 /// Recursively traverses the AST and extracts relevant nodes
-fn visit_node(node: &Node, content: &str, data: &mut AstData) {
-    let kind = node.kind();
-
-    match kind {
-        // Comments
+fn visit_node(
+    node: &Node,
+    content: &str,
+    data: &mut AstData,
+    functions: &mut Vec<AstDataFunction>,
+    structs: &mut Vec<AstDataStruct>,
+    enums: &mut Vec<AstDataEnum>,
+    interfaces: &mut Vec<AstDataInterface>,
+    variables: &mut Vec<AstDataVariable>,
+) {
+    match node.kind() {
+        // Module comments (//!)
         "line_comment" | "block_comment" => {
-            if let Ok(comment) = node.utf8_text(content.as_bytes()) {
-                let cleaned = comment.trim().to_string();
-                if !cleaned.is_empty() {
-                    if cleaned.starts_with("///")
-                        || cleaned.starts_with("//!")
-                        || cleaned.starts_with("/**")
-                        || cleaned.starts_with("/*!")
-                    {
-                        data.doc_comments.push(cleaned);
-                    } else {
-                        data.comments.push(cleaned);
+            if !is_inside_function(node) {
+                if let Ok(comment) = node.utf8_text(content.as_bytes()) {
+                    let cleaned = comment.trim().to_string();
+                    if cleaned.starts_with("//!") {
+                        let content = cleaned[3..].trim();
+                        if !content.is_empty() {
+                            data.comments.push(content.to_string());
+                        }
                     }
                 }
             }
         }
 
-        // Variables
-        "let_declaration" => {
-            if let Some(name) = extract_variable_name(node, content) {
-                data.variables.push(name);
+        // Global variables (const, static)
+        "const_item" | "static_item" => {
+            if let Some(signature) = extract_signature(node, content) {
+                variables.push(AstDataVariable {
+                    signature,
+                    comments: extract_rust_doc_comments(node, content),
+                });
             }
         }
 
         // Functions and methods
         "function_item" | "method_definition" => {
-            if let Some(name) = extract_name(node, content) {
-                data.functions.push(name);
+            if let Some(signature) = extract_signature(node, content) {
+                functions.push(AstDataFunction {
+                    signature,
+                    comments: extract_rust_doc_comments(node, content),
+                });
             }
         }
 
         // Structs
         "struct_item" => {
-            if let Some(name) = extract_name(node, content) {
-                data.structs.push(name);
+            if let Some(signature) = extract_signature(node, content) {
+                structs.push(AstDataStruct {
+                    signature,
+                    comments: extract_rust_doc_comments(node, content),
+                });
             }
         }
 
         // Enums
         "enum_item" => {
-            if let Some(name) = extract_name(node, content) {
-                data.enums.push(name);
+            if let Some(signature) = extract_signature(node, content) {
+                enums.push(AstDataEnum {
+                    signature,
+                    comments: extract_rust_doc_comments(node, content),
+                });
             }
         }
 
         // Traits
         "trait_item" => {
-            if let Some(name) = extract_name(node, content) {
-                data.traits.push(name);
+            if let Some(signature) = extract_signature(node, content) {
+                interfaces.push(AstDataInterface {
+                    signature,
+                    comments: extract_rust_doc_comments(node, content),
+                });
             }
         }
 
         // Imports
         "use_declaration" => {
-            if let Some(path) = extract_import_path(node, content) {
+            if let Some(path) = extract_import_path(node, content, "use ") {
                 data.imports.push(path);
             }
         }
 
-        // Ignored items (implementation blocks)
-        "impl_item" => {}
-
         _ => {}
     }
 
-    // Recursively process children
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        visit_node(&child, content, data);
+        visit_node(
+            &child, content, data, functions, structs, enums, interfaces, variables,
+        );
     }
 }
 
-/// Extracts identifier/type name from a declaration node
-fn extract_name(node: &Node, content: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        let kind = child.kind();
-        if kind == "identifier" || kind == "type_identifier" {
-            if let Ok(name) = child.utf8_text(content.as_bytes()) {
-                let cleaned = name.trim();
-                if !cleaned.is_empty() && cleaned != "self" && cleaned != "Self" && cleaned != "_" {
-                    return Some(cleaned.to_string());
+/// Extracts doc comments (///, /** */, /*!) before a node, skipping attributes
+pub fn extract_rust_doc_comments(node: &Node, content: &str) -> Vec<String> {
+    let mut comments = Vec::new();
+    let mut prev = node.prev_sibling();
+
+    while let Some(sibling) = prev {
+        let kind = sibling.kind();
+
+        if kind == "attribute_item" || kind == "attribute" || kind.contains("annotation") {
+            prev = sibling.prev_sibling();
+            continue;
+        }
+
+        if !kind.contains("comment") {
+            break;
+        }
+
+        if let Ok(text) = sibling.utf8_text(content.as_bytes()) {
+            let cleaned = text.trim().to_string();
+            if cleaned.starts_with("///")
+                || cleaned.starts_with("/**")
+                || cleaned.starts_with("/*!")
+            {
+                let comment_text = if cleaned.starts_with("///") {
+                    cleaned[3..].trim()
+                } else {
+                    let without_start = &cleaned[3..];
+                    if without_start.ends_with("*/") {
+                        without_start[..without_start.len() - 2].trim()
+                    } else {
+                        without_start.trim()
+                    }
+                };
+                if !comment_text.is_empty() {
+                    comments.push(comment_text.to_string());
                 }
             }
         }
+
+        prev = sibling.prev_sibling();
     }
-    None
+
+    comments.reverse();
+    comments
 }
 
-/// Extracts variable name from a let declaration
-fn extract_variable_name(node: &Node, content: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        if child.kind() == "identifier" {
-            if let Ok(name) = child.utf8_text(content.as_bytes()) {
-                let cleaned = name.trim().to_string();
-                if !cleaned.is_empty() && cleaned != "_" {
-                    return Some(cleaned);
-                }
-            }
+/// Checks if a node is inside a function body
+fn is_inside_function(node: &Node) -> bool {
+    let mut parent = node.parent();
+    while let Some(p) = parent {
+        if p.kind() == "function_item" || p.kind() == "method_definition" || p.kind() == "impl_item"
+        {
+            return true;
         }
+        parent = p.parent();
     }
-    None
-}
-
-/// Extracts import path from use declaration
-fn extract_import_path(node: &Node, content: &str) -> Option<String> {
-    if let Ok(text) = node.utf8_text(content.as_bytes()) {
-        let cleaned = text.replace("use ", "").replace(";", "").trim().to_string();
-        if !cleaned.is_empty() && cleaned.len() < 200 {
-            return Some(cleaned);
-        }
-    }
-    None
-}
-
-/// Sorts and deduplicates all extracted data
-fn clean_data(data: &mut AstData) {
-    let fields = [
-        &mut data.functions,
-        &mut data.classes,
-        &mut data.structs,
-        &mut data.imports,
-        &mut data.comments,
-        &mut data.doc_comments,
-        &mut data.variables,
-        &mut data.traits,
-        &mut data.enums,
-    ];
-    for field in fields {
-        field.sort();
-        field.dedup();
-    }
+    false
 }

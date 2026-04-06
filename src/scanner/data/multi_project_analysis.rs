@@ -1,7 +1,4 @@
 //! Multi-project batch export container
-//!
-//! This module defines [`MultiProjectAnalysis`] for grouping multiple
-//! project analysis results into a single JSON export.
 
 use super::project_analysis::ProjectAnalysis;
 use serde::{Deserialize, Serialize};

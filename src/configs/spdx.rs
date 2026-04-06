@@ -1,7 +1,4 @@
 //! SPDX license data management
-//!
-//! This module handles downloading, extracting, and managing SPDX license data
-//! from the official SPDX license list repository.
 
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
@@ -26,9 +23,6 @@ pub struct SpdxConfig {
 
 impl Default for SpdxConfig {
     /// Creates default SPDX configuration
-    ///
-    /// # Returns
-    /// * `SpdxConfig` with default data path
     fn default() -> Self {
         Self {
             data_path: get_config_dir().join("spdx").to_string_lossy().to_string(),
@@ -38,26 +32,16 @@ impl Default for SpdxConfig {
 
 impl SpdxConfig {
     /// Returns the path to the directory containing license JSON files
-    ///
-    /// # Returns
-    /// * `PathBuf` pointing to `{data_path}/json/details/`
     pub fn get_spdx_path(&self) -> PathBuf {
         Path::new(&self.data_path).join("json").join("details")
     }
 
     /// Checks if the configured path is the default one
-    ///
-    /// # Returns
-    /// * `bool` - true if using default path
     fn is_default_path(&self) -> bool {
         self.data_path == SpdxConfig::default().data_path
     }
 
     /// Ensures SPDX data is available, downloading if necessary
-    ///
-    /// # Returns
-    /// * `Ok(())` if data exists or was downloaded
-    /// * `Err` if custom path has no data or download fails
     pub async fn ensure_data(&self) -> Result<()> {
         let spdx_path = self.get_spdx_path();
 
@@ -91,10 +75,6 @@ impl SpdxConfig {
     }
 
     /// Downloads and extracts SPDX license data from GitHub
-    ///
-    /// # Returns
-    /// * `Ok(())` on successful download and extraction
-    /// * `Err` if download, extraction, or copy fails
     async fn download_spdx_data(&self) -> Result<()> {
         let target_dir = Path::new(&self.data_path);
         let details_path = self.get_spdx_path();
@@ -136,14 +116,6 @@ impl SpdxConfig {
     }
 
     /// Recursively copies a directory and all its contents
-    ///
-    /// # Arguments
-    /// * `src` - Source directory path
-    /// * `dst` - Destination directory path
-    ///
-    /// # Returns
-    /// * `Ok(())` on successful copy
-    /// * `Err` if directory reading or copying fails
     fn copy_dir_all(&self, src: &Path, dst: &Path) -> Result<()> {
         std::fs::create_dir_all(dst)?;
         for entry in std::fs::read_dir(src)? {

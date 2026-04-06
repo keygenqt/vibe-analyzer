@@ -1,7 +1,4 @@
 //! Vibe Analyzer - Main entry point
-//!
-//! A CLI tool for scanning and analyzing codebases with AST extraction,
-//! license detection, and JSON export for LLM integration.
 
 use clap::{CommandFactory, Parser, Subcommand};
 use colored::Colorize;

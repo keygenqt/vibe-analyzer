@@ -1,0 +1,50 @@
+{
+  "classes": [
+    {
+      "signature": "class User",
+      "comments": ["User class"]
+    },
+    {
+      "signature": "class UserService",
+      "comments": ["Service class"]
+    }
+  ],
+  "comments": ["Module documentation for Dart testing", "This is also a module comment"],
+  "enums": [
+    {
+      "signature": "enum Color",
+      "comments": ["Color enum"]
+    }
+  ],
+  "functions": [
+    {
+      "signature": "int add(int a, int b)",
+      "comments": ["Adds two numbers", "[a] First number", "[b] Second number"]
+    },
+    {
+      "signature": "int multiply(int a, int b)",
+      "comments": ["Multiplies two numbers"]
+    },
+    {
+      "signature": "Future<String> fetchData(String url)",
+      "comments": ["Async function example"]
+    }
+  ],
+  "imports": ["dart:io", "dart:convert", "package:flutter/material.dart"],
+  "variables": [
+    {
+      "signature": "const int MAX_SIZE",
+      "comments": ["Global constants"]
+    },
+    {
+      "signature": "final int DEFAULT_TIMEOUT"
+    },
+    {
+      "signature": "late String appName",
+      "comments": ["Global variables"]
+    },
+    {
+      "signature": "int counter"
+    }
+  ]
+}

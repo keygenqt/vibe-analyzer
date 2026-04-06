@@ -1,7 +1,4 @@
 //! MIME type detection utilities
-//!
-//! This module provides functions to detect MIME types of files
-//! and determine if a file should be treated as text.
 
 use anyhow::Result;
 use mime::Mime;
@@ -10,12 +7,6 @@ use std::io::Read;
 use std::path::Path;
 
 /// Detects MIME type of a file using multiple strategies
-///
-/// # Arguments
-/// * `path` - Path to the file to analyze
-///
-/// # Returns
-/// * `Result<Mime>` - Detected MIME type on success
 pub fn detect_mime(path: &Path) -> Result<Mime> {
     // Strategy 1: Check by file extension
     if let Some(mime) = detect_by_extension(path) {
@@ -54,12 +45,6 @@ pub fn detect_mime(path: &Path) -> Result<Mime> {
 }
 
 /// Detects MIME by file extension (custom mappings)
-///
-/// # Arguments
-/// * `path` - Path to the file to check
-///
-/// # Returns
-/// * `Option<Mime>` - MIME type if extension matches custom mapping
 fn detect_by_extension(path: &Path) -> Option<Mime> {
     let ext = path.extension()?.to_str()?;
     let mime = match ext {
@@ -73,12 +58,6 @@ fn detect_by_extension(path: &Path) -> Option<Mime> {
 }
 
 /// Detects MIME by exact filename (no extension)
-///
-/// # Arguments
-/// * `path` - Path to the file to check
-///
-/// # Returns
-/// * `Option<Mime>` - MIME type if filename matches known pattern
 fn detect_by_filename(path: &Path) -> Option<Mime> {
     let name = path.file_name()?.to_str()?;
     match name {
@@ -89,25 +68,12 @@ fn detect_by_filename(path: &Path) -> Option<Mime> {
 }
 
 /// Detects MIME using mime_guess crate (standard extension mappings)
-///
-/// # Arguments
-/// * `path` - Path to the file to check
-///
-/// # Returns
-/// * `Option<Mime>` - MIME type from mime_guess if extension is known
 fn detect_by_mime_guess(path: &Path) -> Option<Mime> {
     let ext = path.extension()?.to_str()?;
     mime_guess::from_ext(ext).first()
 }
 
 /// Checks if a file should be treated as text
-///
-/// # Arguments
-/// * `mime` - Detected MIME type of the file
-/// * `path` - Path to the file for extension-based fallback
-///
-/// # Returns
-/// * `bool` - `true` if file should be treated as text, `false` otherwise
 pub fn is_text(mime: &Mime, path: &Path) -> bool {
     // Check by MIME type
     if mime.type_() == mime::TEXT {

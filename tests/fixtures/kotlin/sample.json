@@ -1,0 +1,61 @@
+{
+  "functions": [
+    {
+      "signature": "fun add(a: Int, b: Int): Int",
+      "comments": [
+        "Adds two numbers",
+        "@param a First number",
+        "@param b Second number",
+        "@return Sum of a and b"
+      ]
+    },
+    {
+      "signature": "fun multiply(a: Int, b: Int): Int",
+      "comments": ["Multiplies two numbers"]
+    },
+    {
+      "signature": "suspend fun fetchData(url: String): String",
+      "comments": ["Async function example"]
+    }
+  ],
+  "classes": [
+    {
+      "signature": "data class User",
+      "comments": ["User data class"]
+    },
+    {
+      "signature": "class UserService",
+      "comments": ["Service class"]
+    }
+  ],
+  "interfaces": [
+    {
+      "signature": "interface Repository",
+      "comments": ["Repository interface"]
+    }
+  ],
+  "enums": [
+    {
+      "signature": "enum class Color",
+      "comments": ["Color enum"]
+    }
+  ],
+  "variables": [
+    {
+      "signature": "const val MAX_SIZE",
+      "comments": ["Global constants"]
+    },
+    {
+      "signature": "val DEFAULT_TIMEOUT"
+    },
+    {
+      "signature": "lateinit var appName: String",
+      "comments": ["Global variables"]
+    },
+    {
+      "signature": "var counter"
+    }
+  ],
+  "imports": ["kotlinx.coroutines.*", "java.io.File", "kotlin.math.*"],
+  "comments": ["Module documentation for Kotlin testing"]
+}

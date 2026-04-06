@@ -1,0 +1,62 @@
+{
+  "functions": [
+    {
+      "signature": "func add(_ a: Int, _ b: Int) -> Int",
+      "comments": [
+        "Adds two numbers",
+        "- Parameters:",
+        "- a: First number",
+        "- b: Second number",
+        "- Returns: Sum of a and b"
+      ]
+    },
+    {
+      "signature": "func multiply(_ a: Int, _ b: Int) -> Int",
+      "comments": ["Multiplies two numbers"]
+    },
+    {
+      "signature": "func fetchData(url: String) async -> String",
+      "comments": ["Async function example"]
+    }
+  ],
+  "structs": [
+    {
+      "signature": "struct User",
+      "comments": ["User struct"]
+    }
+  ],
+  "classes": [
+    {
+      "signature": "class UserService",
+      "comments": ["Service class"]
+    }
+  ],
+  "enums": [
+    {
+      "signature": "enum Color",
+      "comments": ["Color enum"]
+    },
+    {
+      "signature": "enum Result",
+      "comments": ["Result enum with associated values"]
+    }
+  ],
+  "variables": [
+    {
+      "signature": "let MAX_SIZE",
+      "comments": ["Global constants"]
+    },
+    {
+      "signature": "let DEFAULT_TIMEOUT"
+    },
+    {
+      "signature": "var appName",
+      "comments": ["Global variables"]
+    },
+    {
+      "signature": "var counter"
+    }
+  ],
+  "imports": ["Foundation", "UIKit"],
+  "comments": ["Module documentation for Swift testing", "This is a module comment"]
+}

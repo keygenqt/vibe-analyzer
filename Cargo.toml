@@ -3,7 +3,7 @@ name = "vibe-analyzer"
 version = "0.0.1"
 edition = "2024"
 license = "Apache-2.0"
-readme = "README.cargo.md"
+readme = "README.md"
 description = "Fast code indexer with AST analysis for OpenSearch MCP"
 
 [profile.release]

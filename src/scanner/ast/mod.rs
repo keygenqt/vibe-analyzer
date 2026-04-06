@@ -1,11 +1,7 @@
-//! Abstract Syntax Tree (AST) parsing module
-//!
-//! This module provides language-agnostic AST parsing infrastructure.
-//! It includes:
-//! - [`parser`] - Main parsing logic and `AstData` structure
-//! - [`traits`] - `LanguageParser` trait for implementing language parsers
-//! - [`langs`] - Language-specific parser implementations
+//! AST parsing module with language parsers, data structures, and utilities
 
+pub mod data;
 pub mod langs;
 pub mod parser;
 pub mod traits;
+pub mod utils;

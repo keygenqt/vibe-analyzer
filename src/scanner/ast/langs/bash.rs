@@ -1,19 +1,20 @@
 //! Bash/Shell language AST parser
-//!
-//! This module provides tree-sitter based AST parsing for Bash/Shell scripts,
-//! extracting functions, variables, source imports, comments, and doc comments.
 
 use anyhow::Result;
 use tree_sitter::{Node, Parser};
 
-use crate::scanner::ast::{parser::AstData, traits::LanguageParser};
+use crate::scanner::ast::{
+    data::{
+        ast_data::AstData, ast_data_function::AstDataFunction, ast_data_variable::AstDataVariable,
+    },
+    traits::LanguageParser,
+};
 
 /// Parser for Bash/Shell language files
 #[derive(Default)]
 pub struct BashParser;
 
 impl LanguageParser for BashParser {
-    /// Parses Bash/Shell source code and extracts AST data
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_bash::LANGUAGE.into())?;
@@ -25,29 +26,43 @@ impl LanguageParser for BashParser {
 
         let root_node = tree.root_node();
         let mut data = AstData::default();
+        let mut functions = Vec::new();
+        let mut variables = Vec::new();
 
-        visit_node(&root_node, content, &mut data);
-        clean_data(&mut data);
+        visit_node(
+            &root_node,
+            content,
+            &mut data,
+            &mut functions,
+            &mut variables,
+        );
+
+        data.functions = functions;
+        data.variables = variables;
 
         Ok(data)
     }
 }
 
 /// Recursively traverses the AST and extracts relevant nodes
-fn visit_node(node: &Node, content: &str, data: &mut AstData) {
-    let kind = node.kind();
-
-    match kind {
-        // Comments
+fn visit_node(
+    node: &Node,
+    content: &str,
+    data: &mut AstData,
+    functions: &mut Vec<AstDataFunction>,
+    variables: &mut Vec<AstDataVariable>,
+) {
+    match node.kind() {
+        // Module comments (## or ###)
         "comment" => {
-            if let Ok(comment) = node.utf8_text(content.as_bytes()) {
-                let cleaned = comment.trim().to_string();
-                if !cleaned.is_empty() {
-                    // Multi-line comments starting with ## or ### are treated as doc comments
-                    if cleaned.starts_with("##") || cleaned.starts_with("###") {
-                        data.doc_comments.push(cleaned);
-                    } else {
-                        data.comments.push(cleaned);
+            if !is_inside_function(node) {
+                if let Ok(comment) = node.utf8_text(content.as_bytes()) {
+                    let cleaned = comment.trim().to_string();
+                    if cleaned.starts_with("##") {
+                        let content = cleaned.trim_start_matches('#').trim().to_string();
+                        if !content.is_empty() {
+                            data.comments.push(content);
+                        }
                     }
                 }
             }
@@ -55,99 +70,146 @@ fn visit_node(node: &Node, content: &str, data: &mut AstData) {
 
         // Variables
         "variable_assignment" => {
-            if let Some(name) = extract_variable_name(node, content) {
-                data.variables.push(name);
+            if !is_inside_function(node) {
+                if let Some(signature) = extract_bash_variable_signature(node, content) {
+                    variables.push(AstDataVariable {
+                        signature,
+                        comments: extract_bash_doc_comments(node, content, true),
+                    });
+                }
             }
         }
 
         // Functions
         "function_definition" => {
-            if let Some(name) = extract_function_name(node, content) {
-                data.functions.push(name);
+            if let Some(signature) = extract_bash_function_signature(node, content) {
+                functions.push(AstDataFunction {
+                    signature,
+                    comments: extract_bash_doc_comments(node, content, false),
+                });
             }
         }
 
-        // Source/import commands (like `source ./file.sh` or `. ./file.sh`)
+        // Source/import commands
         "source_command" => {
+            println!("DEBUG source_command found!");
             if let Some(path) = extract_source_path(node, content) {
+                println!("DEBUG source_command path: '{}'", path);
                 data.imports.push(path);
+            }
+        }
+
+        "command" => {
+            if let Ok(text) = node.utf8_text(content.as_bytes()) {
+                let trimmed = text.trim();
+                // source ./utils.sh
+                if trimmed.starts_with("source ") {
+                    let path = trimmed.trim_start_matches("source ").trim().to_string();
+                    if !path.is_empty() {
+                        data.imports.push(path);
+                    }
+                }
+                // . ./config.sh
+                else if trimmed.starts_with(". ") {
+                    let path = trimmed.trim_start_matches(". ").trim().to_string();
+                    if !path.is_empty() {
+                        data.imports.push(path);
+                    }
+                }
             }
         }
 
         _ => {}
     }
 
-    // Recursively process children
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        visit_node(&child, content, data);
+        visit_node(&child, content, data, functions, variables);
     }
 }
 
-/// Extracts variable name from a variable assignment node
-fn extract_variable_name(node: &Node, content: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        if child.kind() == "variable_name" {
-            if let Ok(name) = child.utf8_text(content.as_bytes()) {
-                let cleaned = name.trim().to_string();
-                if !cleaned.is_empty() && !cleaned.starts_with('#') {
-                    return Some(cleaned);
-                }
-            }
+/// Extracts variable signature from a variable assignment node
+fn extract_bash_variable_signature(node: &Node, content: &str) -> Option<String> {
+    if let Ok(text) = node.utf8_text(content.as_bytes()) {
+        let signature = text.trim().to_string();
+        if !signature.is_empty() {
+            return Some(signature);
         }
     }
     None
 }
 
-/// Extracts function name from a function definition node
-fn extract_function_name(node: &Node, content: &str) -> Option<String> {
+/// Extracts function signature (name with parentheses) from a function definition node
+fn extract_bash_function_signature(node: &Node, content: &str) -> Option<String> {
+    let mut name = String::new();
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        let kind = child.kind();
-        if kind == "word" || kind == "identifier" || kind == "name" {
-            if let Ok(name) = child.utf8_text(content.as_bytes()) {
-                if !name.is_empty() && name != "function" && !name.contains(' ') {
-                    return Some(name.to_string());
+        if child.kind() == "word" {
+            if let Ok(text) = child.utf8_text(content.as_bytes()) {
+                let cleaned = text.trim().to_string();
+                if !cleaned.is_empty() && cleaned != "function" {
+                    name = cleaned;
+                    break;
                 }
             }
         }
     }
-    None
+    if !name.is_empty() {
+        Some(format!("{}()", name))
+    } else {
+        None
+    }
 }
 
-/// Extracts source file path from a source command
+/// Extracts source file path from source command (source ./file.sh or . ./file.sh)
 fn extract_source_path(node: &Node, content: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        let kind = child.kind();
-        if kind == "word" || kind == "string" || kind == "raw_string" {
-            if let Ok(path) = child.utf8_text(content.as_bytes()) {
-                let cleaned = path
-                    .replace("source ", "")
-                    .replace(".", "")
-                    .trim()
-                    .to_string();
-                if !cleaned.is_empty() && !cleaned.starts_with('#') {
-                    return Some(cleaned);
-                }
+    if let Ok(text) = node.utf8_text(content.as_bytes()) {
+        let trimmed = text.trim();
+        if trimmed.starts_with("source ") {
+            let path = trimmed.trim_start_matches("source ").trim().to_string();
+            if !path.is_empty() {
+                return Some(path);
             }
         }
     }
     None
 }
 
-/// Sorts and deduplicates all extracted data
-fn clean_data(data: &mut AstData) {
-    let fields = [
-        &mut data.functions,
-        &mut data.imports,
-        &mut data.comments,
-        &mut data.doc_comments,
-        &mut data.variables,
-    ];
-    for field in fields {
-        field.sort();
-        field.dedup();
+/// Extracts doc comments (/** */) for ArkTS nodes, skipping export declarations
+fn extract_bash_doc_comments(node: &Node, content: &str, is_variable: bool) -> Vec<String> {
+    if is_variable {
+        return vec![];
     }
+
+    let mut comments = Vec::new();
+    let mut prev = node.prev_sibling();
+    while let Some(sibling) = prev {
+        if sibling.kind() != "comment" {
+            break;
+        }
+        if let Ok(text) = sibling.utf8_text(content.as_bytes()) {
+            let cleaned = text.trim().to_string();
+            if cleaned.starts_with("# ") || cleaned.starts_with("#\t") {
+                let content = cleaned[1..].trim();
+                if !content.is_empty() {
+                    comments.push(content.to_string());
+                }
+            }
+        }
+        prev = sibling.prev_sibling();
+    }
+    comments.reverse();
+    comments
+}
+
+/// Checks if a node is inside a function or method body
+fn is_inside_function(node: &Node) -> bool {
+    let mut parent = node.parent();
+    while let Some(p) = parent {
+        if p.kind() == "function_definition" {
+            return true;
+        }
+        parent = p.parent();
+    }
+    false
 }

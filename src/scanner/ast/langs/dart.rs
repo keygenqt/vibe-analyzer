@@ -1,20 +1,23 @@
 //! Dart language AST parser
-//!
-//! This module provides tree-sitter based AST parsing for Dart files,
-//! extracting functions, classes, mixins (as traits), enums, imports,
-//! variables, comments, and doc comments.
 
 use anyhow::Result;
 use tree_sitter::{Node, Parser};
 
-use crate::scanner::ast::{parser::AstData, traits::LanguageParser};
+use crate::scanner::ast::{
+    data::{
+        ast_data::AstData, ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
+        ast_data_function::AstDataFunction, ast_data_interface::AstDataInterface,
+        ast_data_variable::AstDataVariable,
+    },
+    traits::LanguageParser,
+    utils::extract_signature,
+};
 
 /// Parser for Dart language files
 #[derive(Default)]
 pub struct DartParser;
 
 impl LanguageParser for DartParser {
-    /// Parses Dart source code and extracts AST data
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_dart::LANGUAGE.into())?;
@@ -26,142 +29,237 @@ impl LanguageParser for DartParser {
 
         let root_node = tree.root_node();
         let mut data = AstData::default();
+        let mut functions = Vec::new();
+        let mut classes = Vec::new();
+        let mut enums = Vec::new();
+        let mut interfaces = Vec::new();
+        let mut variables = Vec::new();
 
-        visit_node(&root_node, content, &mut data);
-        clean_data(&mut data);
+        visit_node(
+            &root_node,
+            content,
+            &mut data,
+            &mut functions,
+            &mut classes,
+            &mut enums,
+            &mut interfaces,
+            &mut variables,
+        );
+
+        data.functions = functions;
+        data.classes = classes;
+        data.enums = enums;
+        data.interfaces = interfaces;
+        data.variables = variables;
 
         Ok(data)
     }
 }
 
 /// Recursively traverses the AST and extracts relevant nodes
-fn visit_node(node: &Node, content: &str, data: &mut AstData) {
-    let kind = node.kind();
-
-    match kind {
-        // Comments
+fn visit_node(
+    node: &Node,
+    content: &str,
+    data: &mut AstData,
+    functions: &mut Vec<AstDataFunction>,
+    classes: &mut Vec<AstDataClass>,
+    enums: &mut Vec<AstDataEnum>,
+    interfaces: &mut Vec<AstDataInterface>,
+    variables: &mut Vec<AstDataVariable>,
+) {
+    match node.kind() {
+        // Module comments (///)
         "comment" => {
-            if let Ok(comment) = node.utf8_text(content.as_bytes()) {
-                let cleaned = comment.trim().to_string();
-                if !cleaned.is_empty() {
-                    if cleaned.starts_with("///") || cleaned.starts_with("/**") {
-                        data.doc_comments.push(cleaned);
-                    } else {
-                        data.comments.push(cleaned);
+            if node.prev_sibling().is_none() || is_module_comment(node, content) {
+                if let Ok(comment) = node.utf8_text(content.as_bytes()) {
+                    let cleaned = comment.trim().to_string();
+                    if cleaned.starts_with("///") {
+                        let content = cleaned[3..].trim().to_string();
+                        if !content.is_empty() {
+                            data.comments.push(content);
+                        }
                     }
                 }
             }
         }
 
-        // Variables
-        "variable_declaration" => {
-            if let Some(name) = extract_variable_name(node, content) {
-                data.variables.push(name);
+        // Top-level functions
+        "function_signature" => {
+            if !is_inside_class(node) {
+                if let Some(signature) = extract_signature(node, content) {
+                    functions.push(AstDataFunction {
+                        signature,
+                        comments: extract_dart_doc_comments(node, content),
+                    });
+                }
             }
         }
 
-        // Functions
-        "function_declaration" => {
-            if let Some(name) = extract_name(node, content) {
-                data.functions.push(name);
-            }
-        }
-
-        // Types
+        // Classes
         "class_declaration" => {
-            if let Some(name) = extract_name(node, content) {
-                data.classes.push(name);
+            if let Some(signature) = extract_signature(node, content) {
+                classes.push(AstDataClass {
+                    signature,
+                    comments: extract_dart_doc_comments(node, content),
+                });
             }
         }
+
+        // Mixins as interfaces
         "mixin_declaration" => {
-            if let Some(name) = extract_name(node, content) {
-                data.traits.push(name);
+            if let Some(signature) = extract_signature(node, content) {
+                interfaces.push(AstDataInterface {
+                    signature,
+                    comments: extract_dart_doc_comments(node, content),
+                });
             }
         }
+
+        // Enums
         "enum_declaration" => {
-            if let Some(name) = extract_name(node, content) {
-                data.enums.push(name);
+            if let Some(signature) = extract_signature(node, content) {
+                enums.push(AstDataEnum {
+                    signature,
+                    comments: extract_dart_doc_comments(node, content),
+                });
             }
         }
 
         // Imports
-        "import_statement" => {
-            if let Some(path) = extract_import_path(node, content) {
-                data.imports.push(path);
+        "import_specification" => {
+            if let Ok(text) = node.utf8_text(content.as_bytes()) {
+                if let Some(start) = text.find('\'') {
+                    let rest = &text[start + 1..];
+                    if let Some(end) = rest.find('\'') {
+                        let path = rest[..end].to_string();
+                        if !path.is_empty() && !data.imports.contains(&path) {
+                            data.imports.push(path);
+                        }
+                    }
+                } else if let Some(start) = text.find('"') {
+                    let rest = &text[start + 1..];
+                    if let Some(end) = rest.find('"') {
+                        let path = rest[..end].to_string();
+                        if !path.is_empty() && !data.imports.contains(&path) {
+                            data.imports.push(path);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Global variables
+        "initialized_identifier_list" | "static_final_declaration_list" => {
+            if !is_inside_class(node) && !is_inside_function(node) {
+                let mut parts = Vec::new();
+                let mut first_token = *node;
+
+                // Collect prefixes (late, const, final, type)
+                let mut prev = node.prev_sibling();
+                while let Some(sibling) = prev {
+                    let kind = sibling.kind();
+                    if kind == ";" || kind == "comment" || kind == "///" {
+                        break;
+                    }
+
+                    if let Ok(text) = sibling.utf8_text(content.as_bytes()) {
+                        let t = text.trim();
+                        if !t.is_empty() {
+                            parts.insert(0, t.to_string());
+                            first_token = sibling;
+                        }
+                    }
+                    prev = sibling.prev_sibling();
+                }
+
+                // Add variable name (without value)
+                if let Ok(text) = node.utf8_text(content.as_bytes()) {
+                    let name_only = text.split('=').next().unwrap_or(text).trim();
+                    parts.push(name_only.to_string());
+                }
+
+                let signature = parts.join(" ");
+
+                if !signature.is_empty() && !variables.iter().any(|v| v.signature == signature) {
+                    let comments = extract_dart_doc_comments(&first_token, content);
+                    variables.push(AstDataVariable {
+                        signature,
+                        comments,
+                    });
+                }
             }
         }
 
         _ => {}
     }
 
-    // Recursively process children
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
-        visit_node(&child, content, data);
+        visit_node(
+            &child, content, data, functions, classes, enums, interfaces, variables,
+        );
     }
 }
 
-/// Extracts identifier name from a declaration node
-fn extract_name(node: &Node, content: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        if child.kind() == "identifier" {
-            if let Ok(name) = child.utf8_text(content.as_bytes()) {
-                if !name.is_empty() && name != "_" {
-                    return Some(name.to_string());
+/// Extracts doc comments (///) before a node
+fn extract_dart_doc_comments(node: &Node, content: &str) -> Vec<String> {
+    let mut comments = Vec::new();
+
+    let mut prev = node.prev_sibling();
+    while let Some(sibling) = prev {
+        if sibling.kind() != "comment" {
+            break;
+        }
+
+        if let Ok(text) = sibling.utf8_text(content.as_bytes()) {
+            let cleaned = text.trim().to_string();
+            if cleaned.starts_with("///") {
+                let content = cleaned[3..].trim().to_string();
+                if !content.is_empty() {
+                    comments.push(content);
                 }
             }
         }
+
+        prev = sibling.prev_sibling();
     }
-    None
+
+    comments.reverse();
+    comments
 }
 
-/// Extracts variable name from a declaration node
-fn extract_variable_name(node: &Node, content: &str) -> Option<String> {
-    let mut cursor = node.walk();
-    for child in node.children(&mut cursor) {
-        if child.kind() == "identifier" {
-            if let Ok(name) = child.utf8_text(content.as_bytes()) {
-                let cleaned = name.trim().to_string();
-                if !cleaned.is_empty() && cleaned != "_" {
-                    return Some(cleaned);
-                }
-            }
+/// Checks if a node is inside a class
+fn is_inside_class(node: &Node) -> bool {
+    let mut parent = node.parent();
+    while let Some(p) = parent {
+        if p.kind() == "class_declaration" {
+            return true;
         }
+        parent = p.parent();
     }
-    None
+    false
 }
 
-/// Extracts import path from import statement
-fn extract_import_path(node: &Node, content: &str) -> Option<String> {
-    if let Ok(text) = node.utf8_text(content.as_bytes()) {
-        let cleaned = text
-            .replace("import ", "")
-            .replace(";", "")
-            .trim()
-            .to_string();
-        if !cleaned.is_empty() && cleaned.len() < 200 {
-            return Some(cleaned);
+/// Checks if a node is inside a function
+fn is_inside_function(node: &Node) -> bool {
+    let mut parent = node.parent();
+    while let Some(p) = parent {
+        if p.kind() == "function_signature" {
+            return true;
         }
+        parent = p.parent();
     }
-    None
+    false
 }
 
-/// Sorts and deduplicates all extracted data
-fn clean_data(data: &mut AstData) {
-    let fields = [
-        &mut data.functions,
-        &mut data.classes,
-        &mut data.structs,
-        &mut data.imports,
-        &mut data.comments,
-        &mut data.doc_comments,
-        &mut data.variables,
-        &mut data.traits,
-        &mut data.enums,
-    ];
-    for field in fields {
-        field.sort();
-        field.dedup();
+/// Checks if a comment is a module-level comment
+fn is_module_comment(node: &Node, _content: &str) -> bool {
+    let mut prev = node.prev_sibling();
+    while let Some(sibling) = prev {
+        if sibling.kind() != "comment" {
+            return false;
+        }
+        prev = sibling.prev_sibling();
     }
+    true
 }

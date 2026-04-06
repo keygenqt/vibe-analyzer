@@ -1,7 +1,4 @@
 //! Ollama LLM configuration
-//!
-//! This module defines configuration settings for connecting to
-//! a local Ollama instance for LLM-based code analysis.
 
 use serde::{Deserialize, Serialize};
 
@@ -20,9 +17,6 @@ pub struct OllamaConfig {
 
 impl Default for OllamaConfig {
     /// Creates default Ollama configuration
-    ///
-    /// # Returns
-    /// * `OllamaConfig` with default host, model, and chunk size
     fn default() -> Self {
         Self {
             host: "http://localhost:11434".to_string(),

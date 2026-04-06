@@ -1,0 +1,44 @@
+{
+  "functions": [
+    {
+      "signature": "async function fetchData(url: string): Promise<string>",
+      "comments": ["Async function example"]
+    }
+  ],
+  "classes": [
+    {
+      "signature": "class UserService",
+      "comments": ["Service class"]
+    }
+  ],
+  "structs": [
+    {
+      "signature": "struct Index",
+      "comments": ["Entry point class"]
+    }
+  ],
+  "interfaces": [
+    {
+      "signature": "interface User",
+      "comments": ["User data interface"]
+    }
+  ],
+  "enums": [
+    {
+      "signature": "enum Color",
+      "comments": ["Color enum"]
+    }
+  ],
+  "variables": [
+    {
+      "signature": "const MAX_SIZE: number",
+      "comments": ["Global constant"]
+    },
+    {
+      "signature": "let appName: string",
+      "comments": ["Global variable"]
+    }
+  ],
+  "imports": ["@kit.AbilityKit", "@kit.ArkUI"],
+  "comments": ["Module documentation for ArkTS testing"]
+}

@@ -1,7 +1,4 @@
 //! Scan command implementation for the vibe-analyzer CLI
-//!
-//! Handles scanning of single or multiple projects, collecting analysis data,
-//! and exporting results to JSON format.
 
 use anyhow::Result;
 use std::path::PathBuf;
@@ -22,13 +19,6 @@ pub struct ScanOptions {
 }
 
 /// Executes project scanning and indexing
-///
-/// # Arguments
-/// * `options` - ScanOptions containing optional custom path
-///
-/// # Returns
-/// * `Ok(())` on success
-/// * `Err` if no projects are configured or scanning fails
 pub async fn exec(options: ScanOptions) -> Result<()> {
     let config = AppConfig::load()?;
 

@@ -1,0 +1,37 @@
+{
+  "functions": [
+    {
+      "signature": "add()",
+      "comments": ["Function to add two numbers", "Arguments: a b", "Returns: sum"]
+    },
+    {
+      "signature": "multiply()",
+      "comments": ["Function to multiply two numbers"]
+    },
+    {
+      "signature": "file_exists()",
+      "comments": [
+        "Function to check if file exists",
+        "Arguments: path",
+        "Returns: 0 if exists, 1 otherwise"
+      ]
+    },
+    {
+      "signature": "process_data()",
+      "comments": ["Function with multiple lines"]
+    }
+  ],
+  "variables": [
+    {
+      "signature": "CONFIG_DIR=\"$HOME/.vibe-analyzer\""
+    },
+    {
+      "signature": "MAX_SIZE=1024"
+    },
+    {
+      "signature": "TIMEOUT=30"
+    }
+  ],
+  "imports": ["./utils.sh", "./config.sh"],
+  "comments": ["Module documentation for Bash testing", "This is also a module comment"]
+}

@@ -1,0 +1,55 @@
+{
+  "functions": [
+    {
+      "signature": "int Add(int a, int b)",
+      "comments": [
+        "<summary>",
+        "Adds two numbers",
+        "</summary>",
+        "<param name=\"a\">First number</param>",
+        "<param name=\"b\">Second number</param>",
+        "<returns>Sum of a and b</returns>"
+      ]
+    },
+    {
+      "signature": "int Multiply(int a, int b)",
+      "comments": ["<summary>", "Multiplies two numbers", "</summary>"]
+    },
+    {
+      "signature": "async Task<string> FetchData(string url)",
+      "comments": ["<summary>", "Async function example", "</summary>"]
+    },
+    {
+      "signature": "public void AddUser(User user)",
+      "comments": ["<summary>", "Add user method", "</summary>"]
+    },
+    {
+      "signature": "public List<User> GetUsers()",
+      "comments": ["<summary>", "Get users method", "</summary>"]
+    }
+  ],
+  "classes": [
+    {
+      "signature": "public class UserService",
+      "comments": ["<summary>", "Service class", "</summary>"]
+    }
+  ],
+  "structs": [
+    {
+      "signature": "public record User(string Name, int Age)",
+      "comments": ["<summary>", "User record", "</summary>"]
+    },
+    {
+      "signature": "public struct Result",
+      "comments": ["<summary>", "Result struct", "</summary>"]
+    }
+  ],
+  "enums": [
+    {
+      "signature": "public enum Color",
+      "comments": ["<summary>", "Color enum", "</summary>"]
+    }
+  ],
+  "imports": ["System", "System.Collections.Generic", "System.Threading.Tasks", "System.Linq"],
+  "comments": ["Module documentation for C# testing"]
+}

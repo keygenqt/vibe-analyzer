@@ -1,0 +1,61 @@
+{
+  "functions": [
+    {
+      "signature": "public int add(int a, int b)",
+      "comments": [
+        "Adds two numbers",
+        "@param a First number",
+        "@param b Second number",
+        "@return Sum of a and b"
+      ]
+    },
+    {
+      "signature": "public int multiply(int a, int b)",
+      "comments": ["Multiplies two numbers"]
+    }
+  ],
+  "classes": [
+    {
+      "signature": "public class User",
+      "comments": ["User class"]
+    },
+    {
+      "signature": "public class UserService",
+      "comments": ["Service class"]
+    }
+  ],
+  "enums": [
+    {
+      "signature": "public enum Color",
+      "comments": ["Color enum"]
+    },
+    {
+      "signature": "public enum Result",
+      "comments": ["Result enum with values"]
+    }
+  ],
+  "interfaces": [
+    {
+      "signature": "public interface Repository",
+      "comments": ["Repository interface"]
+    }
+  ],
+  "variables": [
+    {
+      "signature": "public static final int MAX_SIZE",
+      "comments": ["Global constants"]
+    },
+    {
+      "signature": "public static final int DEFAULT_TIMEOUT"
+    },
+    {
+      "signature": "public static String appName",
+      "comments": ["Global variables"]
+    },
+    {
+      "signature": "public static int counter"
+    }
+  ],
+  "imports": ["java.util.List", "java.util.ArrayList", "java.io.File"],
+  "comments": ["Module documentation for Java testing"]
+}

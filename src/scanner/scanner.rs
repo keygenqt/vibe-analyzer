@@ -1,7 +1,4 @@
 //! Core scanning functionality
-//!
-//! This module provides the main `scan_project` function for analyzing
-//! a codebase, extracting metadata, AST data, and project statistics.
 
 use anyhow::Result;
 use chrono::Local;
@@ -20,14 +17,6 @@ use crate::{
 };
 
 /// Scans a project and returns complete analysis results
-///
-/// # Arguments
-/// * `project_path` - Path to the project directory or file to scan
-/// * `on_progress` - Callback for progress updates (percent, processed, total)
-/// * `on_warning` - Callback for non-critical warnings
-///
-/// # Returns
-/// * `Result<ProjectAnalysis>` - Complete project analysis on success
 pub async fn scan_project(
     project_path: &Path,
     on_progress: fn(usize, usize, usize),

@@ -1,7 +1,4 @@
 //! Project-level analysis results
-//!
-//! This module defines [`ProjectAnalysis`] containing complete
-//! analysis data for a single project.
 
 use super::file_analysis::FileAnalysis;
 use super::license_info::LicenseInfo;

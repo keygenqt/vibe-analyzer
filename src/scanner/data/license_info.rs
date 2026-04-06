@@ -1,7 +1,4 @@
 //! License detection result structure
-//!
-//! This module defines [`LicenseInfo`] containing SPDX license data
-//! detected from project license files.
 
 use serde::{Deserialize, Serialize};
 

@@ -1,7 +1,4 @@
 //! License detection using SPDX data and askalono
-//!
-//! This module provides lazy initialization of the license store,
-//! automatic SPDX data download on first use, and caching for performance.
 
 use askalono::{Store, TextData};
 use std::fs::File;
@@ -17,17 +14,11 @@ use crate::{
 static LICENSE_STORE: OnceCell<Store> = OnceCell::const_new();
 
 /// Returns a reference to the globally initialized license store
-///
-/// # Returns
-/// * `&'static Store` - Reference to the license store
 async fn get_license_store() -> &'static Store {
     LICENSE_STORE.get_or_init(init_license_store).await
 }
 
 /// Initializes the license store from cache or downloads SPDX data
-///
-/// # Returns
-/// * `Store` - Initialized license store
 async fn init_license_store() -> Store {
     let cache_path = get_config_dir().join("askalono-cache.bin.zstd");
 
@@ -64,12 +55,6 @@ pub struct LicenseDetector;
 
 impl LicenseDetector {
     /// Searches for license file and detects license type
-    ///
-    /// # Arguments
-    /// * `files` - List of files to search for license
-    ///
-    /// # Returns
-    /// * `Option<LicenseInfo>` - License information if found and detected
     pub async fn find_license(files: &[FileInfo]) -> Option<LicenseInfo> {
         let license_patterns = [
             "license", "LICENSE", "License", "copying", "COPYING", "Copying", "licence", "LICENCE",
@@ -98,12 +83,6 @@ impl LicenseDetector {
     }
 
     /// Detects license from content, returns (spdx_id, name, confidence) if confidence > 0.5
-    ///
-    /// # Arguments
-    /// * `content` - License text content
-    ///
-    /// # Returns
-    /// * `Option<(String, String, f64)>` - SPDX ID, license name, and confidence score
     pub async fn detect_from_content(content: &str) -> Option<(String, String, f64)> {
         let store = get_license_store().await;
         let text_data = TextData::from(content);
@@ -122,12 +101,6 @@ impl LicenseDetector {
 }
 
 /// Convenience function for license detection
-///
-/// # Arguments
-/// * `files` - List of files to search for license
-///
-/// # Returns
-/// * `Option<LicenseInfo>` - License information if found and detected
 pub async fn detect_license(files: &[FileInfo]) -> Option<LicenseInfo> {
     LicenseDetector::find_license(files).await
 }

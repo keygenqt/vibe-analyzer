@@ -1,11 +1,8 @@
 //! File-level analysis data structure
-//!
-//! This module defines [`FileAnalysis`] containing all collected
-//! information about a single file in the project.
 
 use serde::{Deserialize, Serialize};
 
-use crate::scanner::ast::parser::AstData;
+use crate::scanner::ast::data::ast_data::AstData;
 
 /// Analysis results for a single file
 #[derive(Debug, Clone, Serialize, Deserialize)]

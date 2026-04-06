@@ -1,7 +1,4 @@
 //! README file information
-//!
-//! This module defines [`ReadmeInfo`] containing content and metadata
-//! of a project's README file.
 
 use serde::{Deserialize, Serialize};
 

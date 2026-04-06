@@ -1,0 +1,32 @@
+{
+  "functions": [
+    {
+      "signature": ":add",
+      "comments": ["Function to add two numbers"]
+    },
+    {
+      "signature": ":multiply",
+      "comments": ["Function to multiply two numbers"]
+    },
+    {
+      "signature": ":file_exists",
+      "comments": ["Function to check if file exists"]
+    },
+    {
+      "signature": ":process_data"
+    }
+  ],
+  "variables": [
+    {
+      "signature": "CONFIG_DIR=%USERPROFILE%\\.vibe-analyzer"
+    },
+    {
+      "signature": "MAX_SIZE=1024"
+    },
+    {
+      "signature": "TIMEOUT=30"
+    }
+  ],
+  "imports": ["utils.bat", "config.bat"],
+  "comments": ["Module documentation for Batch testing", "This is also a module comment"]
+}
