@@ -1,0 +1,45 @@
+{
+  "functions": [
+    {
+      "signature": "fn default() -> Self"
+    },
+    {
+      "signature": "pub fn load() -> Result<Self>",
+      "comments": ["Load config from file, create default if not exists"]
+    },
+    {
+      "signature": "pub fn save(&self) -> Result<()>",
+      "comments": ["Save config to file"]
+    },
+    {
+      "signature": "pub fn add_project(&mut self, path: PathBuf)",
+      "comments": ["Add project to config"]
+    },
+    {
+      "signature": "pub fn del_project(&mut self, path: PathBuf) -> Result<PathBuf>",
+      "comments": ["Delete project from config"]
+    },
+    {
+      "signature": "pub fn get_projects(&self) -> Vec<PathBuf>",
+      "comments": ["Get list of valid projects"]
+    }
+  ],
+  "structs": [
+    {
+      "signature": "pub struct AppConfig",
+      "comments": ["Main application configuration structure"]
+    }
+  ],
+  "imports": [
+    "anyhow::Result",
+    "serde::{Deserialize, Serialize}",
+    "std::fs",
+    "std::path::PathBuf",
+    "crate::configs::spdx::SpdxConfig",
+    "crate::print_info",
+    "crate::utils::path::{self, convert_relative}",
+    "super::ollama::OllamaConfig",
+    "super::opensearch::OpenSearchConfig"
+  ],
+  "comments": ["Application configuration management"]
+}

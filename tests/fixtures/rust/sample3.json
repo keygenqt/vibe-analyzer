@@ -1,0 +1,25 @@
+{
+  "variables": [
+    {
+      "signature": "pub const CONFIG_DIR_NAME: &str",
+      "comments": ["Config directory name"]
+    },
+    {
+      "signature": "pub const CONFIG_FILE_NAME: &str",
+      "comments": ["Config file name"]
+    },
+    {
+      "signature": "pub const DEFAULT_IGNORE_DIRS: &[&str]",
+      "comments": ["Default ignore directories (if no .gitignore)"]
+    },
+    {
+      "signature": "pub const DEFAULT_IGNORE_FILES: &[&str]",
+      "comments": ["Default ignore files (if no .gitignore)"]
+    },
+    {
+      "signature": "pub const MAX_AST_FILE_SIZE: u64",
+      "comments": ["Maximum file size for AST parsing (10 MB)"]
+    }
+  ],
+  "comments": ["Application constants and configuration defaults"]
+}

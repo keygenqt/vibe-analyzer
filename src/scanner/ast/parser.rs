@@ -10,25 +10,6 @@ use crate::scanner::ast::{
     },
 };
 
-// use super::langs::arkts::ArkTSParser;
-// use super::langs::bash::BashParser;
-// use super::langs::batch::BatchParser;
-// use super::langs::cpp::CppParser;
-// use super::langs::csharp::CSharpParser;
-// use super::langs::dart::DartParser;
-// use super::langs::go::GoParser;
-// use super::langs::haskell::HaskellParser;
-// use super::langs::java::JavaParser;
-// use super::langs::javascript::JavaScriptParser;
-// use super::langs::kotlin::KotlinParser;
-// use super::langs::php::PhpParser;
-// use super::langs::python::PythonParser;
-// use super::langs::ruby::RubyParser;
-// use super::langs::rust::RustParser;
-// use super::langs::sql::SqlParser;
-// use super::langs::swift::SwiftParser;
-// use super::langs::typescript::TypeScriptParser;
-// use super::langs::xml::XmlParser;
 use anyhow::Result;
 use once_cell::sync::Lazy;
 use std::collections::HashMap;

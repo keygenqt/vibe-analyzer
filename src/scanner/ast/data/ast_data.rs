@@ -34,14 +34,6 @@ pub struct AstData {
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub interfaces: Vec<AstDataInterface>,
 
-    /// Database table names (SQL)
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub tables: Vec<String>,
-
-    /// Database view names (SQL)
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub views: Vec<String>,
-
     /// File-level comments and global comments not attached to specific code elements
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub comments: Vec<String>,
@@ -49,12 +41,4 @@ pub struct AstData {
     /// Variables with signatures and comments
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub variables: Vec<AstDataVariable>,
-
-    /// XML/HTML tag names
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub tags: Vec<String>,
-
-    /// XML/HTML attribute names
-    #[serde(skip_serializing_if = "Vec::is_empty")]
-    pub attributes: Vec<String>,
 }

@@ -199,26 +199,41 @@ fn extract_python_variable_signature(node: &Node, content: &str) -> Option<Strin
 }
 
 /// Extracts docstring from function or class
+///
+/// NOTE: This function intentionally avoids using `child_by_field_name("body")`
+/// because it causes a global state corruption in tree-sitter when multiple
+/// language parsers are used simultaneously. The bug manifests as subsequent
+/// parsers (including Rust) returning empty ASTs after Python parser is used.
+///
+/// The workaround is to manually traverse children nodes instead of using
+/// the field-based accessor. This is slower but reliable across all parsers.
 fn extract_python_docstring(node: &Node, content: &str) -> Vec<String> {
-    if let Some(body) = node.child_by_field_name("body") {
-        if let Some(expr) = body.child(0) {
-            if expr.kind() == "expression_statement" {
-                if let Some(string_node) = expr.child(0) {
-                    if string_node.kind() == "string" {
-                        if let Ok(text) = string_node.utf8_text(content.as_bytes()) {
-                            let trimmed = text.trim();
-                            if (trimmed.starts_with("\"\"\"") && trimmed.ends_with("\"\"\""))
-                                || (trimmed.starts_with("'''") && trimmed.ends_with("'''"))
-                            {
-                                let inner = trimmed[3..trimmed.len() - 3].trim().to_string();
-                                if !inner.is_empty() {
-                                    return vec![inner];
+    let mut cursor = node.walk();
+    for child in node.children(&mut cursor) {
+        if child.kind() == "block" {
+            let mut block_cursor = child.walk();
+            for block_child in child.children(&mut block_cursor) {
+                if block_child.kind() == "expression_statement" {
+                    let mut expr_cursor = block_child.walk();
+                    for expr_child in block_child.children(&mut expr_cursor) {
+                        if expr_child.kind() == "string" {
+                            if let Ok(text) = expr_child.utf8_text(content.as_bytes()) {
+                                let trimmed = text.trim();
+                                if (trimmed.starts_with("\"\"\"") && trimmed.ends_with("\"\"\""))
+                                    || (trimmed.starts_with("'''") && trimmed.ends_with("'''"))
+                                {
+                                    let inner = trimmed[3..trimmed.len() - 3].trim().to_string();
+                                    if !inner.is_empty() {
+                                        return vec![inner];
+                                    }
                                 }
                             }
                         }
                     }
+                    break;
                 }
             }
+            break;
         }
     }
     vec![]
