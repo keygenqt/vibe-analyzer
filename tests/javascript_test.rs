@@ -1,6 +1,10 @@
+//! Module containing tests for the JavaScript language parser functionality.
+//! These tests verify that JavaScript source code is correctly parsed into an AST and matches expected JSON snapshots.
+
 use std::fs;
 use vibe_analyzer::scanner::ast::parser::parse_ast;
 
+/// Tests JavaScript parser against a fixture file with expected JSON snapshot.
 #[test]
 fn test_javascript_parser() {
     // Arrange

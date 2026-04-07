@@ -1,15 +1,19 @@
-//! SPDX license data management
+//! SPDX license data management for license detection.
+//! Downloads and maintains SPDX license list data from GitHub for accurate license identification.
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use std::fs::File;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 use tempfile::tempdir;
 use zip::ZipArchive;
 
+use crate::exit_error;
+use crate::print_info;
 use crate::utils::path::get_config_dir;
-use crate::{exit_error, print_info};
 
 /// URL to the official SPDX license list data repository
 const SPDX_REPO_URL: &str = "https://github.com/spdx/license-list-data/archive/refs/heads/main.zip";

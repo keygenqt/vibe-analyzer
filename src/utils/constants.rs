@@ -1,4 +1,5 @@
-//! Application constants and configuration defaults
+//! Application constants and configuration defaults.
+//! Defines ignore patterns, file size limits, and configuration file names.
 
 /// Config directory name
 pub const CONFIG_DIR_NAME: &str = ".vibe-analyzer";

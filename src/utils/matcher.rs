@@ -1,8 +1,10 @@
-//! Default ignore pattern matcher
+//! Default ignore pattern matcher for file system filtering.
+//! Checks if paths match predefined ignore patterns for directories and files.
 
 use std::path::Path;
 
-use crate::utils::constants::{DEFAULT_IGNORE_DIRS, DEFAULT_IGNORE_FILES};
+use crate::utils::constants::DEFAULT_IGNORE_DIRS;
+use crate::utils::constants::DEFAULT_IGNORE_FILES;
 
 /// Checks if file/dir matches default ignore patterns
 pub fn is_ignore(path: &Path) -> bool {

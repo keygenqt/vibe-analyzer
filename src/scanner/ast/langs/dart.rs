@@ -1,19 +1,20 @@
-//! Dart language AST parser
+//! Dart language AST parser.
+//! This module provides functionality to parse Dart source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
-        ast_data_function::AstDataFunction, ast_data_interface::AstDataInterface,
-        ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-    utils::extract_signature,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
+use crate::scanner::ast::utils::extract_signature;
 
-/// Parser for Dart language files
+/// Parser for Dart language files.
 #[derive(Default)]
 pub struct DartParser;
 
@@ -35,6 +36,7 @@ impl LanguageParser for DartParser {
         let mut interfaces = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -56,7 +58,7 @@ impl LanguageParser for DartParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -70,13 +72,14 @@ fn visit_node(
     match node.kind() {
         // Module comments (///)
         "comment" => {
+            // Capture only top-level comments that are module documentation
             if node.prev_sibling().is_none() || is_module_comment(node, content) {
                 if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                     let cleaned = comment.trim().to_string();
                     if cleaned.starts_with("///") {
                         let content = cleaned[3..].trim().to_string();
                         if !content.is_empty() {
-                            data.comments.push(content);
+                            data.header_comments.push(content);
                         }
                     }
                 }
@@ -128,6 +131,7 @@ fn visit_node(
         // Imports
         "import_specification" => {
             if let Ok(text) = node.utf8_text(content.as_bytes()) {
+                // Extract import path from single quotes
                 if let Some(start) = text.find('\'') {
                     let rest = &text[start + 1..];
                     if let Some(end) = rest.find('\'') {
@@ -136,6 +140,7 @@ fn visit_node(
                             data.imports.push(path);
                         }
                     }
+                // Extract import path from double quotes
                 } else if let Some(start) = text.find('"') {
                     let rest = &text[start + 1..];
                     if let Some(end) = rest.find('"') {
@@ -148,7 +153,7 @@ fn visit_node(
             }
         }
 
-        // Global variables
+        // Global variables (initialized variables and static final declarations)
         "initialized_identifier_list" | "static_final_declaration_list" => {
             if !is_inside_class(node) && !is_inside_function(node) {
                 let mut parts = Vec::new();
@@ -172,7 +177,7 @@ fn visit_node(
                     prev = sibling.prev_sibling();
                 }
 
-                // Add variable name (without value)
+                // Add variable name (without value assignment)
                 if let Ok(text) = node.utf8_text(content.as_bytes()) {
                     let name_only = text.split('=').next().unwrap_or(text).trim();
                     parts.push(name_only.to_string());
@@ -193,6 +198,7 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(
@@ -201,10 +207,11 @@ fn visit_node(
     }
 }
 
-/// Extracts doc comments (///) before a node
+/// Extracts doc comments (///) before a node.
 fn extract_dart_doc_comments(node: &Node, content: &str) -> Vec<String> {
     let mut comments = Vec::new();
 
+    // Walk backwards through sibling nodes to find preceding comments
     let mut prev = node.prev_sibling();
     while let Some(sibling) = prev {
         if sibling.kind() != "comment" {
@@ -224,11 +231,12 @@ fn extract_dart_doc_comments(node: &Node, content: &str) -> Vec<String> {
         prev = sibling.prev_sibling();
     }
 
+    // Reverse to maintain original order (closest comment first)
     comments.reverse();
     comments
 }
 
-/// Checks if a node is inside a class
+/// Checks if a node is inside a class.
 fn is_inside_class(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -240,7 +248,7 @@ fn is_inside_class(node: &Node) -> bool {
     false
 }
 
-/// Checks if a node is inside a function
+/// Checks if a node is inside a function.
 fn is_inside_function(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -252,7 +260,7 @@ fn is_inside_function(node: &Node) -> bool {
     false
 }
 
-/// Checks if a comment is a module-level comment
+/// Checks if a comment is a module-level comment (no preceding non-comment siblings).
 fn is_module_comment(node: &Node, _content: &str) -> bool {
     let mut prev = node.prev_sibling();
     while let Some(sibling) = prev {

@@ -1,18 +1,20 @@
-//! Java language AST parser
+//! Java language AST parser.
+//! This module provides functionality to parse Java source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
-        ast_data_function::AstDataFunction, ast_data_interface::AstDataInterface,
-        ast_data_struct::AstDataStruct, ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
 
-/// Parser for Java language files
+/// Parser for Java language files.
 #[derive(Default)]
 pub struct JavaParser;
 
@@ -35,6 +37,7 @@ impl LanguageParser for JavaParser {
         let mut interfaces = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -58,7 +61,7 @@ impl LanguageParser for JavaParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -71,12 +74,14 @@ fn visit_node(
     variables: &mut Vec<AstDataVariable>,
 ) {
     match node.kind() {
-        // Module comments
+        // Module comments (/** */)
         "block_comment" => {
+            // Capture only top-level comments with no preceding siblings
             if node.prev_sibling().is_none() {
                 if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                     let cleaned = comment.trim().to_string();
                     if cleaned.starts_with("/**") {
+                        // Extract the content between /** and */
                         let body = cleaned[3..cleaned.len() - 2].trim();
                         let lines: Vec<String> = body
                             .lines()
@@ -85,15 +90,16 @@ fn visit_node(
                             .collect();
                         let comment_text = lines.join(" ").trim().to_string();
                         if !comment_text.is_empty() {
-                            data.comments.push(comment_text);
+                            data.header_comments.push(comment_text);
                         }
                     }
                 }
             }
         }
 
-        // Methods
+        // Methods (top-level methods in Java records and classes are handled elsewhere)
         "method_declaration" => {
+            // Capture only top-level methods not inside interfaces or classes (rare in Java)
             if !is_inside_interface(node) && !is_inside_class(node) {
                 if let Some(signature) = extract_java_method_signature(node, content) {
                     functions.push(AstDataFunction {
@@ -134,7 +140,7 @@ fn visit_node(
             }
         }
 
-        // Global variables
+        // Global variables (field declarations outside classes are rare in Java)
         "local_variable_declaration" => {
             if !is_inside_class(node) && !is_inside_method(node) {
                 if let Some(signature) = extract_java_variable_signature(node, content) {
@@ -163,6 +169,7 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(
@@ -171,15 +178,17 @@ fn visit_node(
     }
 }
 
-/// Extracts method signature without body
+/// Extracts method signature without body.
 fn extract_java_method_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
+        // Trim everything after the opening brace
         if let Some(pos) = text.find('{') {
             let signature = text[..pos].trim().to_string();
             if !signature.is_empty() {
                 return Some(signature);
             }
         }
+        // Fallback to first line only
         let first_line = text.lines().next().unwrap_or(text);
         let signature = first_line.trim().to_string();
         if !signature.is_empty() {
@@ -189,7 +198,7 @@ fn extract_java_method_signature(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Extracts class signature without body
+/// Extracts class signature without body.
 fn extract_java_class_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         if let Some(pos) = text.find('{') {
@@ -207,7 +216,7 @@ fn extract_java_class_signature(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Extracts enum signature without body
+/// Extracts enum signature without body.
 fn extract_java_enum_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         if let Some(pos) = text.find('{') {
@@ -225,7 +234,7 @@ fn extract_java_enum_signature(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Extracts interface signature without body
+/// Extracts interface signature without body.
 fn extract_java_interface_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         if let Some(pos) = text.find('{') {
@@ -243,7 +252,7 @@ fn extract_java_interface_signature(node: &Node, content: &str) -> Option<String
     None
 }
 
-/// Extracts variable signature without value
+/// Extracts variable signature without value.
 fn extract_java_variable_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let without_value = text.split('=').next().unwrap_or(text);
@@ -255,16 +264,18 @@ fn extract_java_variable_signature(node: &Node, content: &str) -> Option<String>
     None
 }
 
-/// Extracts doc comments before a node
+/// Extracts doc comments before a node.
 fn extract_java_doc_comments(node: &Node, content: &str) -> Vec<String> {
     let mut comments = Vec::new();
 
+    // Walk backwards through sibling nodes to find preceding block comments
     let mut prev = node.prev_sibling();
     while let Some(sibling) = prev {
         if sibling.kind() == "block_comment" {
             if let Ok(text) = sibling.utf8_text(content.as_bytes()) {
                 let cleaned = text.trim().to_string();
                 if cleaned.starts_with("/**") {
+                    // Extract the content between /** and */
                     let body = cleaned[3..cleaned.len() - 2].trim();
                     let lines: Vec<String> = body
                         .lines()
@@ -285,7 +296,7 @@ fn extract_java_doc_comments(node: &Node, content: &str) -> Vec<String> {
     comments
 }
 
-/// Checks if a node is inside a class
+/// Checks if a node is inside a class.
 fn is_inside_class(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -297,7 +308,7 @@ fn is_inside_class(node: &Node) -> bool {
     false
 }
 
-/// Checks if a node is inside a method
+/// Checks if a node is inside a method.
 fn is_inside_method(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -309,7 +320,7 @@ fn is_inside_method(node: &Node) -> bool {
     false
 }
 
-/// Checks if a node is inside an interface
+/// Checks if a node is inside an interface.
 fn is_inside_interface(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {

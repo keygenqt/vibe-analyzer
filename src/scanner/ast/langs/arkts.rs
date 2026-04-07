@@ -1,19 +1,21 @@
-//! ArkTS (Ark TypeScript) language AST parser
+//! ArkTS (Ark TypeScript) language AST parser.
+//! This module provides functionality to parse ArkTS source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
-        ast_data_function::AstDataFunction, ast_data_interface::AstDataInterface,
-        ast_data_struct::AstDataStruct, ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-    utils::extract_signature,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
+use crate::scanner::ast::utils::extract_signature;
 
-/// Parser for ArkTS (HarmonyOS) language files
+/// Parser for ArkTS (HarmonyOS) language files.
 #[derive(Default)]
 pub struct ArkTSParser;
 
@@ -36,6 +38,7 @@ impl LanguageParser for ArkTSParser {
         let mut interfaces = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -59,7 +62,7 @@ impl LanguageParser for ArkTSParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -74,10 +77,12 @@ fn visit_node(
     match node.kind() {
         // Module comment at the beginning of file
         "comment" => {
+            // Only capture top-level comments that are not inside functions
             if !is_inside_function(node) && node.prev_sibling().is_none() {
                 if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                     let cleaned = comment.trim().to_string();
                     if cleaned.starts_with("/**") {
+                        // Extract the content between /** and */
                         let content = cleaned[3..cleaned.len() - 2].trim();
                         let lines: Vec<String> = content
                             .lines()
@@ -85,7 +90,7 @@ fn visit_node(
                             .collect();
                         let comment_text = lines.join(" ").trim().to_string();
                         if !comment_text.is_empty() {
-                            data.comments.push(comment_text);
+                            data.header_comments.push(comment_text);
                         }
                     }
                 }
@@ -164,6 +169,7 @@ fn visit_node(
         // Imports
         "import_declaration" => {
             if let Ok(text) = node.utf8_text(content.as_bytes()) {
+                // Extract import path from 'from' clause (single quotes)
                 if let Some(start) = text.find("from '") {
                     let rest = &text[start + 6..];
                     if let Some(end) = rest.find('\'') {
@@ -172,6 +178,7 @@ fn visit_node(
                             data.imports.push(path);
                         }
                     }
+                // Extract import path from 'from' clause (double quotes)
                 } else if let Some(start) = text.find("from \"") {
                     let rest = &text[start + 6..];
                     if let Some(end) = rest.find('"') {
@@ -187,6 +194,7 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(
@@ -195,14 +203,16 @@ fn visit_node(
     }
 }
 
-/// Extracts doc comments (/** */) for ArkTS nodes, skipping export declarations
+/// Extracts doc comments (/** */) for ArkTS nodes, skipping export declarations.
 fn extract_arkts_doc_comments(node: &Node, content: &str) -> Vec<String> {
     let mut comments = Vec::new();
 
+    // Walk backwards through sibling nodes to find preceding comments
     let mut prev = node.prev_sibling();
     while let Some(sibling) = prev {
         let kind = sibling.kind();
 
+        // Skip export declaration nodes as they are not actual comments
         if kind == "export_declaration" || kind == "export" {
             prev = sibling.prev_sibling();
             continue;
@@ -215,6 +225,7 @@ fn extract_arkts_doc_comments(node: &Node, content: &str) -> Vec<String> {
         if let Ok(text) = sibling.utf8_text(content.as_bytes()) {
             let cleaned = text.trim().to_string();
             if cleaned.starts_with("/**") {
+                // Extract the content between /** and */
                 let content = cleaned[3..cleaned.len() - 2].trim();
                 let lines: Vec<String> = content
                     .lines()
@@ -230,6 +241,7 @@ fn extract_arkts_doc_comments(node: &Node, content: &str) -> Vec<String> {
         prev = sibling.prev_sibling();
     }
 
+    // If no comments found on the node itself, check the parent (for exported declarations)
     if comments.is_empty() {
         if let Some(parent) = node.parent() {
             if parent.kind() == "export_declaration" {
@@ -258,11 +270,12 @@ fn extract_arkts_doc_comments(node: &Node, content: &str) -> Vec<String> {
         }
     }
 
+    // Reverse to maintain original order (closest comment first)
     comments.reverse();
     comments
 }
 
-/// Checks if a node is inside a function or method body
+/// Checks if a node is inside a function or method body.
 fn is_inside_function(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {

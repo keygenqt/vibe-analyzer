@@ -1,16 +1,16 @@
-//! Bash/Shell language AST parser
+//! Bash/Shell language AST parser.
+//! This module provides functionality to parse Bash/Shell source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_function::AstDataFunction, ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
 
-/// Parser for Bash/Shell language files
+/// Parser for Bash/Shell language files.
 #[derive(Default)]
 pub struct BashParser;
 
@@ -29,6 +29,7 @@ impl LanguageParser for BashParser {
         let mut functions = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -44,7 +45,7 @@ impl LanguageParser for BashParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -55,13 +56,14 @@ fn visit_node(
     match node.kind() {
         // Module comments (## or ###)
         "comment" => {
+            // Only capture top-level comments that are not inside functions
             if !is_inside_function(node) {
                 if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                     let cleaned = comment.trim().to_string();
                     if cleaned.starts_with("##") {
                         let content = cleaned.trim_start_matches('#').trim().to_string();
                         if !content.is_empty() {
-                            data.comments.push(content);
+                            data.header_comments.push(content);
                         }
                     }
                 }
@@ -70,6 +72,7 @@ fn visit_node(
 
         // Variables
         "variable_assignment" => {
+            // Only capture global variables, not local ones inside functions
             if !is_inside_function(node) {
                 if let Some(signature) = extract_bash_variable_signature(node, content) {
                     variables.push(AstDataVariable {
@@ -102,14 +105,14 @@ fn visit_node(
         "command" => {
             if let Ok(text) = node.utf8_text(content.as_bytes()) {
                 let trimmed = text.trim();
-                // source ./utils.sh
+                // Handle 'source ./utils.sh' syntax
                 if trimmed.starts_with("source ") {
                     let path = trimmed.trim_start_matches("source ").trim().to_string();
                     if !path.is_empty() {
                         data.imports.push(path);
                     }
                 }
-                // . ./config.sh
+                // Handle '. ./config.sh' syntax (POSIX source)
                 else if trimmed.starts_with(". ") {
                     let path = trimmed.trim_start_matches(". ").trim().to_string();
                     if !path.is_empty() {
@@ -122,13 +125,14 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(&child, content, data, functions, variables);
     }
 }
 
-/// Extracts variable signature from a variable assignment node
+/// Extracts variable signature from a variable assignment node.
 fn extract_bash_variable_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let signature = text.trim().to_string();
@@ -139,7 +143,7 @@ fn extract_bash_variable_signature(node: &Node, content: &str) -> Option<String>
     None
 }
 
-/// Extracts function signature (name with parentheses) from a function definition node
+/// Extracts function signature (name with parentheses) from a function definition node.
 fn extract_bash_function_signature(node: &Node, content: &str) -> Option<String> {
     let mut name = String::new();
     let mut cursor = node.walk();
@@ -147,6 +151,7 @@ fn extract_bash_function_signature(node: &Node, content: &str) -> Option<String>
         if child.kind() == "word" {
             if let Ok(text) = child.utf8_text(content.as_bytes()) {
                 let cleaned = text.trim().to_string();
+                // Skip the 'function' keyword itself
                 if !cleaned.is_empty() && cleaned != "function" {
                     name = cleaned;
                     break;
@@ -161,7 +166,7 @@ fn extract_bash_function_signature(node: &Node, content: &str) -> Option<String>
     }
 }
 
-/// Extracts source file path from source command (source ./file.sh or . ./file.sh)
+/// Extracts source file path from source command (source ./file.sh or . ./file.sh).
 fn extract_source_path(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let trimmed = text.trim();
@@ -175,8 +180,9 @@ fn extract_source_path(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Extracts doc comments (/** */) for ArkTS nodes, skipping export declarations
+/// Extracts doc comments (# or ##) for Bash nodes.
 fn extract_bash_doc_comments(node: &Node, content: &str, is_variable: bool) -> Vec<String> {
+    // Variables don't currently support doc comments
     if is_variable {
         return vec![];
     }
@@ -189,6 +195,7 @@ fn extract_bash_doc_comments(node: &Node, content: &str, is_variable: bool) -> V
         }
         if let Ok(text) = sibling.utf8_text(content.as_bytes()) {
             let cleaned = text.trim().to_string();
+            // Match single-line comments starting with '# ' or '#\t'
             if cleaned.starts_with("# ") || cleaned.starts_with("#\t") {
                 let content = cleaned[1..].trim();
                 if !content.is_empty() {
@@ -198,11 +205,12 @@ fn extract_bash_doc_comments(node: &Node, content: &str, is_variable: bool) -> V
         }
         prev = sibling.prev_sibling();
     }
+    // Reverse to maintain original order (closest comment first)
     comments.reverse();
     comments
 }
 
-/// Checks if a node is inside a function or method body
+/// Checks if a node is inside a function or method body.
 fn is_inside_function(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {

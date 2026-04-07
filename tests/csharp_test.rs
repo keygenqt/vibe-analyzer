@@ -1,6 +1,10 @@
+//! Unit tests for the C# language AST parser.
+//! Verifies that parsing a C# fixture file produces the expected JSON snapshot.
+
 use std::fs;
 use vibe_analyzer::scanner::ast::parser::parse_ast;
 
+/// Tests C# parser against a fixture file with expected JSON snapshot.
 #[test]
 fn test_csharp_parser() {
     // Arrange

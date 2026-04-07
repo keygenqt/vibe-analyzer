@@ -1,4 +1,5 @@
-//! Common AST extraction utilities
+//! Common AST extraction utilities.
+//! Provides helper functions for extracting import paths and signatures from tree-sitter nodes.
 
 use tree_sitter::Node;
 

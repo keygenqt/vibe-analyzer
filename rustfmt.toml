@@ -1,0 +1,4 @@
+# Controls how imports are grouped.
+# NOTE: This option is only available on the nightly Rust channel.
+# Usage: rustup run nightly cargo fmt
+imports_granularity = "Item"

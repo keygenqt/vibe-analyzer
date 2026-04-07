@@ -1,6 +1,10 @@
+//! Module containing tests for the Kotlin language parser functionality.
+//! These tests verify that Kotlin source code is correctly parsed into an AST and matches expected JSON snapshots.
+
 use std::fs;
 use vibe_analyzer::scanner::ast::parser::parse_ast;
 
+/// Tests that a Kotlin source file is parsed correctly and matches the expected JSON output.
 #[test]
 fn test_kotlin_parser() {
     // Arrange

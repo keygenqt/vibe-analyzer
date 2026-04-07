@@ -1,6 +1,10 @@
+//! Unit tests for the Windows Batch language AST parser.
+//! Verifies that parsing a Batch fixture file produces the expected JSON snapshot.
+
 use std::fs;
 use vibe_analyzer::scanner::ast::parser::parse_ast;
 
+/// Tests Batch parser against a fixture file with expected JSON snapshot.
 #[test]
 fn test_batch_parser() {
     // Arrange

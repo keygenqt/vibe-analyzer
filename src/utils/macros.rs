@@ -1,4 +1,5 @@
-//! Pretty printing macros for CLI output
+//! Pretty printing macros for CLI output.
+//! Provides color-coded logging macros for error, info, warning, success, progress, and state messages.
 
 /// Pretty print error
 #[macro_export]

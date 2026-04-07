@@ -1,6 +1,8 @@
-//! README file detection
+//! README file detection for project documentation.
+//! Scans for README files and prioritizes Markdown over plain text.
 
-use crate::scanner::data::{file_info::FileInfo, readme_info::ReadmeInfo};
+use crate::scanner::data::input::file_info::FileInfo;
+use crate::scanner::data::output::readme_info::ReadmeInfo;
 
 /// README file detector
 pub struct ReadmeDetector;

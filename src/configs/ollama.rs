@@ -1,6 +1,8 @@
-//! Ollama LLM configuration
+//! Ollama LLM configuration for local model inference.
+//! Defines connection parameters and model settings for code analysis.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Configuration for Ollama LLM connection
 #[derive(Debug, Clone, Serialize, Deserialize)]

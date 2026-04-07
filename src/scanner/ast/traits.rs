@@ -1,4 +1,5 @@
-//! Language parser trait definition
+//! Language parser trait definition.
+//! Defines the common interface that all language-specific AST parsers must implement.
 
 use anyhow::Result;
 

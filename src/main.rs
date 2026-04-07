@@ -1,19 +1,24 @@
-//! Vibe Analyzer - Main entry point
+//! Vibe Analyzer - Main entry point.
+//! Parses CLI arguments and dispatches to the appropriate subcommands (add, del, list, scan).
 
-use clap::{CommandFactory, Parser, Subcommand};
+use clap::CommandFactory;
+use clap::Parser;
+use clap::Subcommand;
 use colored::Colorize;
 use std::path::PathBuf;
 
 use crate::configs::app::AppConfig;
+use crate::export::options::ExportFormat;
 
 mod cli;
 mod configs;
+mod export;
 mod mcp;
 mod scanner;
 mod utils;
 
 #[derive(Parser)]
-#[command(name = "vibe-analyzer")]
+#[command(name = utils::app::app_name())]
 #[command(about = utils::app::app_about())]
 #[command(styles = utils::app::app_styles())]
 #[command(version = utils::app::app_version())]
@@ -35,8 +40,17 @@ enum Commands {
 
     /// Analyze project codebase
     Scan {
+        /// Path to scan (overrides config)
         #[arg(long)]
         path: Option<PathBuf>,
+
+        /// Export format
+        #[arg(long, default_value = "json")]
+        format: ExportFormat,
+
+        /// Output file path (optional)
+        #[arg(long, short = 'o')]
+        output: Option<PathBuf>,
     },
 }
 
@@ -80,8 +94,18 @@ async fn main() {
         },
 
         // Scan and index project(s)
-        Some(Commands::Scan { path }) => {
-            if let Err(e) = cli::scan::exec(cli::scan::ScanOptions { custom_path: path }).await {
+        Some(Commands::Scan {
+            path,
+            format,
+            output,
+        }) => {
+            if let Err(e) = cli::scan::exec(cli::scan::ScanOptions {
+                custom_path: path,
+                format,
+                output,
+            })
+            .await
+            {
                 exit_error!("{}", e);
             }
         }

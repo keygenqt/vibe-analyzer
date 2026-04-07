@@ -1,24 +1,26 @@
-//! Rust language AST parser
+//! Rust language AST parser.
+//! This module provides functionality to parse Rust source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_enum::AstDataEnum, ast_data_function::AstDataFunction,
-        ast_data_interface::AstDataInterface, ast_data_struct::AstDataStruct,
-        ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-    utils::{extract_import_path, extract_signature},
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
+use crate::scanner::ast::utils::extract_import_path;
+use crate::scanner::ast::utils::extract_signature;
 
-/// Parser for Rust language files
+/// Parser for Rust language files.
 #[derive(Default)]
 pub struct RustParser;
 
 impl LanguageParser for RustParser {
-    /// Parses Rust source code and extracts AST data
+    /// Parses Rust source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_rust::LANGUAGE.into())?;
@@ -36,6 +38,7 @@ impl LanguageParser for RustParser {
         let mut interfaces = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -57,7 +60,7 @@ impl LanguageParser for RustParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -71,13 +74,14 @@ fn visit_node(
     match node.kind() {
         // Module comments (//!)
         "line_comment" | "block_comment" => {
+            // Only capture top-level comments that are not inside functions
             if !is_inside_function(node) {
                 if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                     let cleaned = comment.trim().to_string();
                     if cleaned.starts_with("//!") {
                         let content = cleaned[3..].trim();
                         if !content.is_empty() {
-                            data.comments.push(content.to_string());
+                            data.header_comments.push(content.to_string());
                         }
                     }
                 }
@@ -124,7 +128,7 @@ fn visit_node(
             }
         }
 
-        // Traits
+        // Traits (treated as interfaces)
         "trait_item" => {
             if let Some(signature) = extract_signature(node, content) {
                 interfaces.push(AstDataInterface {
@@ -144,6 +148,7 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(
@@ -152,14 +157,16 @@ fn visit_node(
     }
 }
 
-/// Extracts doc comments (///, /** */, /*!) before a node, skipping attributes
+/// Extracts doc comments (///, /** */, /*!) before a node, skipping attributes.
 pub fn extract_rust_doc_comments(node: &Node, content: &str) -> Vec<String> {
     let mut comments = Vec::new();
     let mut prev = node.prev_sibling();
 
+    // Walk backwards through sibling nodes to find preceding doc comments
     while let Some(sibling) = prev {
         let kind = sibling.kind();
 
+        // Skip attribute items as they are not documentation comments
         if kind == "attribute_item" || kind == "attribute" || kind.contains("annotation") {
             prev = sibling.prev_sibling();
             continue;
@@ -194,11 +201,12 @@ pub fn extract_rust_doc_comments(node: &Node, content: &str) -> Vec<String> {
         prev = sibling.prev_sibling();
     }
 
+    // Reverse to maintain original order (closest comment first)
     comments.reverse();
     comments
 }
 
-/// Checks if a node is inside a function body
+/// Checks if a node is inside a function body.
 fn is_inside_function(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {

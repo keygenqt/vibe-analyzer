@@ -1,9 +1,11 @@
-//! Cryptographic hashing utilities
+//! Cryptographic hashing utilities for file identification.
+//! Provides BLAKE3 hash computation for generating unique file IDs.
 
 use anyhow::Result;
 use blake3::Hasher;
 use std::fs::File;
-use std::io::{BufReader, Read};
+use std::io::BufReader;
+use std::io::Read;
 use std::path::Path;
 
 /// Computes BLAKE3 hash of file content (cryptographically secure)

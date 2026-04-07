@@ -1,20 +1,19 @@
-//! Core scanning functionality
+//! Core scanning functionality for codebase analysis.
+//! Coordinates file discovery, AST parsing, license detection, and statistics aggregation.
 
 use anyhow::Result;
 use chrono::Local;
 use std::path::Path;
 
-use crate::{
-    scanner::{
-        ast::parser::parse_ast,
-        data::{
-            file_analysis::FileAnalysis, project_analysis::ProjectAnalysis,
-            project_stats::ProjectStats,
-        },
-        detectors,
-    },
-    utils::{self, constants, hash, path},
-};
+use crate::scanner::ast::parser::parse_ast;
+use crate::scanner::data::output::file_analysis::FileAnalysis;
+use crate::scanner::data::output::project_analysis::ProjectAnalysis;
+use crate::scanner::data::output::project_stats::ProjectStats;
+use crate::scanner::detectors;
+use crate::utils::constants;
+use crate::utils::hash;
+use crate::utils::path;
+use crate::utils::{self};
 
 /// Scans a project and returns complete analysis results
 pub async fn scan_project(

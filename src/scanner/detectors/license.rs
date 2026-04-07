@@ -1,14 +1,15 @@
-//! License detection using SPDX data and askalono
+//! License detection using SPDX data and askalono.
+//! Identifies open-source licenses from license files with confidence scoring.
 
-use askalono::{Store, TextData};
+use askalono::Store;
+use askalono::TextData;
 use std::fs::File;
 use tokio::sync::OnceCell;
 
-use crate::{
-    configs::app::AppConfig,
-    scanner::data::{file_info::FileInfo, license_info::LicenseInfo},
-    utils::path::get_config_dir,
-};
+use crate::configs::app::AppConfig;
+use crate::scanner::data::input::file_info::FileInfo;
+use crate::scanner::data::output::license_info::LicenseInfo;
+use crate::utils::path::get_config_dir;
 
 /// Global license store initialized once asynchronously
 static LICENSE_STORE: OnceCell<Store> = OnceCell::const_new();

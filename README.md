@@ -30,7 +30,7 @@ JSON file in `~/Downloads/` with the following structure:
   "indexed_at": "2026-04-04T21:04:53+03:00",
   "projects": [{
     "project": "/path",
-    "stats": { "total_functions": 141, "total_files": 55 },
+    "stats": { "total_functions": 141, "total_files": 55, ... },
     "files": [...]
   }]
 }

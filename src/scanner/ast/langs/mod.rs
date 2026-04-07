@@ -1,4 +1,5 @@
-//! Language parsers for AST extraction
+//! Language parsers for AST extraction.
+//! This module provides parsers for various programming languages that convert source code into abstract syntax trees (ASTs).
 
 pub mod arkts;
 pub mod bash;

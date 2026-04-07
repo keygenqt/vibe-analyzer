@@ -1,4 +1,5 @@
-//! AST data structures module
+//! AST data structures module.
+//! Defines all serializable types for representing parsed code elements from various languages.
 
 pub mod ast_data;
 pub mod ast_data_class;

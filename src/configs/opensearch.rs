@@ -1,6 +1,8 @@
-//! OpenSearch connection configuration
+//! OpenSearch connection configuration for indexing and querying analysis results.
+//! Defines endpoint and authentication parameters.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Configuration for OpenSearch connection
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,17 +1,17 @@
-//! Python language AST parser
+//! Python language AST parser.
+//! This module provides functionality to parse Python source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_class::AstDataClass, ast_data_function::AstDataFunction,
-        ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
 
-/// Parser for Python language files
+/// Parser for Python language files.
 #[derive(Default)]
 pub struct PythonParser;
 
@@ -31,6 +31,7 @@ impl LanguageParser for PythonParser {
         let mut classes = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -48,7 +49,7 @@ impl LanguageParser for PythonParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -58,25 +59,25 @@ fn visit_node(
     variables: &mut Vec<AstDataVariable>,
 ) {
     match node.kind() {
-        // Module docstring
+        // Module docstring and top-level statements
         "expression_statement" => {
             if let Some(child) = node.child(0) {
                 match child.kind() {
-                    // Module docstring
+                    // Module docstring (triple-quoted string at the top of the file)
                     "string" => {
-                        if data.comments.is_empty() && node.prev_sibling().is_none() {
+                        if data.header_comments.is_empty() && node.prev_sibling().is_none() {
                             if let Ok(text) = child.utf8_text(content.as_bytes()) {
                                 let cleaned = text.trim();
                                 if cleaned.starts_with("\"\"\"") || cleaned.starts_with("'''") {
                                     let body = cleaned[3..cleaned.len() - 3].trim().to_string();
                                     if !body.is_empty() {
-                                        data.comments.push(body);
+                                        data.header_comments.push(body);
                                     }
                                 }
                             }
                         }
                     }
-                    // Type-annotated variable (MAX_SIZE: int = 1024)
+                    // Type-annotated variable (e.g., MAX_SIZE: int = 1024)
                     "annotated_assignment" => {
                         if !is_inside_class(node) && !is_inside_function(node) {
                             if let Some(signature) =
@@ -96,6 +97,7 @@ fn visit_node(
 
         // Top-level functions
         "function_definition" => {
+            // Skip methods defined inside classes
             if !is_inside_class(node) {
                 if let Some(signature) = extract_python_function_signature(node, content) {
                     functions.push(AstDataFunction {
@@ -128,7 +130,7 @@ fn visit_node(
             }
         }
 
-        // Imports
+        // Imports (import module)
         "import_statement" => {
             if let Ok(text) = node.utf8_text(content.as_bytes()) {
                 let cleaned = text.replace("import ", "").trim().to_string();
@@ -140,6 +142,7 @@ fn visit_node(
                 }
             }
         }
+        // Imports (from module import ...)
         "import_from_statement" => {
             if let Ok(text) = node.utf8_text(content.as_bytes()) {
                 if let Some(from_pos) = text.find("from ") {
@@ -157,13 +160,14 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(&child, content, data, functions, classes, variables);
     }
 }
 
-/// Extracts function signature without body and without colon
+/// Extracts function signature without body and without colon.
 fn extract_python_function_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let first_line = text.lines().next().unwrap_or(text);
@@ -175,7 +179,7 @@ fn extract_python_function_signature(node: &Node, content: &str) -> Option<Strin
     None
 }
 
-/// Extracts class signature without colon
+/// Extracts class signature without colon.
 fn extract_python_class_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let first_line = text.lines().next().unwrap_or(text);
@@ -187,7 +191,7 @@ fn extract_python_class_signature(node: &Node, content: &str) -> Option<String> 
     None
 }
 
-/// Extracts variable signature without value
+/// Extracts variable signature without value.
 fn extract_python_variable_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let signature = text.split('=').next().unwrap_or(text).trim().to_string();
@@ -219,6 +223,7 @@ fn extract_python_docstring(node: &Node, content: &str) -> Vec<String> {
                         if expr_child.kind() == "string" {
                             if let Ok(text) = expr_child.utf8_text(content.as_bytes()) {
                                 let trimmed = text.trim();
+                                // Check for triple-quoted strings (both single and double quotes)
                                 if (trimmed.starts_with("\"\"\"") && trimmed.ends_with("\"\"\""))
                                     || (trimmed.starts_with("'''") && trimmed.ends_with("'''"))
                                 {
@@ -230,7 +235,7 @@ fn extract_python_docstring(node: &Node, content: &str) -> Vec<String> {
                             }
                         }
                     }
-                    break;
+                    break; // Only the first string is the docstring
                 }
             }
             break;
@@ -239,7 +244,7 @@ fn extract_python_docstring(node: &Node, content: &str) -> Vec<String> {
     vec![]
 }
 
-/// Checks if a node is inside a class
+/// Checks if a node is inside a class.
 fn is_inside_class(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -251,7 +256,7 @@ fn is_inside_class(node: &Node) -> bool {
     false
 }
 
-/// Checks if a node is inside a function
+/// Checks if a node is inside a function.
 fn is_inside_function(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {

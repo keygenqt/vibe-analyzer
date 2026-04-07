@@ -1,6 +1,10 @@
+//! Module containing tests for the Python language parser functionality.
+//! These tests verify that Python source code is correctly parsed into an AST and matches expected JSON snapshots.
+
 use std::fs;
 use vibe_analyzer::scanner::ast::parser::parse_ast;
 
+/// Tests that a Python source file is parsed correctly and matches the expected JSON output.
 #[test]
 fn test_python_parser() {
     // Arrange

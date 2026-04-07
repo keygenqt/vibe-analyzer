@@ -1,14 +1,20 @@
-//! AST parsing infrastructure and data structures
+//! AST parsing infrastructure and data structures.
+//! Maintains a registry of language parsers and dispatches parsing requests by file extension.
 
-use crate::scanner::ast::{
-    data::ast_data::AstData,
-    langs::{
-        arkts::ArkTSParser, bash::BashParser, batch::BatchParser, csharp::CSharpParser,
-        dart::DartParser, go::GoParser, java::JavaParser, javascript::JavaScriptParser,
-        kotlin::KotlinParser, python::PythonParser, rust::RustParser, swift::SwiftParser,
-        typescript::TypeScriptParser,
-    },
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::langs::arkts::ArkTSParser;
+use crate::scanner::ast::langs::bash::BashParser;
+use crate::scanner::ast::langs::batch::BatchParser;
+use crate::scanner::ast::langs::csharp::CSharpParser;
+use crate::scanner::ast::langs::dart::DartParser;
+use crate::scanner::ast::langs::go::GoParser;
+use crate::scanner::ast::langs::java::JavaParser;
+use crate::scanner::ast::langs::javascript::JavaScriptParser;
+use crate::scanner::ast::langs::kotlin::KotlinParser;
+use crate::scanner::ast::langs::python::PythonParser;
+use crate::scanner::ast::langs::rust::RustParser;
+use crate::scanner::ast::langs::swift::SwiftParser;
+use crate::scanner::ast::langs::typescript::TypeScriptParser;
 
 use anyhow::Result;
 use once_cell::sync::Lazy;
@@ -39,7 +45,7 @@ static PARSERS: Lazy<HashMap<String, Box<dyn LanguageParser>>> = Lazy::new(|| {
     register_parser::<SwiftParser>(&mut map, &["swift"]);
     register_parser::<DartParser>(&mut map, &["dart"]);
 
-    // // Multi-extension languages
+    // Multi-extension languages
     register_parser::<KotlinParser>(&mut map, &["kt", "kts"]);
     register_parser::<JavaScriptParser>(&mut map, &["js", "jsx"]);
     register_parser::<TypeScriptParser>(&mut map, &["ts", "tsx"]);

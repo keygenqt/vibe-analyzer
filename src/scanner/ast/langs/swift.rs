@@ -1,18 +1,20 @@
-//! Swift language AST parser
+//! Swift language AST parser.
+//! This module provides functionality to parse Swift source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
-        ast_data_function::AstDataFunction, ast_data_interface::AstDataInterface,
-        ast_data_struct::AstDataStruct, ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
 
-/// Parser for Swift language files
+/// Parser for Swift language files.
 #[derive(Default)]
 pub struct SwiftParser;
 
@@ -35,6 +37,7 @@ impl LanguageParser for SwiftParser {
         let mut protocols = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -58,7 +61,7 @@ impl LanguageParser for SwiftParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -73,6 +76,7 @@ fn visit_node(
     match node.kind() {
         // Module comments (///)
         "comment" => {
+            // Capture only top-level comments that are module documentation
             let is_module = node.prev_sibling().is_none()
                 || (node.prev_sibling().is_some()
                     && node.prev_sibling().unwrap().kind() == "comment");
@@ -83,15 +87,16 @@ fn visit_node(
                     if cleaned.starts_with("///") {
                         let content = cleaned[3..].trim();
                         if !content.is_empty() {
-                            data.comments.push(content.to_string());
+                            data.header_comments.push(content.to_string());
                         }
                     }
                 }
             }
         }
 
-        // Functions
+        // Functions (top-level)
         "function_declaration" => {
+            // Skip methods inside classes and structs
             if !is_inside_class(node) && !is_inside_struct(node) {
                 if let Some(signature) = extract_swift_function_signature(node, content) {
                     functions.push(AstDataFunction {
@@ -112,7 +117,7 @@ fn visit_node(
             }
         }
 
-        // Classes, structs, enums (all come as class_declaration in Swift)
+        // Classes, structs, enums (all come as class_declaration in Swift's tree-sitter grammar)
         "class_declaration" => {
             if let Ok(text) = node.utf8_text(content.as_bytes()) {
                 let trimmed = text.trim();
@@ -187,6 +192,7 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(
@@ -195,9 +201,10 @@ fn visit_node(
     }
 }
 
-/// Extracts function signature without body
+/// Extracts function signature without body.
 fn extract_swift_function_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
+        // Trim everything after the opening brace
         if let Some(pos) = text.find('{') {
             let signature = text[..pos].trim().to_string();
             if !signature.is_empty() {
@@ -213,7 +220,7 @@ fn extract_swift_function_signature(node: &Node, content: &str) -> Option<String
     None
 }
 
-/// Extracts struct signature without body
+/// Extracts struct signature without body.
 fn extract_swift_struct_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         if let Some(pos) = text.find('{') {
@@ -231,7 +238,7 @@ fn extract_swift_struct_signature(node: &Node, content: &str) -> Option<String> 
     None
 }
 
-/// Extracts class signature without body
+/// Extracts class signature without body.
 fn extract_swift_class_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         if let Some(pos) = text.find('{') {
@@ -249,7 +256,7 @@ fn extract_swift_class_signature(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Extracts enum signature without body
+/// Extracts enum signature without body.
 fn extract_swift_enum_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         if let Some(pos) = text.find('{') {
@@ -267,7 +274,7 @@ fn extract_swift_enum_signature(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Extracts protocol signature without body
+/// Extracts protocol signature without body.
 fn extract_swift_protocol_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let first_line = text.lines().next().unwrap_or(text);
@@ -279,7 +286,7 @@ fn extract_swift_protocol_signature(node: &Node, content: &str) -> Option<String
     None
 }
 
-/// Extracts variable signature without value
+/// Extracts variable signature without value.
 fn extract_swift_variable_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let signature = text.split('=').next().unwrap_or(text).trim().to_string();
@@ -290,14 +297,16 @@ fn extract_swift_variable_signature(node: &Node, content: &str) -> Option<String
     None
 }
 
-/// Extracts doc comments before a node
+/// Extracts doc comments before a node.
 fn extract_swift_doc_comments(node: &Node, content: &str) -> Vec<String> {
     let start_byte = node.range().start_byte;
     let parent_start = node.parent().map(|p| p.range().start_byte).unwrap_or(0);
     let prefix_text = &content[parent_start..start_byte];
 
+    // Look for the last KDoc comment before the node
     if let Some(pos) = prefix_text.rfind("/**") {
         let between = &prefix_text[pos + 3..];
+        // Ensure we're not capturing variable declarations as doc comments
         if !between.contains("let ") && !between.contains("var ") {
             let comment_text = &prefix_text[pos..];
             if let Some(end) = comment_text.find("*/") {
@@ -329,7 +338,7 @@ fn extract_swift_doc_comments(node: &Node, content: &str) -> Vec<String> {
     vec![]
 }
 
-/// Checks if a node is inside a class
+/// Checks if a node is inside a class.
 fn is_inside_class(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -341,7 +350,7 @@ fn is_inside_class(node: &Node) -> bool {
     false
 }
 
-/// Checks if a node is inside a struct
+/// Checks if a node is inside a struct.
 fn is_inside_struct(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -353,7 +362,7 @@ fn is_inside_struct(node: &Node) -> bool {
     false
 }
 
-/// Checks if a node is inside a function
+/// Checks if a node is inside a function.
 fn is_inside_function(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {

@@ -1,6 +1,10 @@
+//! Module containing tests for the Rust language parser functionality.
+//! These tests verify that Rust source code is correctly parsed into an AST and matches expected JSON snapshots.
+
 use std::fs;
 use vibe_analyzer::scanner::ast::parser::parse_ast;
 
+/// Tests that a Rust source file (sample.rs) is parsed correctly and matches the expected JSON output.
 #[test]
 fn test_rust_parser() {
     // Arrange
@@ -16,6 +20,7 @@ fn test_rust_parser() {
     assert_eq!(actual, expected);
 }
 
+/// Tests that a Rust source file (sample2.rs) is parsed correctly and matches the expected JSON output.
 #[test]
 fn test_rust_parser2() {
     // Arrange
@@ -31,6 +36,7 @@ fn test_rust_parser2() {
     assert_eq!(actual, expected);
 }
 
+/// Tests that a Rust source file (sample3.rs) is parsed correctly and matches the expected JSON output.
 #[test]
 fn test_rust_parser3() {
     // Arrange

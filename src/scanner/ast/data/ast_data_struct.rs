@@ -1,9 +1,12 @@
-//! AST data structures for struct/record definitions
+//! AST data structures for struct/record definitions.
+//! Stores struct signatures and associated documentation comments.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Container for struct-related AST data
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct AstDataStruct {
     /// Full struct signature (e.g., "struct ScanOptions { path: Option<PathBuf> }")
     pub signature: String,

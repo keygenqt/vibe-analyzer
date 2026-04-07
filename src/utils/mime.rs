@@ -1,4 +1,5 @@
-//! MIME type detection utilities
+//! MIME type detection utilities for file content classification.
+//! Uses multiple strategies (extension, filename, content sniffing) to determine MIME types.
 
 use anyhow::Result;
 use mime::Mime;

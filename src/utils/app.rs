@@ -1,4 +1,5 @@
-//! CLI application helpers
+//! CLI application helpers for vibe-analyzer.
+//! Provides version information, help text formatting, and CLI styling configuration.
 
 use clap::builder::Styles;
 use colored::Colorize;
@@ -8,6 +9,10 @@ pub fn app_version() -> &'static str {
     env!("CARGO_PKG_VERSION")
 }
 
+/// Returns the application name as a static string slice.
+pub fn app_name() -> &'static str {
+    "vibe-analyzer"
+}
 /// Returns the application help description
 pub fn app_about() -> String {
     format!(

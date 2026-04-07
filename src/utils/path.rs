@@ -1,13 +1,19 @@
-//! File system path utilities
+//! File system path utilities for the vibe-analyzer.
+//! Provides path resolution, configuration directory handling, and project file discovery.
 
 use anyhow::Result;
+use chrono::Local;
 use dirs::home_dir;
 use ignore::WalkBuilder;
 use std::env;
-use std::path::{Path, PathBuf};
+use std::path::Path;
+use std::path::PathBuf;
 
-use crate::scanner::data::file_info::FileInfo;
-use crate::utils::constants::{CONFIG_DIR_NAME, CONFIG_FILE_NAME};
+use crate::export::options::ExportFormat;
+use crate::scanner::data::input::file_info::FileInfo;
+use crate::utils::app;
+use crate::utils::constants::CONFIG_DIR_NAME;
+use crate::utils::constants::CONFIG_FILE_NAME;
 use crate::utils::matcher;
 
 /// Returns file extension (lowercase)
@@ -31,6 +37,14 @@ pub fn get_config_path() -> PathBuf {
 /// Get Downloads directory path
 pub fn get_downloads_dir() -> PathBuf {
     dirs::download_dir().expect("Failed to get downloads directory")
+}
+
+/// Generates the default export file path in the Downloads directory.
+pub fn get_default_export(format: ExportFormat) -> PathBuf {
+    let timestamp = Local::now().format("%d-%m-%Y_%H-%M-%S");
+    let filename = format!("{}-{}.{}", app::app_name(), timestamp, format.extension());
+    let downloads_dir = get_downloads_dir();
+    downloads_dir.join(filename)
 }
 
 /// Resolves a path to absolute form, expanding ~, ., ..

@@ -1,6 +1,10 @@
+//! Unit tests for the Bash/Shell language AST parser.
+//! Verifies that parsing a Bash fixture file produces the expected JSON snapshot.
+
 use std::fs;
 use vibe_analyzer::scanner::ast::parser::parse_ast;
 
+/// Tests Bash parser against a fixture file with expected JSON snapshot.
 #[test]
 fn test_bash_parser() {
     // Arrange

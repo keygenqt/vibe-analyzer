@@ -1,14 +1,17 @@
-//! Scan command implementation for the vibe-analyzer CLI
+//! Scan command implementation for the vibe-analyzer CLI.
+//! Handles project scanning, AST extraction, and JSON export to Downloads folder.
 
 use anyhow::Result;
 use std::path::PathBuf;
 
 use crate::configs::app::AppConfig;
+use crate::export;
+use crate::export::options::ExportFormat;
+use crate::export::options::ExportOptions;
 use crate::print_info;
 use crate::print_progress;
 use crate::print_success;
 use crate::print_warning;
-use crate::scanner::export::export_project;
 use crate::scanner::scanner;
 use crate::utils::path::convert_relative;
 
@@ -16,6 +19,13 @@ use crate::utils::path::convert_relative;
 pub struct ScanOptions {
     /// Optional custom path to scan instead of configured projects
     pub custom_path: Option<PathBuf>,
+
+    /// Export format (json or toon)
+    pub format: ExportFormat,
+
+    /// Optional custom output file path
+    /// If not provided, uses default path in Downloads directory
+    pub output: Option<PathBuf>,
 }
 
 /// Executes project scanning and indexing
@@ -62,7 +72,8 @@ pub async fn exec(options: ScanOptions) -> Result<()> {
 
     // Export all projects to a single JSON file
     if !all_analyses.is_empty() {
-        let json_path = export_project(all_analyses)?;
+        let options = ExportOptions::new(options.format, options.output);
+        let json_path = export::writer::export_projects(all_analyses, &options)?;
         println!();
         print_success!("Exported all projects to: {}", json_path.display());
     }

@@ -1,19 +1,21 @@
-//! C# language AST parser
+//! C# language AST parser.
+//! This module provides functionality to parse C# source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
-        ast_data_function::AstDataFunction, ast_data_interface::AstDataInterface,
-        ast_data_struct::AstDataStruct, ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-    utils::extract_signature,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
+use crate::scanner::ast::utils::extract_signature;
 
-/// Parser for C# language files
+/// Parser for C# language files.
 #[derive(Default)]
 pub struct CSharpParser;
 
@@ -36,6 +38,7 @@ impl LanguageParser for CSharpParser {
         let mut interfaces = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -59,7 +62,7 @@ impl LanguageParser for CSharpParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -74,10 +77,12 @@ fn visit_node(
     match node.kind() {
         // Module comments (/** */)
         "comment" => {
+            // Only capture top-level comments that are not inside methods
             if !is_inside_method(node) {
                 if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                     let cleaned = comment.trim().to_string();
                     if cleaned.starts_with("/**") {
+                        // Extract the content between /** and */
                         let content = cleaned[3..cleaned.len() - 2].trim();
                         let lines: Vec<String> = content
                             .lines()
@@ -85,14 +90,14 @@ fn visit_node(
                             .collect();
                         let comment_text = lines.join(" ").trim().to_string();
                         if !comment_text.is_empty() {
-                            data.comments.push(comment_text);
+                            data.header_comments.push(comment_text);
                         }
                     }
                 }
             }
         }
 
-        // Global statements with functions
+        // Global statements with functions (top-level functions in C# 9+)
         "global_statement" => {
             if let Some(signature) = extract_signature(node, content) {
                 let mut has_function = false;
@@ -124,7 +129,7 @@ fn visit_node(
             }
         }
 
-        // Record declarations
+        // Record declarations (C# 9+)
         "record_declaration" => {
             if let Some(signature) = extract_signature(node, content) {
                 structs.push(AstDataStruct {
@@ -191,6 +196,7 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(
@@ -199,14 +205,16 @@ fn visit_node(
     }
 }
 
-/// Extracts doc comments (///) before a node
+/// Extracts doc comments (///) before a node.
 fn extract_csharp_doc_comments(node: &Node, content: &str) -> Vec<String> {
     let mut comments = Vec::new();
 
+    // Walk backwards through sibling nodes to find preceding comments
     let mut prev = node.prev_sibling();
     while let Some(sibling) = prev {
         let kind = sibling.kind();
 
+        // Skip attribute lists as they are not comments
         if kind == "attribute_list" {
             prev = sibling.prev_sibling();
             continue;
@@ -229,11 +237,12 @@ fn extract_csharp_doc_comments(node: &Node, content: &str) -> Vec<String> {
         prev = sibling.prev_sibling();
     }
 
+    // Reverse to maintain original order (closest comment first)
     comments.reverse();
     comments
 }
 
-/// Checks if a node is inside a method body
+/// Checks if a node is inside a method body.
 fn is_inside_method(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {

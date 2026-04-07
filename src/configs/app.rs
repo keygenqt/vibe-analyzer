@@ -1,13 +1,16 @@
-//! Application configuration management
+//! Application configuration management for vibe-analyzer.
+//! Handles loading, saving, and modifying project lists with path normalization.
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
 
 use crate::configs::spdx::SpdxConfig;
 use crate::print_info;
-use crate::utils::path::{self, convert_relative};
+use crate::utils::path::convert_relative;
+use crate::utils::path::{self};
 
 use super::ollama::OllamaConfig;
 use super::opensearch::OpenSearchConfig;

@@ -1,16 +1,16 @@
-//! Batch script language AST parser
+//! Batch script language AST parser.
+//! This module provides functionality to parse Windows Batch script source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_function::AstDataFunction, ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
 
-/// Parser for Windows Batch language files
+/// Parser for Windows Batch language files.
 #[derive(Default)]
 pub struct BatchParser;
 
@@ -29,6 +29,7 @@ impl LanguageParser for BatchParser {
         let mut functions = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -44,7 +45,7 @@ impl LanguageParser for BatchParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -55,7 +56,9 @@ fn visit_node(
     match node.kind() {
         // Module comments (::)
         "comment" => {
+            // Skip comments that belong to labels (they are extracted by extract_batch_doc_comments)
             if !is_inside_label(node) {
+                // Check if this comment is directly followed by a label
                 let next = node.next_sibling();
                 if let Some(n) = next {
                     if n.kind() == "label" {
@@ -68,7 +71,7 @@ fn visit_node(
                     if cleaned.starts_with("::") {
                         let content = cleaned.trim_start_matches(':').trim().to_string();
                         if !content.is_empty() {
-                            data.comments.push(content);
+                            data.header_comments.push(content);
                         }
                     }
                 }
@@ -81,13 +84,13 @@ fn visit_node(
                 let signature = text.trim().to_string();
                 let clean_sig = signature.replace("set ", "").trim().to_string();
 
-                // Skip local variables
+                // Skip local variables (command line arguments and loop variables)
                 if clean_sig.contains("%1") || clean_sig.contains("%2") || clean_sig.contains("%%i")
                 {
                     return;
                 }
 
-                // Skip variables inside functions
+                // Skip variables defined inside functions (labels)
                 if is_inside_label(node) {
                     return;
                 }
@@ -130,16 +133,18 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(&child, content, data, functions, variables);
     }
 }
 
-/// Extracts doc comments (::) before a label
+/// Extracts doc comments (::) before a label.
 fn extract_batch_doc_comments(node: &Node, content: &str) -> Vec<String> {
     let mut comments = Vec::new();
 
+    // Walk backwards through sibling nodes to find preceding comments
     let mut prev = node.prev_sibling();
     while let Some(sibling) = prev {
         if sibling.kind() != "comment" {
@@ -159,12 +164,14 @@ fn extract_batch_doc_comments(node: &Node, content: &str) -> Vec<String> {
         prev = sibling.prev_sibling();
     }
 
+    // Reverse to maintain original order (closest comment first)
     comments.reverse();
     comments
 }
 
-/// Checks if a node is inside a label body
+/// Checks if a node is inside a label body.
 fn is_inside_label(node: &Node) -> bool {
+    // Check preceding siblings for a label
     let mut prev = node.prev_sibling();
     while let Some(sibling) = prev {
         if sibling.kind() == "label" {
@@ -173,6 +180,7 @@ fn is_inside_label(node: &Node) -> bool {
         prev = sibling.prev_sibling();
     }
 
+    // Check ancestors for a label
     let mut parent = node.parent();
     while let Some(p) = parent {
         if p.kind() == "label" {

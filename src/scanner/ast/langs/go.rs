@@ -1,17 +1,18 @@
-//! Go language AST parser
+//! Go language AST parser.
+//! This module provides functionality to parse Go source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_enum::AstDataEnum, ast_data_function::AstDataFunction,
-        ast_data_struct::AstDataStruct, ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
 
-/// Parser for Go language files
+/// Parser for Go language files.
 #[derive(Default)]
 pub struct GoParser;
 
@@ -32,6 +33,7 @@ impl LanguageParser for GoParser {
         let mut enums = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -51,7 +53,7 @@ impl LanguageParser for GoParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -62,15 +64,16 @@ fn visit_node(
     variables: &mut Vec<AstDataVariable>,
 ) {
     match node.kind() {
-        // Module comments
+        // Module comments (//)
         "comment" => {
+            // Capture only top-level comments that are not inside functions
             if node.prev_sibling().is_none() && !is_inside_function(node) {
                 if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                     let cleaned = comment.trim().to_string();
                     if cleaned.starts_with("//") {
                         let content = cleaned[2..].trim();
                         if !content.is_empty() {
-                            data.comments.push(content.to_string());
+                            data.header_comments.push(content.to_string());
                         }
                     }
                 }
@@ -79,6 +82,7 @@ fn visit_node(
 
         // Top-level functions (without receiver)
         "function_declaration" => {
+            // Skip methods (functions with receivers)
             if !is_method(node) {
                 if let Some(signature) = extract_go_function_signature(node, content) {
                     functions.push(AstDataFunction {
@@ -121,6 +125,7 @@ fn visit_node(
                             comments: extract_go_doc_comments(&child, content),
                         });
                     } else if !builtin_type.is_empty() && is_builtin_type(&builtin_type) {
+                        // Type aliases to built-in types are treated as enums
                         enums.push(AstDataEnum {
                             signature: format!("type {} {}", type_name, builtin_type),
                             comments: extract_go_doc_comments(&child, content),
@@ -131,13 +136,12 @@ fn visit_node(
         }
 
         // Constants
-        // Constants
         "const_declaration" => {
             let mut cursor = node.walk();
             for child in node.children(&mut cursor) {
                 if child.kind() == "const_spec" {
                     if let Some(signature) = extract_go_const_signature(&child, content) {
-                        // Skip constants that have a type (they are enum values)
+                        // Skip constants that have a type (they are enum values) and iota constants
                         let has_type = signature.split_whitespace().count() >= 3;
                         if !has_type && !signature.contains("iota") {
                             variables.push(AstDataVariable {
@@ -188,13 +192,14 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(&child, content, data, functions, structs, enums, variables);
     }
 }
 
-/// Checks if a type name is a built-in Go type
+/// Checks if a type name is a built-in Go type.
 fn is_builtin_type(type_name: &str) -> bool {
     matches!(
         type_name,
@@ -220,15 +225,17 @@ fn is_builtin_type(type_name: &str) -> bool {
     )
 }
 
-/// Extracts function signature without body
+/// Extracts function signature without body.
 fn extract_go_function_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
+        // Trim everything after the opening brace
         if let Some(pos) = text.find('{') {
             let signature = text[..pos].trim().to_string();
             if !signature.is_empty() {
                 return Some(signature);
             }
         }
+        // Fallback to first line only
         let first_line = text.lines().next().unwrap_or(text);
         let signature = first_line.trim().to_string();
         if !signature.is_empty() {
@@ -238,7 +245,7 @@ fn extract_go_function_signature(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Extracts const signature
+/// Extracts const signature (e.g., "const NAME" or "const NAME TYPE").
 fn extract_go_const_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let parts: Vec<&str> = text.split_whitespace().collect();
@@ -254,7 +261,7 @@ fn extract_go_const_signature(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Extracts var signature
+/// Extracts var signature (e.g., "var NAME" or "var NAME TYPE").
 fn extract_go_var_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let parts: Vec<&str> = text.split_whitespace().collect();
@@ -270,7 +277,7 @@ fn extract_go_var_signature(node: &Node, content: &str) -> Option<String> {
     None
 }
 
-/// Checks if a function has a receiver (method)
+/// Checks if a function has a receiver (i.e., is a method).
 fn is_method(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -282,7 +289,7 @@ fn is_method(node: &Node) -> bool {
     false
 }
 
-/// Checks if a node is inside a function
+/// Checks if a node is inside a function.
 fn is_inside_function(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -294,8 +301,9 @@ fn is_inside_function(node: &Node) -> bool {
     false
 }
 
-/// Extracts doc comments before a node
+/// Extracts doc comments before a node.
 fn extract_go_doc_comments(node: &Node, content: &str) -> Vec<String> {
+    // For spec nodes, look at the parent (declaration) for comments
     let search_node =
         if node.kind() == "type_spec" || node.kind() == "const_spec" || node.kind() == "var_spec" {
             if let Some(parent) = node.parent() {
@@ -314,6 +322,7 @@ fn extract_go_doc_comments(node: &Node, content: &str) -> Vec<String> {
         .unwrap_or(0);
     let prefix_text = &content[parent_start..start_byte];
 
+    // Parse lines in reverse to find consecutive comment lines
     let lines: Vec<&str> = prefix_text.lines().collect();
     let mut in_comment_block = false;
     let mut comment_lines: Vec<String> = Vec::new();
@@ -324,12 +333,14 @@ fn extract_go_doc_comments(node: &Node, content: &str) -> Vec<String> {
             in_comment_block = true;
             comment_lines.push(trimmed[2..].trim().to_string());
         } else if in_comment_block && trimmed.is_empty() {
+            // Empty line breaks the comment block
             break;
         } else if in_comment_block && !trimmed.is_empty() && !trimmed.starts_with("//") {
             break;
         }
     }
 
+    // Reverse to restore original order
     comment_lines.reverse();
     comment_lines
 }

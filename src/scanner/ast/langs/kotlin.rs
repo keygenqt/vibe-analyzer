@@ -1,18 +1,19 @@
-//! Kotlin language AST parser
+//! Kotlin language AST parser.
+//! This module provides functionality to parse Kotlin source code into an abstract syntax tree (AST) representation.
 
 use anyhow::Result;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
-use crate::scanner::ast::{
-    data::{
-        ast_data::AstData, ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
-        ast_data_function::AstDataFunction, ast_data_interface::AstDataInterface,
-        ast_data_variable::AstDataVariable,
-    },
-    traits::LanguageParser,
-};
+use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::traits::LanguageParser;
 
-/// Parser for Kotlin language files
+/// Parser for Kotlin language files.
 #[derive(Default)]
 pub struct KotlinParser;
 
@@ -35,6 +36,7 @@ impl LanguageParser for KotlinParser {
         let mut interfaces = Vec::new();
         let mut variables = Vec::new();
 
+        // Traverse the AST and collect all declarations
         visit_node(
             &root_node,
             content,
@@ -56,7 +58,7 @@ impl LanguageParser for KotlinParser {
     }
 }
 
-/// Recursively traverses the AST and extracts relevant nodes
+/// Recursively traverses the AST and extracts relevant nodes.
 fn visit_node(
     node: &Node,
     content: &str,
@@ -68,11 +70,12 @@ fn visit_node(
     variables: &mut Vec<AstDataVariable>,
 ) {
     match node.kind() {
-        // Module comments
+        // Module comments (/** */)
         "multiline_comment" => {
             let is_at_root = node.parent().map_or(false, |p| p.kind() == "source_file");
             let is_first = is_module_comment(node, content);
 
+            // Capture only top-level comments that are module documentation
             if is_at_root && is_first {
                 if let Ok(comment) = node.utf8_text(content.as_bytes()) {
                     let cleaned = comment.trim();
@@ -89,8 +92,9 @@ fn visit_node(
                             .collect();
 
                         let comment_text = lines.join(" ").trim().to_string();
-                        if !comment_text.is_empty() && !data.comments.contains(&comment_text) {
-                            data.comments.push(comment_text);
+                        if !comment_text.is_empty() && !data.header_comments.contains(&comment_text)
+                        {
+                            data.header_comments.push(comment_text);
                         }
                     }
                 }
@@ -99,6 +103,7 @@ fn visit_node(
 
         // Top-level functions
         "function_declaration" => {
+            // Skip functions defined inside classes (methods are handled separately)
             if !is_inside_class(node) {
                 if let Some(signature) = extract_kotlin_function_signature(node, content) {
                     functions.push(AstDataFunction {
@@ -116,7 +121,7 @@ fn visit_node(
                     let trimmed = text.trim();
 
                     if trimmed.starts_with("sealed class") {
-                        // Skip sealed classes
+                        // Skip sealed classes as they are not standard classes for our purposes
                     } else if trimmed.starts_with("enum ") || trimmed.starts_with("enum class") {
                         if let Some(signature) = extract_kotlin_class_signature(node, content) {
                             enums.push(AstDataEnum {
@@ -143,7 +148,7 @@ fn visit_node(
             }
         }
 
-        // Global properties
+        // Global properties (top-level variables)
         "property_declaration" => {
             if !is_inside_class(node) && !is_inside_function(node) {
                 if let Some(signature) = extract_kotlin_property_signature(node, content) {
@@ -169,6 +174,7 @@ fn visit_node(
         _ => {}
     }
 
+    // Recursively process all child nodes
     let mut cursor = node.walk();
     for child in node.children(&mut cursor) {
         visit_node(
@@ -177,13 +183,15 @@ fn visit_node(
     }
 }
 
-/// Extracts function signature without body
+/// Extracts function signature without body.
 fn extract_kotlin_function_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let first_line = text.lines().next().unwrap_or(text);
+        // Trim everything after the opening brace
         if let Some(pos) = first_line.find('{') {
             return Some(first_line[..pos].trim().to_string());
         }
+        // Trim everything after equals sign (for expression bodies)
         if let Some(pos) = first_line.find('=') {
             return Some(first_line[..pos].trim().to_string());
         }
@@ -193,7 +201,7 @@ fn extract_kotlin_function_signature(node: &Node, content: &str) -> Option<Strin
     }
 }
 
-/// Extracts class signature without body
+/// Extracts class signature without body.
 fn extract_kotlin_class_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let first_line = text.lines().next().unwrap_or(text);
@@ -209,7 +217,7 @@ fn extract_kotlin_class_signature(node: &Node, content: &str) -> Option<String> 
     None
 }
 
-/// Extracts property signature without value
+/// Extracts property signature without value.
 fn extract_kotlin_property_signature(node: &Node, content: &str) -> Option<String> {
     if let Ok(text) = node.utf8_text(content.as_bytes()) {
         let signature = text.split('=').next().unwrap_or(text).trim().to_string();
@@ -220,18 +228,20 @@ fn extract_kotlin_property_signature(node: &Node, content: &str) -> Option<Strin
     None
 }
 
-/// Extracts doc comments before a node
+/// Extracts doc comments (KDoc) before a node.
 fn extract_kotlin_doc_comments(node: &Node, content: &str) -> Vec<String> {
     let start_byte = node.range().start_byte;
     let parent_start = node.parent().map(|p| p.range().start_byte).unwrap_or(0);
     let prefix_text = &content[parent_start..start_byte];
 
+    // Look for the last KDoc comment before the node
     if let Some(open_idx) = prefix_text.rfind("/**") {
         let potential_doc = &prefix_text[open_idx..];
         if let Some(close_idx) = potential_doc.find("*/") {
             let kdoc_text = &potential_doc[..close_idx + 2];
             let between = &potential_doc[close_idx + 2..].trim();
 
+            // Ensure only whitespace or line comments between KDoc and node
             let is_clean_gap = between.lines().all(|line| {
                 let l = line.trim();
                 l.is_empty() || l.starts_with("//")
@@ -253,12 +263,12 @@ fn extract_kotlin_doc_comments(node: &Node, content: &str) -> Vec<String> {
     Vec::new()
 }
 
-/// Checks if a comment is a module-level comment
+/// Checks if a comment is a module-level comment (first node in the file).
 fn is_module_comment(node: &Node, _content: &str) -> bool {
     node.prev_sibling().is_none() && node.parent().map_or(false, |p| p.kind() == "source_file")
 }
 
-/// Checks if a node is inside a class
+/// Checks if a node is inside a class.
 fn is_inside_class(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {
@@ -270,7 +280,7 @@ fn is_inside_class(node: &Node) -> bool {
     false
 }
 
-/// Checks if a node is inside a function
+/// Checks if a node is inside a function.
 fn is_inside_function(node: &Node) -> bool {
     let mut parent = node.parent();
     while let Some(p) = parent {

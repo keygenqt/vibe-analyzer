@@ -1,6 +1,10 @@
+//! Module containing tests for the Swift language parser functionality.
+//! These tests verify that Swift source code is correctly parsed into an AST and matches expected JSON snapshots.
+
 use std::fs;
 use vibe_analyzer::scanner::ast::parser::parse_ast;
 
+/// Tests that a Swift source file is parsed correctly and matches the expected JSON output.
 #[test]
 fn test_swift_parser() {
     // Arrange
