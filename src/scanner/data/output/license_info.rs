@@ -1,8 +1,11 @@
-//! License detection result structure
+//! License detection result structure.
+//! Stores SPDX identifier, license name, detection confidence, and file path.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct LicenseInfo {
     /// SPDX identifier (e.g., "MIT", "Apache-2.0")
     pub spdx_id: String,

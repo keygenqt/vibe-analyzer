@@ -1,8 +1,11 @@
-//! README file information
+//! README file information structure.
+//! Stores path, content, and size of a detected README file.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct ReadmeInfo {
     /// Path to README file
     pub path: String,

@@ -1,11 +1,14 @@
-//! File-level analysis data structure
+//! File-level analysis data structure.
+//! Contains per-file metadata, AST data, and content statistics for a scanned file.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::scanner::ast::data::ast_data::AstData;
 
 /// Analysis results for a single file
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct FileAnalysis {
     /// Relative path from project root
     pub path: String,
@@ -14,11 +17,11 @@ pub struct FileAnalysis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub extension: Option<String>,
 
-    /// File size in bytes
-    pub size_bytes: u64,
-
     /// Whether the file is text-based
     pub is_text: bool,
+
+    /// File size in bytes
+    pub size_bytes: u64,
 
     /// Number of lines (text files only)
     #[serde(skip_serializing_if = "Option::is_none")]

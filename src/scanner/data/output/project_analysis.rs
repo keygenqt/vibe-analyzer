@@ -1,13 +1,16 @@
-//! Project-level analysis results
+//! Project-level analysis results.
+//! Contains complete scan data for a single project including metadata, statistics, and file details.
 
 use super::file_analysis::FileAnalysis;
 use super::license_info::LicenseInfo;
 use super::project_stats::ProjectStats;
 use super::readme_info::ReadmeInfo;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Complete analysis results for a single project
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
 pub struct ProjectAnalysis {
     /// Absolute path to project root
     pub project: String,

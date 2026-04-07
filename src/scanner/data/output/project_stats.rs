@@ -1,11 +1,14 @@
-//! Project statistics aggregation
+//! Project statistics aggregation.
+//! Tracks cumulative metrics across all scanned files including code counts and size information.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::scanner::ast::data::ast_data::AstData;
 
 /// Aggregated project statistics
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(rename_all = "PascalCase")]
 pub struct ProjectStats {
     /// Total number of files
     pub total_files: usize,

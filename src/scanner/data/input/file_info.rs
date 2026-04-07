@@ -1,4 +1,5 @@
-//! Internal file information structure
+//! Internal file information structure.
+//! Represents a file discovered during directory scanning with absolute and relative paths.
 
 use std::path::PathBuf;
 
