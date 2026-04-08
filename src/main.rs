@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use crate::configs::app::AppConfig;
 use crate::export::options::ExportFormat;
 
+mod analyzer;
 mod cli;
 mod configs;
 mod export;
@@ -40,6 +41,21 @@ enum Commands {
 
     /// Analyze project codebase
     Scan {
+        /// Path to scan (overrides config)
+        #[arg(long)]
+        path: Option<PathBuf>,
+
+        /// Export format
+        #[arg(long, default_value = "json")]
+        format: ExportFormat,
+
+        /// Output file path (optional)
+        #[arg(long, short = 'o')]
+        output: Option<PathBuf>,
+    },
+
+    /// Scan and analyze project
+    Analyze {
         /// Path to scan (overrides config)
         #[arg(long)]
         path: Option<PathBuf>,
@@ -93,13 +109,30 @@ async fn main() {
             Err(e) => exit_error!("{}", e),
         },
 
-        // Scan and index project(s)
+        // Scan and index project(s) - extracts AST and metadata
         Some(Commands::Scan {
             path,
             format,
             output,
         }) => {
             if let Err(e) = cli::scan::exec(cli::scan::ScanOptions {
+                custom_path: path,
+                format,
+                output,
+            })
+            .await
+            {
+                exit_error!("{}", e);
+            }
+        }
+
+        // Analyze project(s) with LLM enrichment - adds descriptions and search tags
+        Some(Commands::Analyze {
+            path,
+            format,
+            output,
+        }) => {
+            if let Err(e) = cli::analyze::exec(cli::analyze::AnalyzeOptions {
                 custom_path: path,
                 format,
                 output,

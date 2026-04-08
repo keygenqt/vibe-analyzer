@@ -1,6 +1,7 @@
 //! Core export functionality with pluggable format writers and registry.
 //! Provides centralized export coordination and format selection.
 
+use crate::analyzer::data::output::enriched_project_analysis::EnrichedProjectAnalysis;
 use crate::export::formats::json::JsonWriter;
 use crate::export::formats::json5::Json5Writer;
 use crate::export::formats::toon::ToonWriter;
@@ -19,7 +20,12 @@ use std::path::PathBuf;
 /// Each format must provide serialization logic for project analyses.
 pub trait ExportWriter: Send + Sync {
     /// Exports project analyses to the specified file path.
-    fn export(&self, projects: &[ProjectAnalysis], output_path: &Path) -> Result<()>;
+    fn export_scanner(&self, projects: &[ProjectAnalysis], output_path: &Path) -> Result<()>;
+    fn export_analyzer(
+        &self,
+        projects: &[EnrichedProjectAnalysis],
+        output_path: &Path,
+    ) -> Result<()>;
 }
 
 /// Registry of all available export writers, indexed by format type.
@@ -54,7 +60,30 @@ pub fn export_projects(projects: Vec<ProjectAnalysis>, options: &ExportOptions) 
     };
 
     // Perform the actual export
-    writer.export(&projects, &output_path)?;
+    writer.export_scanner(&projects, &output_path)?;
+
+    Ok(output_path)
+}
+
+/// Exports enriched project analyses using the specified options.
+/// Returns the absolute path to the created export file.
+pub fn export_enriched_projects(
+    projects: Vec<EnrichedProjectAnalysis>,
+    options: &ExportOptions,
+) -> Result<PathBuf> {
+    // Look up the writer for the requested format
+    let writer =
+        get_writer(options.format).ok_or_else(|| anyhow::anyhow!("Exporter is not registered."))?;
+
+    // Resolve output path: use custom path or generate default
+    let output_path = match options.output.clone() {
+        Some(path) => path::convert_relative(&path.to_string_lossy())
+            .ok_or_else(|| anyhow::anyhow!("Error path for save output."))?,
+        None => path::get_default_export(options.format),
+    };
+
+    // Perform the actual export
+    writer.export_analyzer(&projects, &output_path)?;
 
     Ok(output_path)
 }

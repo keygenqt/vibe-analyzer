@@ -15,6 +15,18 @@ pub struct OllamaConfig {
 
     /// Maximum chunk size in characters for LLM context
     pub max_chunk_chars: usize,
+
+    /// Request timeout in seconds
+    pub timeout_secs: u64,
+
+    /// Temperature for generation (0.0-2.0, lower = more deterministic)
+    pub temperature: f32,
+
+    /// Seed for reproducible outputs
+    pub seed: u64,
+
+    /// Context window size in tokens
+    pub num_ctx: usize,
 }
 
 impl Default for OllamaConfig {
@@ -23,7 +35,11 @@ impl Default for OllamaConfig {
         Self {
             host: "http://localhost:11434".to_string(),
             model: "qwen2.5-coder:7b-instruct".to_string(),
-            max_chunk_chars: 100_000,
+            max_chunk_chars: 5_000,
+            timeout_secs: 60,
+            temperature: 0.1,
+            seed: 42,
+            num_ctx: 4096,
         }
     }
 }

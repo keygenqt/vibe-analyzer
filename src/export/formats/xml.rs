@@ -8,6 +8,8 @@ use std::path::Path;
 use xml::reader::ParserConfig;
 use xml::writer::EmitterConfig;
 
+use crate::analyzer::data::output::enriched_project_analysis::EnrichedProjectAnalysis;
+use crate::analyzer::data::output::enriched_projects_analysis::EnrichedProjectsAnalysis;
 use crate::scanner::data::output::project_analysis::ProjectAnalysis;
 use crate::scanner::data::output::projects_analysis::ProjectsAnalysis;
 
@@ -43,8 +45,29 @@ impl XmlWriter {
 
 impl ExportWriter for XmlWriter {
     /// Exports project analyses to a pretty-printed XML file.
-    fn export(&self, projects: &[ProjectAnalysis], output_path: &Path) -> Result<()> {
+    fn export_scanner(&self, projects: &[ProjectAnalysis], output_path: &Path) -> Result<()> {
         let multi_analysis = ProjectsAnalysis {
+            indexed_at: Local::now().to_rfc3339(),
+            projects: projects.to_vec(),
+        };
+
+        // Serialize to compact XML (no indentation)
+        let compact_xml = to_string(&multi_analysis)?;
+
+        // Pretty-print with indentation
+        let pretty_xml = Self::pretty_print(&compact_xml)?;
+
+        fs::write(output_path, pretty_xml)?;
+        Ok(())
+    }
+
+    /// Exports enriched project analyses to a pretty-printed XML file.
+    fn export_analyzer(
+        &self,
+        projects: &[EnrichedProjectAnalysis],
+        output_path: &Path,
+    ) -> Result<()> {
+        let multi_analysis = EnrichedProjectsAnalysis {
             indexed_at: Local::now().to_rfc3339(),
             projects: projects.to_vec(),
         };
