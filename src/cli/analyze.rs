@@ -1,14 +1,20 @@
 //! Analyze command for LLM-powered code enrichment.
 //! Scans projects and enhances results with descriptions and search tags.
 
+use crate::analyzer;
 use crate::analyzer::data::output::enriched_project_analysis::EnrichedProjectAnalysis;
-use crate::analyzer::ollama;
-use crate::cli::scan::{self, ScanOptions};
+use crate::analyzer::ollama_cluster;
+use crate::cli::scan::ScanOptions;
+use crate::cli::scan::{self};
 use crate::configs::app::AppConfig;
-use crate::export::options::{ExportFormat, ExportOptions};
-use crate::{
-    analyzer, export, print_error, print_info, print_progress, print_success, print_warning,
-};
+use crate::export;
+use crate::export::options::ExportFormat;
+use crate::export::options::ExportOptions;
+use crate::print_error;
+use crate::print_info;
+use crate::print_progress;
+use crate::print_success;
+use crate::print_warning;
 use anyhow::Result;
 use std::path::PathBuf;
 
@@ -34,7 +40,6 @@ pub async fn exec(options: AnalyzeOptions) -> Result<()> {
     if !enriched_all_analyses.is_empty() {
         let options = ExportOptions::new(options.format, options.output);
         let json_path = export::writer::export_enriched_projects(enriched_all_analyses, &options)?;
-        println!();
         print_success!(
             "Exported all projects to: {} (took {:.1}s)",
             json_path.display(),
@@ -50,25 +55,36 @@ pub async fn scan(
     config: &AppConfig,
     options: &AnalyzeOptions,
 ) -> Result<Vec<EnrichedProjectAnalysis>> {
+    let cluster = ollama_cluster::OllamaCluster::new(&config.ollama);
     // Validate Ollama configuration
-    if config.ollama.host.is_empty() {
-        anyhow::bail!("Ollama host not configured. Add it to ~/.vibe-analyzer/config.json");
+    if cluster.is_empty() {
+        anyhow::bail!("Ollama hosts not configured. Add it to ~/.vibe-analyzer/config.json");
     }
 
     // Check Ollama availability and warm up model
-    let ollama_client = ollama::OllamaClient::new(&config.ollama);
-    if !ollama_client.is_available().await? {
+    print_info!("Checking Ollama cluster...");
+    if !cluster
+        .is_available(|current, total| {
+            print_progress!("Checking availability {}/{}", current, total);
+            if total == current {
+                println!()
+            }
+        })
+        .await?
+    {
         anyhow::bail!(
-            "Ollama not available at {}. Check config or start Ollama service",
-            config.ollama.host
+            "One or more Ollama servers are not available. Check config or start Ollama service"
         );
     }
-
-    print_info!("Checking Ollama and warming up model...");
-    if let Err(e) = ollama_client.ensure_ready().await {
-        anyhow::bail!("{}", e);
-    }
-    print_success!("Ollama model '{}' ready", ollama_client.config.model);
+    cluster
+        .ensure_ready(|current, total| {
+            print_progress!("Warming up server {}/{}", current, total);
+            if total == current {
+                println!()
+            }
+        })
+        .await?;
+    print_success!("All {} Ollama servers ready", cluster.len());
 
     // Phase 1: Perform standard project scanning
     let scan_options = ScanOptions {
@@ -77,7 +93,6 @@ pub async fn scan(
         output: options.output.clone(),
     };
     let all_analyses = scan::scan(&config, &scan_options).await?;
-    println!();
 
     // Phase 2: Enrich each project with LLM analysis
     let mut enriched_all_analyses = Vec::new();
@@ -87,14 +102,15 @@ pub async fn scan(
 
         match analyzer::analyzer::analyze_project(
             &project_analyses,
-            &ollama_client,
+            &cluster,
             |percent, current, total| {
-                print_progress!("Processing... {:.1}% ({}/{})", percent, current, total)
+                print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
+                if total == current {
+                    println!()
+                }
             },
-            |message| {
-                println!();
-                print_warning!("{}", message)
-            },
+            |message| print_warning!("{}", message),
+            |message| print_info!("{}", message),
         )
         .await
         {
@@ -102,7 +118,6 @@ pub async fn scan(
                 enriched_all_analyses.push(analysis);
             }
             Err(e) => {
-                println!();
                 print_error!("Failed to index {}: {}", project_analyses.project, e);
             }
         }

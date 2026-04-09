@@ -1,7 +1,8 @@
 //! Ollama tags API response structure.
 //! Contains list of all installed models available for inference.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::analyzer::data::responses::ollama_model_info_response::OllamaModelInfoResponse;
 

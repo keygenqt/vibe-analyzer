@@ -3,24 +3,18 @@
 
 use std::time::Duration;
 
-use crate::{
-    analyzer::data::{
-        output::enriched_file_analysis::EnrichedFileAnalysis,
-        requests::{
-            ollama_file_request::OllamaFilesRequest, ollama_summary_request::OllamaSummaryRequest,
-        },
-        responses::{
-            ollama_enrichment_response::OllamaEnrichmentResponse,
-            ollama_generate_response::OllamaGenerateResponse,
-            ollama_tags_response::OllamaTagsResponse,
-        },
-    },
-    configs::ollama::OllamaConfig,
-};
+use crate::analyzer::data::output::enriched_file_analysis::EnrichedFileAnalysis;
+use crate::analyzer::data::requests::ollama_files_request::OllamaFilesRequest;
+use crate::analyzer::data::requests::ollama_summary_request::OllamaSummaryRequest;
+use crate::analyzer::data::responses::ollama_enrichment_response::OllamaEnrichmentResponse;
+use crate::analyzer::data::responses::ollama_generate_response::OllamaGenerateResponse;
+use crate::analyzer::data::responses::ollama_tags_response::OllamaTagsResponse;
+use crate::configs::ollama::OllamaConfig;
 use anyhow::Result;
 use reqwest::Client;
 
 /// Client for interacting with Ollama API.
+#[derive(Clone)]
 pub struct OllamaClient {
     client: Client,
     pub config: OllamaConfig,
@@ -44,7 +38,7 @@ impl OllamaClient {
     }
 
     /// Checks if the configured model is already installed.
-    async fn is_model_installed(&self) -> Result<bool> {
+    pub async fn is_model_installed(&self) -> Result<bool> {
         let url = format!("{}/api/tags", self.config.host);
         let response = self.client.get(&url).send().await?;
         let tags: OllamaTagsResponse = response.json().await?;
@@ -115,6 +109,7 @@ Provide only the summary text, no additional formatting."#,
         &self,
         data: &OllamaFilesRequest,
     ) -> Result<Vec<EnrichedFileAnalysis>> {
+        const MAX_RETRIES: usize = 3;
         let files_json = format!("[{}]", data.values.join(","));
 
         let prompt = format!(
@@ -122,7 +117,7 @@ Provide only the summary text, no additional formatting."#,
 {{
   "files": [
     {{
-      "file_id": "...",
+      "path": "...",
       "description": "2-3 sentences describing the file's purpose and role",
       "tags": ["tag1", "tag2", "tag3", ...]
     }}
@@ -130,7 +125,7 @@ Provide only the summary text, no additional formatting."#,
 }}
 
 Rules:
-- Use EXACT file_id from input
+- Use EXACT path from input
 - Provide 3-5 specific tags per file (technologies, patterns, concepts)
 - Descriptions in English only
 
@@ -139,51 +134,54 @@ Files:
             files_json
         );
 
-        let response = self.generate_completion(&prompt).await?;
+        for attempt in 1..=MAX_RETRIES {
+            let response = self.generate_completion(&prompt).await?;
+            let json_str = response
+                .trim()
+                .trim_start_matches("```json")
+                .trim_start_matches("```")
+                .trim_end_matches("```")
+                .trim();
 
-        // Extract JSON from response (handle potential markdown code blocks)
-        let json_str = response
-            .trim()
-            .trim_start_matches("```json")
-            .trim_start_matches("```")
-            .trim_end_matches("```")
-            .trim();
-
-        let parsed: OllamaEnrichmentResponse = serde_json::from_str(json_str).map_err(|e| {
-            let preview = if json_str.len() > 400 {
-                format!("{}...", &json_str[..400])
-            } else {
-                json_str.to_string()
-            };
-
-            anyhow::anyhow!(
-                "LLM returned invalid JSON: {}\n\
-             Response preview: {}\n\
-             Try reducing max_chunk_chars in config (current: {})",
-                e,
-                preview,
-                self.config.max_chunk_chars
-            )
-        })?;
-
-        // Convert response to EnrichedFileAnalysis
-        let mut enriched = Vec::new();
-        for file_response in parsed.files {
-            // Find matching original file to preserve all fields
-            if let Some(original_file) = data
-                .files
-                .iter()
-                .find(|f| f.file_id == file_response.file_id)
-            {
-                enriched.push(EnrichedFileAnalysis {
-                    base: original_file.clone(),
-                    description: Some(file_response.description),
-                    tags: Some(file_response.tags),
-                });
+            match serde_json::from_str::<OllamaEnrichmentResponse>(json_str) {
+                Ok(parsed) => {
+                    let mut enriched = Vec::new();
+                    for file_response in parsed.files {
+                        if let Some(original) =
+                            data.files.iter().find(|f| f.path == file_response.path)
+                        {
+                            enriched.push(EnrichedFileAnalysis {
+                                description: Some(file_response.description),
+                                tags: Some(file_response.tags),
+                                path: original.path.clone(),
+                                extension: original.extension.clone(),
+                                is_text: original.is_text,
+                                size_bytes: original.size_bytes,
+                                lines_of_code: original.lines_of_code,
+                                size_chars: original.size_chars,
+                                ast: original.ast.clone(),
+                                file_id: original.file_id.clone(),
+                            });
+                        }
+                    }
+                    return Ok(enriched);
+                }
+                Err(_) if attempt < MAX_RETRIES => {
+                    tokio::time::sleep(Duration::from_millis(500)).await;
+                }
+                Err(e) => {
+                    let preview = &json_str[..json_str.len().min(400)];
+                    anyhow::bail!(
+                        "LLM JSON parse failed after {} attempts: {}\nPreview: {}...\nReduce max_chunk_chars (current: {})",
+                        MAX_RETRIES,
+                        e,
+                        preview,
+                        self.config.max_chunk_chars
+                    );
+                }
             }
         }
-
-        Ok(enriched)
+        unreachable!()
     }
 
     /// Sends a completion request to Ollama API.

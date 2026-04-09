@@ -1,55 +1,105 @@
 //! Batch request for file-level LLM enrichment.
 //! Groups multiple files into a single request respecting max_chunk_chars limit.
 
+use serde::Deserialize;
+use serde::Serialize;
+
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
 use crate::scanner::data::output::file_analysis::FileAnalysis;
 
-#[derive(Debug)]
-pub struct OllamaFilesRequest {
-    /// Maximum allowed characters per batch
-    max_chunk_chars: usize,
-    /// Current total characters in the batch
-    current_chars: usize,
-    /// Original file analysis data for later matching with LLM responses
-    pub files: Vec<FileAnalysis>,
-    /// JSON-serialized file data ready for LLM prompt
-    pub values: Vec<String>,
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[serde(rename_all = "PascalCase")]
+pub struct OllamaFileRequest {
+    /// Relative path from project root
+    pub path: String,
+
+    /// File extension without dot (e.g., "rs", "toml")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub extension: Option<String>,
+
+    /// Top-level documentation comments at the beginning of the file
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub header_comments: Vec<String>,
+
+    /// Import/use/include statements
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub imports: Vec<String>,
+
+    /// Variables with signatures and comments
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub variables: Vec<AstDataVariable>,
+
+    /// Functions with signatures and comments
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub functions: Vec<AstDataFunction>,
+
+    /// Classes with signatures and comments
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub classes: Vec<AstDataClass>,
+
+    /// Structs with signatures and comments
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub structs: Vec<AstDataStruct>,
+
+    /// Enums with signatures and comments
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub enums: Vec<AstDataEnum>,
+
+    /// Interfaces/Protocols/Traits with signatures and comments
+    #[serde(skip_serializing_if = "Vec::is_empty")]
+    pub interfaces: Vec<AstDataInterface>,
 }
 
-impl OllamaFilesRequest {
-    pub fn new(max_chunk_chars: usize) -> Self {
+impl OllamaFileRequest {
+    pub fn new(file: &FileAnalysis) -> Self {
         Self {
-            max_chunk_chars,
-            current_chars: 0,
-            files: Vec::new(),
-            values: Vec::new(),
+            path: file.path.clone(),
+            extension: file.extension.clone(),
+            header_comments: file
+                .ast
+                .as_ref()
+                .map(|ast| ast.header_comments.clone())
+                .unwrap_or_default(),
+            imports: file
+                .ast
+                .as_ref()
+                .map(|ast| ast.imports.clone())
+                .unwrap_or_default(),
+            variables: file
+                .ast
+                .as_ref()
+                .map(|ast| ast.variables.clone())
+                .unwrap_or_default(),
+            functions: file
+                .ast
+                .as_ref()
+                .map(|ast| ast.functions.clone())
+                .unwrap_or_default(),
+            classes: file
+                .ast
+                .as_ref()
+                .map(|ast| ast.classes.clone())
+                .unwrap_or_default(),
+            structs: file
+                .ast
+                .as_ref()
+                .map(|ast| ast.structs.clone())
+                .unwrap_or_default(),
+            enums: file
+                .ast
+                .as_ref()
+                .map(|ast| ast.enums.clone())
+                .unwrap_or_default(),
+            interfaces: file
+                .ast
+                .as_ref()
+                .map(|ast| ast.interfaces.clone())
+                .unwrap_or_default(),
         }
-    }
-
-    /// Attempts to add a file to the batch.
-    pub fn add(&mut self, file: &FileAnalysis) -> bool {
-        let json_content = match serde_json::to_string(file) {
-            Ok(json) => json,
-            Err(_) => return false,
-        };
-        let json_chars = json_content.chars().count();
-        if self.current_chars + json_chars > self.max_chunk_chars {
-            return false;
-        }
-        self.files.push(file.clone());
-        self.values.push(json_content);
-        self.current_chars += json_chars;
-        true
-    }
-
-    /// Returns true if batch contains no files.
-    pub fn is_empty(&self) -> bool {
-        self.files.is_empty()
-    }
-
-    /// Clears all files from the batch and resets character count.
-    pub fn clear(&mut self) {
-        self.current_chars = 0;
-        self.files.clear();
-        self.values.clear();
     }
 }

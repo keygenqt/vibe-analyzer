@@ -19,7 +19,7 @@ use super::opensearch::OpenSearchConfig;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
     pub opensearch: OpenSearchConfig,
-    pub ollama: OllamaConfig,
+    pub ollama: Vec<OllamaConfig>,
     pub spdx: SpdxConfig,
     pub projects: Vec<PathBuf>,
 }
@@ -28,7 +28,7 @@ impl Default for AppConfig {
     fn default() -> Self {
         Self {
             opensearch: OpenSearchConfig::default(),
-            ollama: OllamaConfig::default(),
+            ollama: vec![OllamaConfig::default()],
             spdx: SpdxConfig::default(),
             projects: vec![],
         }

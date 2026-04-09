@@ -3,4 +3,5 @@
 
 pub mod analyzer;
 pub mod data;
-pub mod ollama;
+pub mod ollama_client;
+pub mod ollama_cluster;

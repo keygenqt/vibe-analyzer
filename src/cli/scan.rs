@@ -76,12 +76,12 @@ pub async fn scan(config: &AppConfig, options: &ScanOptions) -> Result<Vec<Proje
         match scanner::scan_project(
             &project,
             |percent, current, total| {
-                print_progress!("Processing... {:.1}% ({}/{})", percent, current, total)
+                print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
+                if total == current {
+                    println!()
+                }
             },
-            |message| {
-                println!();
-                print_warning!("{}", message)
-            },
+            |message| print_warning!("{}", message),
         )
         .await
         {
@@ -89,7 +89,6 @@ pub async fn scan(config: &AppConfig, options: &ScanOptions) -> Result<Vec<Proje
                 all_analyses.push(analysis);
             }
             Err(e) => {
-                println!();
                 print_error!("Failed to index {}: {}", name, e);
             }
         }

@@ -2,7 +2,8 @@
 //! Wraps multiple enriched project analyses for batch export.
 
 use super::enriched_project_analysis::EnrichedProjectAnalysis;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Container for multiple enriched project analyses exported to JSON.
 #[derive(Debug, Clone, Serialize, Deserialize)]

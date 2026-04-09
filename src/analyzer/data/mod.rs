@@ -9,6 +9,7 @@ pub mod output {
 
 pub mod requests {
     pub mod ollama_file_request;
+    pub mod ollama_files_request;
     pub mod ollama_summary_request;
 }
 

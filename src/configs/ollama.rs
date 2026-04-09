@@ -34,10 +34,10 @@ impl Default for OllamaConfig {
     fn default() -> Self {
         Self {
             host: "http://localhost:11434".to_string(),
-            model: "qwen2.5-coder:7b-instruct".to_string(),
+            model: "qwen2.5-coder:3b-instruct".to_string(),
             max_chunk_chars: 5_000,
             timeout_secs: 60,
-            temperature: 0.1,
+            temperature: 0.2,
             seed: 42,
             num_ctx: 4096,
         }

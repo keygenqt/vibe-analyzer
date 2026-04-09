@@ -1,12 +1,13 @@
 //! Request structure for generating project-level summary with LLM.
 //! Contains project metadata, README, license information, and statistics.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::scanner::data::output::{
-    license_info::LicenseInfo, project_analysis::ProjectAnalysis, project_stats::ProjectStats,
-    readme_info::ReadmeInfo,
-};
+use crate::scanner::data::output::license_info::LicenseInfo;
+use crate::scanner::data::output::project_analysis::ProjectAnalysis;
+use crate::scanner::data::output::project_stats::ProjectStats;
+use crate::scanner::data::output::readme_info::ReadmeInfo;
 
 /// Request payload for project summary generation via Ollama.
 #[derive(Debug, Serialize, Deserialize)]

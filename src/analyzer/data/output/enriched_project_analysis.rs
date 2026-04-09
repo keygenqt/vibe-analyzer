@@ -1,10 +1,11 @@
 //! Enriched project analysis structure.
 //! Extends scanner ProjectAnalysis with LLM-generated summaries and enriched files.
 use super::enriched_file_analysis::EnrichedFileAnalysis;
-use crate::scanner::data::output::{
-    license_info::LicenseInfo, project_stats::ProjectStats, readme_info::ReadmeInfo,
-};
-use serde::{Deserialize, Serialize};
+use crate::scanner::data::output::license_info::LicenseInfo;
+use crate::scanner::data::output::project_stats::ProjectStats;
+use crate::scanner::data::output::readme_info::ReadmeInfo;
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Complete analysis results for a single project with LLM enrichment.
 #[derive(Debug, Clone, Serialize, Deserialize)]
