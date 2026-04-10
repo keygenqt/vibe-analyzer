@@ -10,7 +10,7 @@ use crate::scanner::ast::data::ast_data::AstData;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct FileAnalysis {
-    /// Relative path from project root
+    /// Relative path from source root
     pub path: String,
 
     /// File extension without dot (e.g., "rs", "toml")

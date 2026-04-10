@@ -1,8 +1,8 @@
 {
-  "functions": [
+  "Functions": [
     {
-      "signature": "function add(a, b)",
-      "comments": [
+      "Signature": "function add(a, b)",
+      "Comments": [
         "Adds two numbers",
         "@param {number} a - First number",
         "@param {number} b - Second number",
@@ -10,35 +10,35 @@
       ]
     },
     {
-      "signature": "const multiply = (a, b)",
-      "comments": ["Multiplies two numbers"]
+      "Signature": "const multiply = (a, b)",
+      "Comments": ["Multiplies two numbers"]
     },
     {
-      "signature": "async function fetchData(url)",
-      "comments": ["Async function example"]
+      "Signature": "async function fetchData(url)",
+      "Comments": ["Async function example"]
     }
   ],
-  "classes": [
+  "Classes": [
     {
-      "signature": "class User",
-      "comments": ["User class"]
+      "Signature": "class User",
+      "Comments": ["User class"]
     }
   ],
-  "variables": [
+  "Variables": [
     {
-      "signature": "const config",
-      "comments": ["Config object"]
+      "Signature": "const config",
+      "Comments": ["Config object"]
     },
     {
-      "signature": "export const MAX_SIZE"
+      "Signature": "export const MAX_SIZE"
     },
     {
-      "signature": "export const APP_NAME"
+      "Signature": "export const APP_NAME"
     },
     {
-      "signature": "let counter"
+      "Signature": "let counter"
     }
   ],
-  "imports": ["fs", "path", "express", "url"],
-  "comments": ["Module documentation for JavaScript testing"]
+  "Imports": ["fs", "path", "express", "url"],
+  "HeaderComments": ["Module documentation for JavaScript testing"]
 }

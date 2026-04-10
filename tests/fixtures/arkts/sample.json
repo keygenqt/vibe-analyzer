@@ -1,44 +1,44 @@
 {
-  "functions": [
+  "Functions": [
     {
-      "signature": "async function fetchData(url: string): Promise<string>",
-      "comments": ["Async function example"]
+      "Signature": "async function fetchData(url: string): Promise<string>",
+      "Comments": ["Async function example"]
     }
   ],
-  "classes": [
+  "Classes": [
     {
-      "signature": "class UserService",
-      "comments": ["Service class"]
+      "Signature": "class UserService",
+      "Comments": ["Service class"]
     }
   ],
-  "structs": [
+  "Structs": [
     {
-      "signature": "struct Index",
-      "comments": ["Entry point class"]
+      "Signature": "struct Index",
+      "Comments": ["Entry point class"]
     }
   ],
-  "interfaces": [
+  "Interfaces": [
     {
-      "signature": "interface User",
-      "comments": ["User data interface"]
+      "Signature": "interface User",
+      "Comments": ["User data interface"]
     }
   ],
-  "enums": [
+  "Enums": [
     {
-      "signature": "enum Color",
-      "comments": ["Color enum"]
+      "Signature": "enum Color",
+      "Comments": ["Color enum"]
     }
   ],
-  "variables": [
+  "Variables": [
     {
-      "signature": "const MAX_SIZE: number",
-      "comments": ["Global constant"]
+      "Signature": "const MAX_SIZE: number",
+      "Comments": ["Global constant"]
     },
     {
-      "signature": "let appName: string",
-      "comments": ["Global variable"]
+      "Signature": "let appName: string",
+      "Comments": ["Global variable"]
     }
   ],
-  "imports": ["@kit.AbilityKit", "@kit.ArkUI"],
-  "comments": ["Module documentation for ArkTS testing"]
+  "Imports": ["@kit.AbilityKit", "@kit.ArkUI"],
+  "HeaderComments": ["Module documentation for ArkTS testing"]
 }

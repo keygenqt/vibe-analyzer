@@ -1,8 +1,8 @@
 {
-  "functions": [
+  "Functions": [
     {
-      "signature": "func add(_ a: Int, _ b: Int) -> Int",
-      "comments": [
+      "Signature": "func add(_ a: Int, _ b: Int) -> Int",
+      "Comments": [
         "Adds two numbers",
         "- Parameters:",
         "- a: First number",
@@ -11,52 +11,52 @@
       ]
     },
     {
-      "signature": "func multiply(_ a: Int, _ b: Int) -> Int",
-      "comments": ["Multiplies two numbers"]
+      "Signature": "func multiply(_ a: Int, _ b: Int) -> Int",
+      "Comments": ["Multiplies two numbers"]
     },
     {
-      "signature": "func fetchData(url: String) async -> String",
-      "comments": ["Async function example"]
+      "Signature": "func fetchData(url: String) async -> String",
+      "Comments": ["Async function example"]
     }
   ],
-  "structs": [
+  "Structs": [
     {
-      "signature": "struct User",
-      "comments": ["User struct"]
+      "Signature": "struct User",
+      "Comments": ["User struct"]
     }
   ],
-  "classes": [
+  "Classes": [
     {
-      "signature": "class UserService",
-      "comments": ["Service class"]
+      "Signature": "class UserService",
+      "Comments": ["Service class"]
     }
   ],
-  "enums": [
+  "Enums": [
     {
-      "signature": "enum Color",
-      "comments": ["Color enum"]
+      "Signature": "enum Color",
+      "Comments": ["Color enum"]
     },
     {
-      "signature": "enum Result",
-      "comments": ["Result enum with associated values"]
+      "Signature": "enum Result",
+      "Comments": ["Result enum with associated values"]
     }
   ],
-  "variables": [
+  "Variables": [
     {
-      "signature": "let MAX_SIZE",
-      "comments": ["Global constants"]
+      "Signature": "let MAX_SIZE",
+      "Comments": ["Global constants"]
     },
     {
-      "signature": "let DEFAULT_TIMEOUT"
+      "Signature": "let DEFAULT_TIMEOUT"
     },
     {
-      "signature": "var appName",
-      "comments": ["Global variables"]
+      "Signature": "var appName",
+      "Comments": ["Global variables"]
     },
     {
-      "signature": "var counter"
+      "Signature": "var counter"
     }
   ],
-  "imports": ["Foundation", "UIKit"],
-  "comments": ["Module documentation for Swift testing", "This is a module comment"]
+  "Imports": ["Foundation", "UIKit"],
+  "HeaderComments": ["Module documentation for Swift testing", "This is a module comment"]
 }

@@ -1,4 +1,4 @@
-//! Project statistics aggregation.
+//! Source statistics aggregation.
 //! Tracks cumulative metrics across all scanned files including code counts and size information.
 
 use serde::Deserialize;
@@ -6,10 +6,10 @@ use serde::Serialize;
 
 use crate::scanner::ast::data::ast_data::AstData;
 
-/// Aggregated project statistics
+/// Aggregated source statistics
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(rename_all = "PascalCase")]
-pub struct ProjectStats {
+pub struct SourceStats {
     /// Total number of files
     pub total_files: usize,
     /// Number of text files
@@ -38,7 +38,7 @@ pub struct ProjectStats {
     pub total_size_human: String,
 }
 
-impl ProjectStats {
+impl SourceStats {
     /// Update stats with AST data from a single file
     pub fn update(&mut self, ast: Option<&AstData>) {
         self.total_files += 1;

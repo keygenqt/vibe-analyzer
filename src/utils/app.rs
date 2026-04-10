@@ -13,16 +13,16 @@ pub fn app_version() -> &'static str {
 pub fn app_name() -> &'static str {
     "vibe-analyzer"
 }
-/// Returns the application help description
+
 pub fn app_about() -> String {
     format!(
         r#"
 
-{} - fast code indexer with AST analysis for OpenSearch MCP.
+{} - personal knowledge base for developers.
 
 {}"#,
         "Vibe Analyzer".bright_green().bold(),
-        "Tool for code analysis and search across codebase".italic()
+        "Index, analyze, and search across code, docs, and notes".italic()
     )
 }
 

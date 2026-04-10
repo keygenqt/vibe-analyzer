@@ -13,7 +13,7 @@ pub struct EnrichedFileAnalysis {
     pub description: Option<String>,
     /// Search tags for improved discoverability
     pub tags: Option<Vec<String>>,
-    /// Relative path from project root
+    /// Relative path from source root
     pub path: String,
     /// File extension without dot (e.g., "rs", "toml")
     #[serde(skip_serializing_if = "Option::is_none")]

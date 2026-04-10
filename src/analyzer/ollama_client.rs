@@ -83,7 +83,7 @@ impl OllamaClient {
         Ok(())
     }
 
-    /// Generates project summary using LLM.
+    /// Generates source summary using LLM.
     pub async fn get_summary_enriched_analysis(
         &self,
         data: &OllamaSummaryRequest,
@@ -91,9 +91,9 @@ impl OllamaClient {
         let json_data = serde_json::to_string(data)?;
 
         let prompt = format!(
-            r#"Analyze this project and provide a concise 2-3 sentence summary in English.
+            r#"Analyze this source and provide a concise 2-3 sentence summary in English.
 
-Project data:
+Source data:
 {}
 
 Provide only the summary text, no additional formatting."#,
@@ -113,21 +113,23 @@ Provide only the summary text, no additional formatting."#,
         let files_json = format!("[{}]", data.values.join(","));
 
         let prompt = format!(
-            r#"Analyze these code files. Return ONLY valid JSON:
-{{
-  "files": [
-    {{
-      "path": "...",
-      "description": "2-3 sentences describing the file's purpose and role",
-      "tags": ["tag1", "tag2", "tag3", ...]
-    }}
-  ]
-}}
+            r#"Task: Tag each file with 3-5 search keywords.
 
 Rules:
-- Use EXACT path from input
-- Provide 3-5 specific tags per file (technologies, patterns, concepts)
-- Descriptions in English only
+- NO: "markdown", "file", "code", "documentation", "text"
+- NO: repeating words from filename or path
+- Use specific terms that describe WHAT this file does or contains
+
+Think: "If I needed this file, what words would I search for?"
+
+Examples of good tags:
+- API handler → "authentication", "login", "session"
+- Config file → "settings", "environment", "database-url"
+- Biography → "team-lead", "sprint-master", "remote-work"
+- Documentation → "setup-guide", "installation", "requirements"
+
+Return ONLY:
+{{"files": [{{"path": "...", "description": "...", "tags": [...]}}]}}
 
 Files:
 {}"#,

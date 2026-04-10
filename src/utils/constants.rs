@@ -7,6 +7,9 @@ pub const CONFIG_DIR_NAME: &str = ".vibe-analyzer";
 /// Config file name
 pub const CONFIG_FILE_NAME: &str = "config.json";
 
+/// Config version
+pub const CONFIG_VERSION: &str = "0.0.1";
+
 /// Default ignore directories (if no .gitignore)
 pub const DEFAULT_IGNORE_DIRS: &[&str] = &[
     "target",       // Rust

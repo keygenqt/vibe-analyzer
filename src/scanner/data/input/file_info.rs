@@ -8,7 +8,7 @@ use std::path::PathBuf;
 pub struct FileInfo {
     /// Absolute path on disk
     pub path: PathBuf,
-    /// Path relative to project root
+    /// Path relative to source root
     pub relative_path: PathBuf,
     /// File size in bytes
     pub size: u64,

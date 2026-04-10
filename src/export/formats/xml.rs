@@ -8,10 +8,10 @@ use std::path::Path;
 use xml::reader::ParserConfig;
 use xml::writer::EmitterConfig;
 
-use crate::analyzer::data::output::enriched_project_analysis::EnrichedProjectAnalysis;
-use crate::analyzer::data::output::enriched_projects_analysis::EnrichedProjectsAnalysis;
-use crate::scanner::data::output::project_analysis::ProjectAnalysis;
-use crate::scanner::data::output::projects_analysis::ProjectsAnalysis;
+use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
+use crate::analyzer::data::output::enriched_sources_analysis::EnrichedSourcesAnalysis;
+use crate::scanner::data::output::source_analysis::SourceAnalysis;
+use crate::scanner::data::output::sources_analysis::SourcesAnalysis;
 
 use super::super::writer::ExportWriter;
 
@@ -44,11 +44,11 @@ impl XmlWriter {
 }
 
 impl ExportWriter for XmlWriter {
-    /// Exports project analyses to a pretty-printed XML file.
-    fn export_scanner(&self, projects: &[ProjectAnalysis], output_path: &Path) -> Result<()> {
-        let multi_analysis = ProjectsAnalysis {
+    /// Exports source analyses to a pretty-printed XML file.
+    fn export_scanner(&self, sources: &[SourceAnalysis], output_path: &Path) -> Result<()> {
+        let multi_analysis = SourcesAnalysis {
             indexed_at: Local::now().to_rfc3339(),
-            projects: projects.to_vec(),
+            sources: sources.to_vec(),
         };
 
         // Serialize to compact XML (no indentation)
@@ -61,15 +61,15 @@ impl ExportWriter for XmlWriter {
         Ok(())
     }
 
-    /// Exports enriched project analyses to a pretty-printed XML file.
+    /// Exports enriched source analyses to a pretty-printed XML file.
     fn export_analyzer(
         &self,
-        projects: &[EnrichedProjectAnalysis],
+        sources: &[EnrichedSourceAnalysis],
         output_path: &Path,
     ) -> Result<()> {
-        let multi_analysis = EnrichedProjectsAnalysis {
+        let multi_analysis = EnrichedSourcesAnalysis {
             indexed_at: Local::now().to_rfc3339(),
-            projects: projects.to_vec(),
+            sources: sources.to_vec(),
         };
 
         // Serialize to compact XML (no indentation)

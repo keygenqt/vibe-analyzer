@@ -1,4 +1,4 @@
-//! JSON format exporter for project analysis results.
+//! JSON format exporter for source analysis results.
 //! Provides compact JSON output with minimal size (no extra whitespace).
 
 use anyhow::Result;
@@ -7,10 +7,10 @@ use serde_json;
 use std::fs;
 use std::path::Path;
 
-use crate::analyzer::data::output::enriched_project_analysis::EnrichedProjectAnalysis;
-use crate::analyzer::data::output::enriched_projects_analysis::EnrichedProjectsAnalysis;
-use crate::scanner::data::output::project_analysis::ProjectAnalysis;
-use crate::scanner::data::output::projects_analysis::ProjectsAnalysis;
+use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
+use crate::analyzer::data::output::enriched_sources_analysis::EnrichedSourcesAnalysis;
+use crate::scanner::data::output::source_analysis::SourceAnalysis;
+use crate::scanner::data::output::sources_analysis::SourcesAnalysis;
 
 use super::super::writer::ExportWriter;
 
@@ -18,12 +18,12 @@ use super::super::writer::ExportWriter;
 pub struct JsonWriter;
 
 impl ExportWriter for JsonWriter {
-    /// Exports project analyses to a compact JSON file (minified).
-    fn export_scanner(&self, projects: &[ProjectAnalysis], output_path: &Path) -> Result<()> {
-        // Wrap projects with timestamp metadata
-        let multi_analysis = ProjectsAnalysis {
+    /// Exports source analyses to a compact JSON file (minified).
+    fn export_scanner(&self, sources: &[SourceAnalysis], output_path: &Path) -> Result<()> {
+        // Wrap sources with timestamp metadata
+        let multi_analysis = SourcesAnalysis {
             indexed_at: Local::now().to_rfc3339(),
-            projects: projects.to_vec(),
+            sources: sources.to_vec(),
         };
 
         // Serialize without indentation for minimal size
@@ -35,16 +35,16 @@ impl ExportWriter for JsonWriter {
         Ok(())
     }
 
-    /// Exports enriched project analyses to a compact JSON file.
+    /// Exports enriched source analyses to a compact JSON file.
     fn export_analyzer(
         &self,
-        projects: &[EnrichedProjectAnalysis],
+        sources: &[EnrichedSourceAnalysis],
         output_path: &Path,
     ) -> Result<()> {
-        // Wrap projects with timestamp metadata
-        let multi_analysis = EnrichedProjectsAnalysis {
+        // Wrap sources with timestamp metadata
+        let multi_analysis = EnrichedSourcesAnalysis {
             indexed_at: Local::now().to_rfc3339(),
-            projects: projects.to_vec(),
+            sources: sources.to_vec(),
         };
 
         // Serialize without indentation for minimal size

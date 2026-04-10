@@ -1,8 +1,8 @@
 {
-  "functions": [
+  "Functions": [
     {
-      "signature": "public int add(int a, int b)",
-      "comments": [
+      "Signature": "public int add(int a, int b)",
+      "Comments": [
         "Adds two numbers",
         "@param a First number",
         "@param b Second number",
@@ -10,52 +10,52 @@
       ]
     },
     {
-      "signature": "public int multiply(int a, int b)",
-      "comments": ["Multiplies two numbers"]
+      "Signature": "public int multiply(int a, int b)",
+      "Comments": ["Multiplies two numbers"]
     }
   ],
-  "classes": [
+  "Classes": [
     {
-      "signature": "public class User",
-      "comments": ["User class"]
+      "Signature": "public class User",
+      "Comments": ["User class"]
     },
     {
-      "signature": "public class UserService",
-      "comments": ["Service class"]
+      "Signature": "public class UserService",
+      "Comments": ["Service class"]
     }
   ],
-  "enums": [
+  "Enums": [
     {
-      "signature": "public enum Color",
-      "comments": ["Color enum"]
+      "Signature": "public enum Color",
+      "Comments": ["Color enum"]
     },
     {
-      "signature": "public enum Result",
-      "comments": ["Result enum with values"]
+      "Signature": "public enum Result",
+      "Comments": ["Result enum with values"]
     }
   ],
-  "interfaces": [
+  "Interfaces": [
     {
-      "signature": "public interface Repository",
-      "comments": ["Repository interface"]
+      "Signature": "public interface Repository",
+      "Comments": ["Repository interface"]
     }
   ],
-  "variables": [
+  "Variables": [
     {
-      "signature": "public static final int MAX_SIZE",
-      "comments": ["Global constants"]
+      "Signature": "public static final int MAX_SIZE",
+      "Comments": ["Global constants"]
     },
     {
-      "signature": "public static final int DEFAULT_TIMEOUT"
+      "Signature": "public static final int DEFAULT_TIMEOUT"
     },
     {
-      "signature": "public static String appName",
-      "comments": ["Global variables"]
+      "Signature": "public static String appName",
+      "Comments": ["Global variables"]
     },
     {
-      "signature": "public static int counter"
+      "Signature": "public static int counter"
     }
   ],
-  "imports": ["java.util.List", "java.util.ArrayList", "java.io.File"],
-  "comments": ["Module documentation for Java testing"]
+  "Imports": ["java.util.List", "java.util.ArrayList", "java.io.File"],
+  "HeaderComments": ["Module documentation for Java testing"]
 }

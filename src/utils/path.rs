@@ -1,5 +1,5 @@
 //! File system path utilities for the vibe-analyzer.
-//! Provides path resolution, configuration directory handling, and project file discovery.
+//! Provides path resolution, configuration directory handling, and source file discovery.
 
 use anyhow::Result;
 use chrono::Local;
@@ -103,33 +103,33 @@ pub fn convert_relative(path: &str) -> Option<PathBuf> {
     }
 }
 
-/// Returns list of files in a project (supports both single file and directory)
-pub fn project_files(project_path: &Path) -> Result<Vec<FileInfo>> {
-    let project_path_abs = dunce::canonicalize(project_path)?;
+/// Returns list of files in a source (supports both single file and directory)
+pub fn source_files(source_path: &Path) -> Result<Vec<FileInfo>> {
+    let source_path_abs = dunce::canonicalize(source_path)?;
 
     // Handle single file case
-    if project_path_abs.is_file() {
-        let size = project_path_abs.metadata()?.len();
-        let file_name = project_path_abs
+    if source_path_abs.is_file() {
+        let size = source_path_abs.metadata()?.len();
+        let file_name = source_path_abs
             .file_name()
             .unwrap_or_default()
             .to_string_lossy()
             .to_string();
 
         return Ok(vec![FileInfo {
-            path: project_path_abs,
+            path: source_path_abs,
             relative_path: PathBuf::from(file_name),
             size,
         }]);
     }
 
     // Check for .gitignore presence
-    let gitignore_path = project_path_abs.join(".gitignore");
+    let gitignore_path = source_path_abs.join(".gitignore");
     let has_gitignore = gitignore_path.exists();
 
     // Scan directory recursively
     let mut files = Vec::new();
-    let walker = WalkBuilder::new(&project_path_abs)
+    let walker = WalkBuilder::new(&source_path_abs)
         .require_git(false)
         .git_ignore(true)
         .hidden(true)
@@ -151,7 +151,7 @@ pub fn project_files(project_path: &Path) -> Result<Vec<FileInfo>> {
             continue;
         }
 
-        let relative_path = path.strip_prefix(&project_path_abs)?.to_path_buf();
+        let relative_path = path.strip_prefix(&source_path_abs)?.to_path_buf();
         let size = path.metadata()?.len();
 
         files.push(FileInfo {

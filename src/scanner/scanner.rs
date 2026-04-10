@@ -7,23 +7,23 @@ use std::path::Path;
 
 use crate::scanner::ast::parser::parse_ast;
 use crate::scanner::data::output::file_analysis::FileAnalysis;
-use crate::scanner::data::output::project_analysis::ProjectAnalysis;
-use crate::scanner::data::output::project_stats::ProjectStats;
+use crate::scanner::data::output::source_analysis::SourceAnalysis;
+use crate::scanner::data::output::source_stats::SourceStats;
 use crate::scanner::detectors;
 use crate::utils::constants;
 use crate::utils::hash;
 use crate::utils::path;
 use crate::utils::{self};
 
-/// Scans a project and returns complete analysis results
-pub async fn scan_project(
-    project_path: &Path,
+/// Scans a source and returns complete analysis results
+pub async fn scan_source(
+    source_path: &Path,
     on_progress: fn(usize, usize, usize),
     on_warning: fn(String),
-) -> Result<ProjectAnalysis> {
-    let canonical_path = dunce::canonicalize(project_path)?;
+) -> Result<SourceAnalysis> {
+    let canonical_path = dunce::canonicalize(source_path)?;
 
-    let project_display = if canonical_path.is_file() {
+    let source_display = if canonical_path.is_file() {
         canonical_path
             .parent()
             .unwrap_or(&canonical_path)
@@ -32,17 +32,17 @@ pub async fn scan_project(
         canonical_path.clone()
     };
 
-    let files = path::project_files(&canonical_path)?;
+    let files = path::source_files(&canonical_path)?;
     let total = files.len();
     let readme = detectors::readme::detect_readme(&files);
     let license = detectors::license::detect_license(&files).await;
 
-    let mut analysis = ProjectAnalysis {
-        project: project_display.to_string_lossy().to_string(),
+    let mut analysis = SourceAnalysis {
+        source: source_display.to_string_lossy().to_string(),
         indexed_at: Local::now().to_rfc3339(),
         readme,
         license,
-        stats: ProjectStats::default(),
+        stats: SourceStats::default(),
         files: Vec::with_capacity(total),
     };
 

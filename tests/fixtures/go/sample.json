@@ -1,48 +1,48 @@
 {
-  "comments": ["Module documentation for Go testing"],
-  "enums": [
+  "HeaderComments": ["Module documentation for Go testing"],
+  "Enums": [
     {
-      "signature": "type Color int",
-      "comments": ["Color type (enum-like)"]
+      "Signature": "type Color int",
+      "Comments": ["Color type (enum-like)"]
     }
   ],
-  "functions": [
+  "Functions": [
     {
-      "signature": "func Add(a int, b int) int",
-      "comments": ["Add adds two numbers"]
+      "Signature": "func Add(a int, b int) int",
+      "Comments": ["Add adds two numbers"]
     },
     {
-      "signature": "func Multiply(a, b int) int",
-      "comments": ["Multiply multiplies two numbers"]
+      "Signature": "func Multiply(a, b int) int",
+      "Comments": ["Multiply multiplies two numbers"]
     }
   ],
-  "imports": ["fmt", "os", "strings"],
-  "structs": [
+  "Imports": ["fmt", "os", "strings"],
+  "Structs": [
     {
-      "signature": "type User struct",
-      "comments": ["User struct"]
+      "Signature": "type User struct",
+      "Comments": ["User struct"]
     },
     {
-      "signature": "type UserService struct",
-      "comments": ["UserService struct"]
+      "Signature": "type UserService struct",
+      "Comments": ["UserService struct"]
     }
   ],
-  "variables": [
+  "Variables": [
     {
-      "signature": "const MaxSize",
-      "comments": ["Global constants"]
+      "Signature": "const MaxSize",
+      "Comments": ["Global constants"]
     },
     {
-      "signature": "const DefaultTimeout",
-      "comments": ["Global constants"]
+      "Signature": "const DefaultTimeout",
+      "Comments": ["Global constants"]
     },
     {
-      "signature": "var AppName",
-      "comments": ["Global variable 1"]
+      "Signature": "var AppName",
+      "Comments": ["Global variable 1"]
     },
     {
-      "signature": "var counter",
-      "comments": ["Global variable 2"]
+      "Signature": "var counter",
+      "Comments": ["Global variable 2"]
     }
   ]
 }

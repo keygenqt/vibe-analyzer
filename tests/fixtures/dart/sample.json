@@ -1,50 +1,50 @@
 {
-  "classes": [
+  "Classes": [
     {
-      "signature": "class User",
-      "comments": ["User class"]
+      "Signature": "class User",
+      "Comments": ["User class"]
     },
     {
-      "signature": "class UserService",
-      "comments": ["Service class"]
+      "Signature": "class UserService",
+      "Comments": ["Service class"]
     }
   ],
-  "comments": ["Module documentation for Dart testing", "This is also a module comment"],
-  "enums": [
+  "HeaderComments": ["Module documentation for Dart testing", "This is also a module comment"],
+  "Enums": [
     {
-      "signature": "enum Color",
-      "comments": ["Color enum"]
+      "Signature": "enum Color",
+      "Comments": ["Color enum"]
     }
   ],
-  "functions": [
+  "Functions": [
     {
-      "signature": "int add(int a, int b)",
-      "comments": ["Adds two numbers", "[a] First number", "[b] Second number"]
+      "Signature": "int add(int a, int b)",
+      "Comments": ["Adds two numbers", "[a] First number", "[b] Second number"]
     },
     {
-      "signature": "int multiply(int a, int b)",
-      "comments": ["Multiplies two numbers"]
+      "Signature": "int multiply(int a, int b)",
+      "Comments": ["Multiplies two numbers"]
     },
     {
-      "signature": "Future<String> fetchData(String url)",
-      "comments": ["Async function example"]
+      "Signature": "Future<String> fetchData(String url)",
+      "Comments": ["Async function example"]
     }
   ],
-  "imports": ["dart:io", "dart:convert", "package:flutter/material.dart"],
-  "variables": [
+  "Imports": ["dart:io", "dart:convert", "package:flutter/material.dart"],
+  "Variables": [
     {
-      "signature": "const int MAX_SIZE",
-      "comments": ["Global constants"]
+      "Signature": "const int MAX_SIZE",
+      "Comments": ["Global constants"]
     },
     {
-      "signature": "final int DEFAULT_TIMEOUT"
+      "Signature": "final int DEFAULT_TIMEOUT"
     },
     {
-      "signature": "late String appName",
-      "comments": ["Global variables"]
+      "Signature": "late String appName",
+      "Comments": ["Global variables"]
     },
     {
-      "signature": "int counter"
+      "Signature": "int counter"
     }
   ]
 }

@@ -1,5 +1,5 @@
 //! Data structures for scan results.
-//! Defines all serializable types used for project analysis, file metadata, and statistics.
+//! Defines all serializable types used for source analysis, file metadata, and statistics.
 
 pub mod input {
     pub mod file_info;
@@ -8,8 +8,8 @@ pub mod input {
 pub mod output {
     pub mod file_analysis;
     pub mod license_info;
-    pub mod project_analysis;
-    pub mod project_stats;
-    pub mod projects_analysis;
     pub mod readme_info;
+    pub mod source_analysis;
+    pub mod source_stats;
+    pub mod sources_analysis;
 }

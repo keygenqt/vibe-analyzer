@@ -11,6 +11,7 @@ use crate::scanner::ast::langs::go::GoParser;
 use crate::scanner::ast::langs::java::JavaParser;
 use crate::scanner::ast::langs::javascript::JavaScriptParser;
 use crate::scanner::ast::langs::kotlin::KotlinParser;
+use crate::scanner::ast::langs::markdown::MarkdownParser;
 use crate::scanner::ast::langs::python::PythonParser;
 use crate::scanner::ast::langs::rust::RustParser;
 use crate::scanner::ast::langs::swift::SwiftParser;
@@ -52,6 +53,7 @@ static PARSERS: Lazy<HashMap<String, Box<dyn LanguageParser>>> = Lazy::new(|| {
     register_parser::<ArkTSParser>(&mut map, &["ets", "arkts"]);
     register_parser::<BashParser>(&mut map, &["sh", "bash", "zsh"]);
     register_parser::<BatchParser>(&mut map, &["bat", "cmd"]);
+    register_parser::<MarkdownParser>(&mut map, &["md", "markdown"]);
 
     map
 });

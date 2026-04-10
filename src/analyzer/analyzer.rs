@@ -7,9 +7,9 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use crate::analyzer::data::requests::ollama_files_request::OllamaFilesRequest;
 use crate::analyzer::data::requests::ollama_summary_request::OllamaSummaryRequest;
 use crate::analyzer::ollama_cluster::OllamaCluster;
-use crate::scanner::data::output::project_analysis::ProjectAnalysis;
+use crate::scanner::data::output::source_analysis::SourceAnalysis;
 use crate::{
-    analyzer::data::output::enriched_project_analysis::EnrichedProjectAnalysis,
+    analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis,
     scanner::data::output::file_analysis::FileAnalysis,
 };
 use anyhow::Result;
@@ -22,31 +22,31 @@ struct WorkerStats {
     files_processed: Arc<AtomicUsize>,
 }
 
-/// Analyzes a project with LLM-powered enrichment using file-level distribution.
+/// Analyzes a source with LLM-powered enrichment using file-level distribution.
 /// Fast workers naturally process more files, maximizing cluster utilization.
-pub async fn analyze_project(
-    project: &ProjectAnalysis,
+pub async fn analyze_source(
+    source: &SourceAnalysis,
     cluster: &OllamaCluster,
     on_progress: fn(usize, usize, usize),
     on_warning: fn(String),
     on_done: fn(String),
-) -> Result<EnrichedProjectAnalysis> {
-    let total = project.files.len();
+) -> Result<EnrichedSourceAnalysis> {
+    let total = source.files.len();
 
-    // Step 1: Get enriched analysis project
+    // Step 1: Get enriched analysis source
     let summary = cluster
         .next()
-        .get_summary_enriched_analysis(&OllamaSummaryRequest::new(&project))
+        .get_summary_enriched_analysis(&OllamaSummaryRequest::new(&source))
         .await?;
 
-    // Step 2: Create project data
-    let mut analysis = EnrichedProjectAnalysis {
-        project: project.project.clone(),
+    // Step 2: Create source data
+    let mut analysis = EnrichedSourceAnalysis {
+        source: source.source.clone(),
         indexed_at: Local::now().to_rfc3339(),
-        readme: project.readme.clone(),
+        readme: source.readme.clone(),
         summary,
-        license: project.license.clone(),
-        stats: project.stats.clone(),
+        license: source.license.clone(),
+        stats: source.stats.clone(),
         files: Vec::with_capacity(total),
     };
 
@@ -131,7 +131,7 @@ pub async fn analyze_project(
 
     // Step 4: Send all files to the shared channel
     let mut sent = 0;
-    for file in project.files.iter() {
+    for file in source.files.iter() {
         file_tx.send(Arc::new(file.clone())).await?;
         sent += 1;
         let percent = sent as f64 / total as f64 * 100.0;

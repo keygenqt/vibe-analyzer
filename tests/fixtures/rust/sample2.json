@@ -1,36 +1,36 @@
 {
-  "functions": [
+  "Functions": [
     {
-      "signature": "fn default() -> Self"
+      "Signature": "fn default() -> Self"
     },
     {
-      "signature": "pub fn load() -> Result<Self>",
-      "comments": ["Load config from file, create default if not exists"]
+      "Signature": "pub fn load() -> Result<Self>",
+      "Comments": ["Load config from file, create default if not exists"]
     },
     {
-      "signature": "pub fn save(&self) -> Result<()>",
-      "comments": ["Save config to file"]
+      "Signature": "pub fn save(&self) -> Result<()>",
+      "Comments": ["Save config to file"]
     },
     {
-      "signature": "pub fn add_project(&mut self, path: PathBuf)",
-      "comments": ["Add project to config"]
+      "Signature": "pub fn add_project(&mut self, path: PathBuf)",
+      "Comments": ["Add project to config"]
     },
     {
-      "signature": "pub fn del_project(&mut self, path: PathBuf) -> Result<PathBuf>",
-      "comments": ["Delete project from config"]
+      "Signature": "pub fn del_project(&mut self, path: PathBuf) -> Result<PathBuf>",
+      "Comments": ["Delete project from config"]
     },
     {
-      "signature": "pub fn get_projects(&self) -> Vec<PathBuf>",
-      "comments": ["Get list of valid projects"]
+      "Signature": "pub fn get_projects(&self) -> Vec<PathBuf>",
+      "Comments": ["Get list of valid projects"]
     }
   ],
-  "structs": [
+  "Structs": [
     {
-      "signature": "pub struct AppConfig",
-      "comments": ["Main application configuration structure"]
+      "Signature": "pub struct AppConfig",
+      "Comments": ["Main application configuration structure"]
     }
   ],
-  "imports": [
+  "Imports": [
     "anyhow::Result",
     "serde::{Deserialize, Serialize}",
     "std::fs",
@@ -41,5 +41,5 @@
     "super::ollama::OllamaConfig",
     "super::opensearch::OpenSearchConfig"
   ],
-  "comments": ["Application configuration management"]
+  "HeaderComments": ["Application configuration management"]
 }

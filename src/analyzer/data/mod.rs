@@ -3,8 +3,8 @@
 
 pub mod output {
     pub mod enriched_file_analysis;
-    pub mod enriched_project_analysis;
-    pub mod enriched_projects_analysis;
+    pub mod enriched_source_analysis;
+    pub mod enriched_sources_analysis;
 }
 
 pub mod requests {

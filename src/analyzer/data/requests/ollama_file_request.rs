@@ -15,7 +15,7 @@ use crate::scanner::data::output::file_analysis::FileAnalysis;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct OllamaFileRequest {
-    /// Relative path from project root
+    /// Relative path from source root
     pub path: String,
 
     /// File extension without dot (e.g., "rs", "toml")

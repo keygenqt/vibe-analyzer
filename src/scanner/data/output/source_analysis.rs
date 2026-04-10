@@ -1,19 +1,19 @@
-//! Project-level analysis results.
-//! Contains complete scan data for a single project including metadata, statistics, and file details.
+//! Source-level analysis results.
+//! Contains complete scan data for a single source including metadata, statistics, and file details.
 
 use super::file_analysis::FileAnalysis;
 use super::license_info::LicenseInfo;
-use super::project_stats::ProjectStats;
 use super::readme_info::ReadmeInfo;
+use super::source_stats::SourceStats;
 use serde::Deserialize;
 use serde::Serialize;
 
-/// Complete analysis results for a single project
+/// Complete analysis results for a single source
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
-pub struct ProjectAnalysis {
-    /// Absolute path to project root
-    pub project: String,
+pub struct SourceAnalysis {
+    /// Absolute path to source root
+    pub source: String,
     /// ISO 8601 timestamp of analysis
     pub indexed_at: String,
     /// README file content (if found)
@@ -22,8 +22,8 @@ pub struct ProjectAnalysis {
     /// Detected license information (if found)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub license: Option<LicenseInfo>,
-    /// Aggregated project statistics
-    pub stats: ProjectStats,
+    /// Aggregated source statistics
+    pub stats: SourceStats,
     /// Per-file analysis results
     pub files: Vec<FileAnalysis>,
 }

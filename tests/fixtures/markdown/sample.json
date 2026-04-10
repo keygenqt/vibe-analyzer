@@ -1,0 +1,55 @@
+{
+  "Frontmatter": {
+    "title": "Vibe Analyzer Documentation",
+    "tags": ["rust", "ast", "opensearch"],
+    "author": "keygenqt",
+    "date": "2026-04-10"
+  },
+  "Headings": [
+    {
+      "level": 1,
+      "title": "Vibe Analyzer",
+      "preview": "Universal knowledge base for developers"
+    },
+    {
+      "level": 2,
+      "title": "Features",
+      "preview": "AST parsing for multiple languages"
+    },
+    {
+      "level": 3,
+      "title": "Supported Languages",
+      "preview": "| Language | Parser | Status |"
+    },
+    {
+      "level": 2,
+      "title": "Usage",
+      "preview": "vibe-analyzer source add /path/to/project"
+    },
+    {
+      "level": 2,
+      "title": "Configuration",
+      "preview": "1. First step"
+    },
+    {
+      "level": 1,
+      "title": "Introduction",
+      "preview": "This is the official documentation"
+    },
+    {
+      "level": 2,
+      "title": "Getting Started",
+      "preview": "Install via cargo"
+    },
+    {
+      "level": 3,
+      "title": "Requirements",
+      "preview": "[x] Rust installed"
+    }
+  ],
+  "Links": [
+    { "text": "documentation", "url": "https://example.com/docs" },
+    { "text": "Link to GitHub", "url": "https://github.com" }
+  ],
+  "CodeBlocks": ["bash", "rust"]
+}

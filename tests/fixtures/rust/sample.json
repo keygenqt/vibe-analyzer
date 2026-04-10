@@ -1,68 +1,71 @@
 {
-  "functions": [
+  "Functions": [
     {
-      "signature": "fn add(a: i32, b: i32) -> i32",
-      "comments": ["Adds two numbers", "# Examples", "```", "let result = add(2, 3);", "```"]
+      "Signature": "fn add(a: i32, b: i32) -> i32",
+      "Comments": ["Adds two numbers", "# Examples", "```", "let result = add(2, 3);", "```"]
     },
     {
-      "signature": "pub fn multiply(a: i32, b: i32) -> i32",
-      "comments": ["Multiplies two numbers"]
+      "Signature": "pub fn multiply(a: i32, b: i32) -> i32",
+      "Comments": ["Multiplies two numbers"]
     },
     {
-      "signature": "pub async fn fetch_data(url: &str) -> Result<String, std::io::Error>",
-      "comments": ["Async function example"]
+      "Signature": "pub async fn fetch_data(url: &str) -> Result<String, std::io::Error>",
+      "Comments": ["Async function example"]
     },
     {
-      "signature": "pub unsafe fn dangerous()",
-      "comments": ["Unsafe function example"]
+      "Signature": "pub unsafe fn dangerous()",
+      "Comments": ["Unsafe function example"]
     }
   ],
-  "structs": [
+  "Structs": [
     {
-      "signature": "pub struct User",
-      "comments": ["User structure with fields"]
+      "Signature": "pub struct User",
+      "Comments": ["User structure with fields"]
     },
     {
-      "signature": "struct Config",
-      "comments": ["Internal struct"]
+      "Signature": "struct Config",
+      "Comments": ["Internal struct"]
     }
   ],
-  "enums": [
+  "Enums": [
     {
-      "signature": "pub enum Color",
-      "comments": ["Color enum"]
+      "Signature": "pub enum Color",
+      "Comments": ["Color enum"]
     },
     {
-      "signature": "pub enum Result<T, E>",
-      "comments": ["Result enum with values"]
+      "Signature": "pub enum Result<T, E>",
+      "Comments": ["Result enum with values"]
     }
   ],
-  "interfaces": [
+  "Interfaces": [
     {
-      "signature": "pub trait Display",
-      "comments": ["Display trait"]
+      "Signature": "pub trait Display",
+      "Comments": ["Display trait"]
     },
     {
-      "signature": "pub trait Debug",
-      "comments": ["Debug trait"]
+      "Signature": "pub trait Debug",
+      "Comments": ["Debug trait"]
     }
   ],
-  "variables": [
+  "Variables": [
     {
-      "signature": "pub const MAX_SIZE: usize",
-      "comments": ["Global constants"]
+      "Signature": "pub const MAX_SIZE: usize",
+      "Comments": ["Global constants"]
     },
     {
-      "signature": "const DEFAULT_TIMEOUT: u64"
+      "Signature": "const DEFAULT_TIMEOUT: u64"
     },
     {
-      "signature": "pub static APP_NAME: &str",
-      "comments": ["Static variables"]
+      "Signature": "pub static APP_NAME: &str",
+      "Comments": ["Static variables"]
     },
     {
-      "signature": "static mut COUNTER: u32"
+      "Signature": "static mut COUNTER: u32"
     }
   ],
-  "imports": ["crate::utils::path", "std::collections::HashMap", "std::fs::{self, File}"],
-  "comments": ["Module documentation for testing", "This module contains various Rust constructs"]
+  "Imports": ["crate::utils::path", "std::collections::HashMap", "std::fs::{self, File}"],
+  "HeaderComments": [
+    "Module documentation for testing",
+    "This module contains various Rust constructs"
+  ]
 }

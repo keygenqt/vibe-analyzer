@@ -2,23 +2,29 @@
 
 A tool for scanning and analyzing codebases with AST extraction and JSON export.
 
-## Installation
-
-```bash
-cargo install --path .
-```
-
 ## Usage
 
 ```bash
-# Project management
-vibe-analyzer add /path/to/project
-vibe-analyzer del /path/to/project
-vibe-analyzer list
+# Source management
+vibe-analyzer source add /path/to/source
+vibe-analyzer source remove --target /path/to/source
+vibe-analyzer source list
 
 # Scanning
-vibe-analyzer scan                    # all projects from config
-vibe-analyzer scan --path ./src       # specific path
+vibe-analyzer scan ast                          # all sources from config
+vibe-analyzer scan ast --target my-project      # specific source
+vibe-analyzer scan analyze --target my-project
+
+# Search
+vibe-analyzer search ast UserService            # search in code structure
+vibe-analyzer search file config                # search in file content
+vibe-analyzer search meta authentication        # search in metadata
+vibe-analyzer search get abc123def456           # get file content by ID
+
+# MCP Server
+vibe-analyzer serve start                       # start MCP server
+vibe-analyzer serve status                      # check server status
+vibe-analyzer serve stop                        # stop server
 ```
 
 ## Output
@@ -28,8 +34,8 @@ JSON file in `~/Downloads/` with the following structure:
 ```json
 {
   "indexed_at": "2026-04-04T21:04:53+03:00",
-  "projects": [{
-    "project": "/path",
+  "sources": [{
+    "source": "/path",
     "stats": { "total_functions": 141, "total_files": 55, ... },
     "files": [...]
   }]

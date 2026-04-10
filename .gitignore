@@ -4,5 +4,5 @@ target/
 # macOS
 .DS_Store
 
-# Project
+# Source
 templates/

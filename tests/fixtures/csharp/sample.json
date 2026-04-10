@@ -1,8 +1,8 @@
 {
-  "functions": [
+  "Functions": [
     {
-      "signature": "int Add(int a, int b)",
-      "comments": [
+      "Signature": "int Add(int a, int b)",
+      "Comments": [
         "<summary>",
         "Adds two numbers",
         "</summary>",
@@ -12,44 +12,44 @@
       ]
     },
     {
-      "signature": "int Multiply(int a, int b)",
-      "comments": ["<summary>", "Multiplies two numbers", "</summary>"]
+      "Signature": "int Multiply(int a, int b)",
+      "Comments": ["<summary>", "Multiplies two numbers", "</summary>"]
     },
     {
-      "signature": "async Task<string> FetchData(string url)",
-      "comments": ["<summary>", "Async function example", "</summary>"]
+      "Signature": "async Task<string> FetchData(string url)",
+      "Comments": ["<summary>", "Async function example", "</summary>"]
     },
     {
-      "signature": "public void AddUser(User user)",
-      "comments": ["<summary>", "Add user method", "</summary>"]
+      "Signature": "public void AddUser(User user)",
+      "Comments": ["<summary>", "Add user method", "</summary>"]
     },
     {
-      "signature": "public List<User> GetUsers()",
-      "comments": ["<summary>", "Get users method", "</summary>"]
+      "Signature": "public List<User> GetUsers()",
+      "Comments": ["<summary>", "Get users method", "</summary>"]
     }
   ],
-  "classes": [
+  "Classes": [
     {
-      "signature": "public class UserService",
-      "comments": ["<summary>", "Service class", "</summary>"]
+      "Signature": "public class UserService",
+      "Comments": ["<summary>", "Service class", "</summary>"]
     }
   ],
-  "structs": [
+  "Structs": [
     {
-      "signature": "public record User(string Name, int Age)",
-      "comments": ["<summary>", "User record", "</summary>"]
+      "Signature": "public record User(string Name, int Age)",
+      "Comments": ["<summary>", "User record", "</summary>"]
     },
     {
-      "signature": "public struct Result",
-      "comments": ["<summary>", "Result struct", "</summary>"]
+      "Signature": "public struct Result",
+      "Comments": ["<summary>", "Result struct", "</summary>"]
     }
   ],
-  "enums": [
+  "Enums": [
     {
-      "signature": "public enum Color",
-      "comments": ["<summary>", "Color enum", "</summary>"]
+      "Signature": "public enum Color",
+      "Comments": ["<summary>", "Color enum", "</summary>"]
     }
   ],
-  "imports": ["System", "System.Collections.Generic", "System.Threading.Tasks", "System.Linq"],
-  "comments": ["Module documentation for C# testing"]
+  "Imports": ["System", "System.Collections.Generic", "System.Threading.Tasks", "System.Linq"],
+  "HeaderComments": ["Module documentation for C# testing"]
 }
