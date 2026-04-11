@@ -31,7 +31,13 @@ impl OllamaClient {
 
     /// Checks if Ollama service is available.
     pub async fn is_available(&self) -> Result<bool> {
-        match self.client.get(&self.config.host).send().await {
+        match self
+            .client
+            .get(&self.config.host)
+            .timeout(Duration::from_secs(10))
+            .send()
+            .await
+        {
             Ok(_) => Ok(true),
             Err(_) => Ok(false),
         }
@@ -109,31 +115,41 @@ Provide only the summary text, no additional formatting."#,
         &self,
         data: &OllamaFilesRequest,
     ) -> Result<Vec<EnrichedFileAnalysis>> {
-        const MAX_RETRIES: usize = 3;
-        let files_json = format!("[{}]", data.values.join(","));
+        const MAX_RETRIES: usize = 5;
+        let template_files: Vec<String> = data
+            .files
+            .iter()
+            .map(|f| {
+                format!(
+                    r#"    {{
+      "path": "{}",
+      "description": "[FILL]",
+      "tags": ["[FILL]"]
+    }}"#,
+                    f.path
+                )
+            })
+            .collect();
+
+        let template = format!(
+            r#"{{"files": [
+{}
+]}}"#,
+            template_files.join(",\n")
+        );
 
         let prompt = format!(
-            r#"Task: Tag each file with 3-5 search keywords.
+            r#"COPY the JSON below EXACTLY, but replace "[FILL]" with appropriate content.
 
-Rules:
-- NO: "markdown", "file", "code", "documentation", "text"
-- NO: repeating words from filename or path
-- Use specific terms that describe WHAT this file does or contains
+RULES:
+- For "description": Write 2-3 sentences describing the file's purpose
+- For "tags": Replace with 3-5 specific keywords (NO: "file", "code", "markdown")
+- DO NOT change paths, structure, or number of objects
+- DO NOT add or remove any objects from the "files" array
 
-Think: "If I needed this file, what words would I search for?"
-
-Examples of good tags:
-- API handler → "authentication", "login", "session"
-- Config file → "settings", "environment", "database-url"
-- Biography → "team-lead", "sprint-master", "remote-work"
-- Documentation → "setup-guide", "installation", "requirements"
-
-Return ONLY:
-{{"files": [{{"path": "...", "description": "...", "tags": [...]}}]}}
-
-Files:
+COPY AND FILL THIS JSON:
 {}"#,
-            files_json
+            template
         );
 
         for attempt in 1..=MAX_RETRIES {
@@ -148,13 +164,13 @@ Files:
             match serde_json::from_str::<OllamaEnrichmentResponse>(json_str) {
                 Ok(parsed) => {
                     let mut enriched = Vec::new();
-                    for file_response in parsed.files {
+                    for file_response in &parsed.files {
                         if let Some(original) =
                             data.files.iter().find(|f| f.path == file_response.path)
                         {
                             enriched.push(EnrichedFileAnalysis {
-                                description: Some(file_response.description),
-                                tags: Some(file_response.tags),
+                                description: Some(file_response.description.clone()),
+                                tags: Some(file_response.tags.clone()),
                                 path: original.path.clone(),
                                 extension: original.extension.clone(),
                                 is_text: original.is_text,
@@ -162,11 +178,33 @@ Files:
                                 lines_of_code: original.lines_of_code,
                                 size_chars: original.size_chars,
                                 ast: original.ast.clone(),
-                                file_id: original.file_id.clone(),
+                                hash: original.hash.clone(),
                             });
                         }
                     }
-                    return Ok(enriched);
+
+                    if enriched.len() == data.files.len() {
+                        return Ok(enriched);
+                    }
+
+                    if attempt < MAX_RETRIES {
+                        tokio::time::sleep(Duration::from_millis(500 * attempt as u64)).await;
+                        continue;
+                    }
+
+                    anyhow::bail!(
+                        "LLM returned {} files, expected {}. Response may be truncated or paths mismatch.\n\
+                            \n\
+                            Troubleshooting:\n\
+                            - Try reducing max_chunk_chars in config (current: {})\n\
+                            - Try a more capable model (e.g., qwen2.5-coder:7b, llama3.2:3b)\n\
+                            - Split large files into smaller batches\n\
+                            \n\
+                            Config location: ~/.vibe-analyzer/config.json",
+                        enriched.len(),
+                        data.files.len(),
+                        self.config.max_chunk_chars
+                    );
                 }
                 Err(_) if attempt < MAX_RETRIES => {
                     tokio::time::sleep(Duration::from_millis(500)).await;

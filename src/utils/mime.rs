@@ -51,8 +51,9 @@ fn detect_by_extension(path: &Path) -> Option<Mime> {
     let mime = match ext {
         "ui" | "xml" | "qrc" | "xcstrings" | "entitlements" | "appxmanifest" | "resw" | "resx"
         | "csproj" | "slnx" | "xaml" => mime::TEXT_XML,
-        "qml" | "po" | "pot" | "spec" | "desktop" | "pro" | "properties" | "lock" | "env"
-        | "example" | "in" | "pbxproj" | "sln" | "build" | "wrap" => mime::TEXT_PLAIN,
+        "java" | "md" | "markdown" | "qml" | "po" | "pot" | "spec" | "desktop" | "pro"
+        | "properties" | "lock" | "env" | "example" | "in" | "pbxproj" | "sln" | "build"
+        | "wrap" => mime::TEXT_PLAIN,
         _ => return None,
     };
     Some(mime)

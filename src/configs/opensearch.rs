@@ -5,16 +5,11 @@ use serde::Deserialize;
 use serde::Serialize;
 
 /// Configuration for OpenSearch connection
+/// TODO: Add authentication support (username, password, api_key, tls).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenSearchConfig {
     /// OpenSearch endpoint URL
     pub host: String,
-
-    /// Username for authentication
-    pub username: String,
-
-    /// Password for authentication
-    pub password: String,
 }
 
 impl Default for OpenSearchConfig {
@@ -22,8 +17,6 @@ impl Default for OpenSearchConfig {
     fn default() -> Self {
         Self {
             host: "http://localhost:9200".to_string(),
-            username: "admin".to_string(),
-            password: "password".to_string(),
         }
     }
 }

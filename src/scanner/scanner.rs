@@ -38,7 +38,7 @@ pub async fn scan_source(
     let license = detectors::license::detect_license(&files).await;
 
     let mut analysis = SourceAnalysis {
-        source: source_display.to_string_lossy().to_string(),
+        root: source_display.to_string_lossy().to_string(),
         indexed_at: Local::now().to_rfc3339(),
         readme,
         license,
@@ -53,7 +53,7 @@ pub async fn scan_source(
         let mime = utils::mime::detect_mime(&file_info.path)?;
         let text_file = utils::mime::is_text(&mime, &file_info.path);
 
-        let file_id = hash::file_id_from_file(&file_info.path)?;
+        let hash = hash::hash_from_content(&file_info.path)?;
         let extension = path::get_extension(&file_info.path);
 
         let (lines_of_code, size_chars) = if text_file {
@@ -116,7 +116,7 @@ pub async fn scan_source(
             path: file_info.relative_path.to_string_lossy().to_string(),
             extension,
             size_bytes: file_info.size,
-            file_id,
+            hash,
             is_text: text_file,
             lines_of_code,
             size_chars,

@@ -12,6 +12,6 @@ pub struct AstDataClass {
     pub signature: String,
 
     /// Documentation comments and regular comments associated with the class
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub comments: Vec<String>,
 }

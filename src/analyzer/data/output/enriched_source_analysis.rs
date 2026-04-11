@@ -2,8 +2,8 @@
 //! Extends scanner SourceAnalysis with LLM-generated summaries and enriched files.
 use super::enriched_file_analysis::EnrichedFileAnalysis;
 use crate::scanner::data::output::license_info::LicenseInfo;
-use crate::scanner::data::output::source_stats::SourceStats;
 use crate::scanner::data::output::readme_info::ReadmeInfo;
+use crate::scanner::data::output::source_stats::SourceStats;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -12,7 +12,7 @@ use serde::Serialize;
 #[serde(rename_all = "PascalCase")]
 pub struct EnrichedSourceAnalysis {
     /// Absolute path to source root
-    pub source: String,
+    pub root: String,
     /// ISO 8601 timestamp of analysis
     pub indexed_at: String,
     /// README file content (if found)

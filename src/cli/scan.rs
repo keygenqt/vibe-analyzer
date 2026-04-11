@@ -1,6 +1,7 @@
 //! Scan commands for extracting structure from knowledge sources.
 //! Provides AST extraction, LLM enrichment, and OpenSearch indexing.
 
+use std::path::Path;
 use std::path::PathBuf;
 
 use anyhow::Result;
@@ -14,6 +15,13 @@ use crate::exit_error;
 use crate::export;
 use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
+use crate::opensearch::client::OpenSearchClient;
+use crate::opensearch::data::source_file::SourceFile;
+use crate::opensearch::data::source_file_analysis::SourceFileAnalysis;
+use crate::opensearch::data::source_meta::SourceMeta;
+use crate::opensearch::indexer::IndexFilesReport;
+use crate::opensearch::indexer::IndexReport;
+use crate::opensearch::indexer::Indexer;
 use crate::print_error;
 use crate::print_info;
 use crate::print_progress;
@@ -60,6 +68,10 @@ pub enum ScanAction {
         /// Target source (all if not specified)
         #[arg(long)]
         target: Option<String>,
+
+        /// Force reindex (ignore content hash)
+        #[arg(long, default_value_t = false)]
+        force: bool,
     },
 }
 
@@ -126,8 +138,27 @@ pub async fn run(action: ScanAction) {
                 print_warning!("No files to save");
             }
         }
-        ScanAction::Index { target } => {
-            print_warning!("Coming soon: scan index");
+        ScanAction::Index { target, force } => {
+            let result = match index_enriches(&config, target, force).await {
+                Ok(result) => {
+                    if result.files.files_indexed > 0 {
+                        let elapsed = start_time.elapsed();
+                        print_success!(
+                            "{} (took {:.1}s)",
+                            format!(
+                                "Meta: {}, Files: {} indexed, Analysis: {} indexed",
+                                result.meta.indexed,
+                                result.files.files_indexed,
+                                result.files.analysis_indexed
+                            ),
+                            elapsed.as_secs_f64()
+                        );
+                    } else {
+                        print_warning!("No files were indexed");
+                    }
+                }
+                Err(e) => exit_error!("{}", e),
+            };
         }
     }
 }
@@ -151,7 +182,7 @@ pub async fn scan_ast(config: &AppConfig, target: Option<String>) -> Result<Vec<
             |percent, current, total| {
                 print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
                 if total == current {
-                    println!()
+                    println!();
                 }
             },
             |message| print_warning!("{}", message),
@@ -162,6 +193,7 @@ pub async fn scan_ast(config: &AppConfig, target: Option<String>) -> Result<Vec<
                 all_analyses.push(analysis);
             }
             Err(e) => {
+                println!();
                 print_error!("Failed to scan {}: {}", name, e);
             }
         }
@@ -181,30 +213,42 @@ pub async fn scan_enriches(
         anyhow::bail!("Ollama hosts not configured. Add it to ~/.vibe-analyzer/config.json");
     }
 
-    // Check Ollama availability and warm up model
+    // Check Ollama availability
     print_info!("Checking Ollama cluster...");
-    if !cluster
+    match cluster
         .is_available(|current, total| {
             print_progress!("Checking availability {}/{}", current, total);
             if total == current {
-                println!()
+                println!();
             }
         })
-        .await?
+        .await
     {
-        anyhow::bail!(
-            "One or more Ollama servers are not available. Check config or start Ollama service"
-        );
+        Ok(_) => {}
+        Err(_) => {
+            println!();
+            anyhow::bail!(
+                "One or more Ollama servers are not available. Check config or start Ollama service"
+            )
+        }
     }
-    cluster
+
+    // Warm Ollama model
+    match cluster
         .ensure_ready(|current, total| {
             print_progress!("Warming up server {}/{}", current, total);
             if total == current {
-                println!()
+                println!();
             }
         })
-        .await?;
-    print_success!("All {} Ollama servers ready", cluster.len());
+        .await
+    {
+        Ok(_) => print_success!("All {} Ollama servers ready", cluster.len()),
+        Err(e) => {
+            println!();
+            Err(e)?
+        }
+    }
 
     // Phase 1: Perform standard source scanning
     let all_analyses = scan_ast(config, target).await?;
@@ -224,7 +268,6 @@ pub async fn scan_enriches(
                     println!()
                 }
             },
-            |message| print_warning!("{}", message),
             |message| print_info!("{}", message),
         )
         .await
@@ -233,10 +276,65 @@ pub async fn scan_enriches(
                 enriched_all_analyses.push(analysis);
             }
             Err(e) => {
-                print_error!("Failed to enrich {}: {}", source_analyses.source, e);
+                println!();
+                Err(e)?
             }
         }
     }
 
     Ok(enriched_all_analyses)
+}
+
+/// Index enriched analysis results to OpenSearch.
+pub async fn index_enriches(
+    config: &AppConfig,
+    target: Option<String>,
+    force: bool,
+) -> Result<IndexReport> {
+    // 1. Connect to OpenSearch
+    let client = OpenSearchClient::new(&config.opensearch.host)?;
+
+    // 2. Check connection
+    if !client.healthcheck().await? {
+        anyhow::bail!("OpenSearch is not available at {}", config.opensearch.host);
+    }
+
+    // 3. Create indexer coordinator
+    let indexer = Indexer::new(client);
+
+    // 4. Get enriched data from analyzer
+    let sources = scan_enriches(config, target).await?;
+    // let debug_file = "/Users/keygenqt/Downloads/vibe-analyzer-11-04-2026_13-31-25.json";
+    // let content = std::fs::read_to_string(debug_file)?;
+    // let sources = serde_json::from_str::<EnrichedSourcesAnalysis>(&content)?.sources;
+
+    // 5. Index metadata for all sources
+    let meta_items = SourceMeta::from_enriched(&sources);
+    let report_meta = indexer.index_meta(&meta_items, force).await?;
+
+    // 6. Index files and analysis for each source
+    let mut total_files = 0;
+    let mut total_analysis = 0;
+
+    for source in &sources {
+        let project_root = Path::new(&source.root);
+
+        let file_items = SourceFile::from_enriched(source)?;
+        let analysis_items = SourceFileAnalysis::from_enriched(source);
+
+        let report_files = indexer
+            .index_files(project_root, &file_items, &analysis_items, force)
+            .await?;
+
+        total_files += report_files.files_indexed;
+        total_analysis += report_files.analysis_indexed;
+    }
+
+    Ok(IndexReport {
+        meta: report_meta,
+        files: IndexFilesReport {
+            files_indexed: total_files,
+            analysis_indexed: total_analysis,
+        },
+    })
 }

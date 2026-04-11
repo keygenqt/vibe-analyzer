@@ -32,5 +32,5 @@ pub struct EnrichedFileAnalysis {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub ast: Option<AstData>,
     /// Unique file identifier (BLAKE3 hash)
-    pub file_id: String,
+    pub hash: String,
 }

@@ -6,5 +6,6 @@ pub mod cli;
 pub mod configs;
 pub mod export;
 pub mod mcp;
+pub mod opensearch;
 pub mod scanner;
 pub mod utils;

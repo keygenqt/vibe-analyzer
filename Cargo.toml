@@ -42,6 +42,7 @@ futures-util = "0.3"
 zip = "8.5"
 tempfile = "3.27"
 regex = "1.10"
+futures = "0.3"
 
 # Tree-sitter grammars
 tree-sitter = "0.25.1"

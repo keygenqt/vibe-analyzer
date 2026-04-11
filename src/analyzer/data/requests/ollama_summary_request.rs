@@ -5,15 +5,15 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::scanner::data::output::license_info::LicenseInfo;
+use crate::scanner::data::output::readme_info::ReadmeInfo;
 use crate::scanner::data::output::source_analysis::SourceAnalysis;
 use crate::scanner::data::output::source_stats::SourceStats;
-use crate::scanner::data::output::readme_info::ReadmeInfo;
 
 /// Request payload for source summary generation via Ollama.
 #[derive(Debug, Serialize, Deserialize)]
 pub struct OllamaSummaryRequest {
     /// Absolute path to source root
-    pub source: String,
+    pub root: String,
     /// README file content (if found)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub readme: Option<ReadmeInfo>,
@@ -27,7 +27,7 @@ pub struct OllamaSummaryRequest {
 impl OllamaSummaryRequest {
     pub fn new(data: &SourceAnalysis) -> Self {
         Self {
-            source: data.source.clone(),
+            root: data.root.clone(),
             readme: data.readme.clone(),
             license: data.license.clone(),
             stats: data.stats.clone(),

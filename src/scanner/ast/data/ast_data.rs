@@ -17,51 +17,39 @@ use serde::Serialize;
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 #[serde(rename_all = "PascalCase")]
 pub struct AstData {
-    /// Top-level documentation comments at the beginning of the file
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub header_comments: Vec<String>,
 
-    /// Import/use/include statements
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub imports: Vec<String>,
 
-    /// Variables with signatures and comments
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub variables: Vec<AstDataVariable>,
 
-    /// Functions with signatures and comments
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub functions: Vec<AstDataFunction>,
 
-    /// Classes with signatures and comments
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub classes: Vec<AstDataClass>,
 
-    /// Structs with signatures and comments
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub structs: Vec<AstDataStruct>,
 
-    /// Enums with signatures and comments
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub enums: Vec<AstDataEnum>,
 
-    /// Interfaces/Protocols/Traits with signatures and comments
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub interfaces: Vec<AstDataInterface>,
 
-    /// Markdown frontmatter metadata
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub frontmatter: Option<HashMap<String, serde_json::Value>>,
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub frontmatter: Option<HashMap<String, String>>,
 
-    /// Markdown headings
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub headings: Vec<AstHeading>,
 
-    /// Markdown links
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub links: Vec<AstLink>,
 
-    /// Markdown code block languages
-    #[serde(skip_serializing_if = "Vec::is_empty")]
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub code_blocks: Vec<String>,
 }

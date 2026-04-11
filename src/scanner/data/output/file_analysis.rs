@@ -36,5 +36,5 @@ pub struct FileAnalysis {
     pub ast: Option<AstData>,
 
     /// Unique file identifier (BLAKE3 hash)
-    pub file_id: String,
+    pub hash: String,
 }

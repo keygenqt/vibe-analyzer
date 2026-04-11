@@ -13,7 +13,7 @@ use serde::Serialize;
 #[serde(rename_all = "PascalCase")]
 pub struct SourceAnalysis {
     /// Absolute path to source root
-    pub source: String,
+    pub root: String,
     /// ISO 8601 timestamp of analysis
     pub indexed_at: String,
     /// README file content (if found)

@@ -5,7 +5,6 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use regex::Regex;
-use serde_json::Value;
 use tree_sitter::{Node, Parser};
 
 use crate::scanner::ast::data::ast_data::AstData;
@@ -32,13 +31,15 @@ impl LanguageParser for MarkdownParser {
                     let value = value.trim();
 
                     if value.starts_with('[') && value.ends_with(']') {
-                        let items: Vec<Value> = value[1..value.len() - 1]
+                        // Массив — соединяем в строку через запятую
+                        let items: String = value[1..value.len() - 1]
                             .split(',')
-                            .map(|s| Value::String(s.trim().to_string()))
-                            .collect();
-                        frontmatter_map.insert(key, Value::Array(items));
+                            .map(|s| s.trim().to_string())
+                            .collect::<Vec<_>>()
+                            .join(", ");
+                        frontmatter_map.insert(key, items);
                     } else {
-                        frontmatter_map.insert(key, Value::String(value.to_string()));
+                        frontmatter_map.insert(key, value.to_string());
                     }
                 }
                 i += 1;
