@@ -58,7 +58,12 @@ Used to provide structured documentation context for LLM queries alongside sourc
 
 ## TODO
 
-- OpenSearch authentication support
 - CLI search commands expansion (meta, file, get, stats)
 - MCP server implementation
+- Docker support (Dockerfile + docker-compose.yml)
+- Documentation (user guide, configuration reference)
+
+## Backlog
+
 - Watch mode for automatic incremental indexing on file changes
+- OpenSearch authentication support (optional, for public deployments)
