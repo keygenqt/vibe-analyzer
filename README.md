@@ -58,7 +58,6 @@ Used to provide structured documentation context for LLM queries alongside sourc
 
 ## TODO
 
-- Orphaned files cleanup (remove deleted files from index)
 - OpenSearch authentication support
 - CLI search commands expansion (meta, file, get, stats)
 - MCP server implementation

@@ -122,4 +122,69 @@ impl OpenSearchClient {
             .json()
             .await?)
     }
+
+    /// Lists all index names from OpenSearch.
+    pub async fn list_indices(&self) -> Result<Vec<String>> {
+        let url = format!("{}/_cat/indices?format=json", self.base_url());
+        let response = self
+            .client
+            .get(&url)
+            .send()
+            .await
+            .context("Failed to list indices")?;
+
+        let indices: Vec<Value> = response.json().await?;
+
+        Ok(indices
+            .into_iter()
+            .filter_map(|v| v["index"].as_str().map(String::from))
+            .collect())
+    }
+
+    /// Deletes documents matching the given paths from an index.
+    pub async fn delete_by_full_path(
+        &self,
+        index: &str,
+        root: &str,
+        paths: &[&str],
+    ) -> Result<Value> {
+        let should_clauses: Vec<Value> = paths
+            .iter()
+            .map(|path| {
+                json!({
+                    "bool": {
+                        "must": [
+                            { "term": { "Root": root } },
+                            { "term": { "Path": path } }
+                        ]
+                    }
+                })
+            })
+            .collect();
+
+        let query = json!({
+            "query": {
+                "bool": {
+                    "should": should_clauses,
+                    "minimum_should_match": 1
+                }
+            }
+        });
+
+        self.delete_by_query(index, &query).await
+    }
+
+    /// Deletes documents matching a custom query.
+    pub async fn delete_by_query(&self, index: &str, query: &Value) -> Result<Value> {
+        let url = format!("{}/{}/_delete_by_query", self.base_url(), index);
+        let response = self
+            .client
+            .post(&url)
+            .json(query)
+            .send()
+            .await
+            .context(format!("Failed to delete by query from index: {}", index))?;
+
+        Ok(response.json().await?)
+    }
 }

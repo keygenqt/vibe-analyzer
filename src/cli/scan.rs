@@ -319,8 +319,15 @@ pub async fn index_enriches(
         anyhow::bail!("OpenSearch is not available at {}", config.opensearch.host);
     }
 
+    // Create indexer coordinator
+    let indexer = Indexer::new(client.clone());
+
+    // Cleanup orphaned data after successful indexing
+    print_info!("Cleaning up orphaned data...");
+    indexer.cleanup(config).await?;
+
     // Get hashes from OpenSearch for incremental indexing
-    let search_client = SearchClient::new(client.clone());
+    let search_client = SearchClient::new(client);
     let hashes: Option<SearchFileHashSource> = if force {
         None
     } else {
@@ -345,9 +352,6 @@ pub async fn index_enriches(
         }
         Some(all_hashes)
     };
-
-    // Create indexer coordinator
-    let indexer = Indexer::new(client);
 
     // Get enriched data from analyzer (with incremental skip)
     let sources = scan_enriches(config, target, hashes).await?;

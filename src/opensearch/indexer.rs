@@ -1,6 +1,7 @@
 //! Indexer coordinator for OpenSearch operations.
 //! Manages bulk indexing for meta, files, and analysis indices.
 
+use crate::configs::app::{AppConfig, IndexType};
 use crate::opensearch::client::OpenSearchClient;
 use crate::opensearch::data::requests::source_file::SourceFile;
 use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;
@@ -8,7 +9,11 @@ use crate::opensearch::data::requests::source_meta::SourceMeta;
 use crate::opensearch::index::index_files::FilesIndex;
 use crate::opensearch::index::index_files_analysis::FilesAnalysisIndex;
 use crate::opensearch::index::index_meta::MetaIndex;
+use crate::opensearch::search::SearchClient;
+use crate::utils;
 use anyhow::Result;
+use serde_json::json;
+use std::collections::HashSet;
 use std::path::PathBuf;
 
 /// Report for indexing operations.
@@ -115,5 +120,93 @@ impl Indexer {
         }
 
         Ok(report)
+    }
+
+    /// Removes all orphaned data from OpenSearch.
+    pub async fn cleanup(&self, config: &AppConfig) -> Result<()> {
+        let search_client = SearchClient::new(self.client.clone());
+
+        // Expected indices from current config
+        let expected_indices: HashSet<String> =
+            config.get_indexes(IndexType::All).into_iter().collect();
+
+        // All indices in OpenSearch
+        let all_indices = self.client.list_indices().await?;
+
+        // Delete indices for removed sources
+        for index in &all_indices {
+            if index.starts_with("vibe-analyzer-") && !expected_indices.contains(index) {
+                let _ = self.client.delete_index(index).await;
+            }
+        }
+
+        // Delete orphaned files for each active source
+        for source in config.get_sources() {
+            // Files on disk
+            let Ok(fs_files) = utils::path::source_files(&source, &None) else {
+                continue;
+            };
+            let fs_paths: HashSet<String> = fs_files
+                .into_iter()
+                .map(|f| f.path.to_string_lossy().to_string())
+                .collect();
+
+            // Files in index
+            let files_index = AppConfig::files_index(&source);
+            let Ok(indexed_hashes) = search_client.get_hashes(&files_index).await else {
+                continue;
+            };
+
+            let indexed_paths: HashSet<String> =
+                indexed_hashes.into_iter().map(|h| h.path).collect();
+
+            // Orphans = in index but not on disk
+            let root_str = source.to_string_lossy().to_string();
+            let orphans: Vec<&str> = indexed_paths
+                .difference(&fs_paths)
+                .map(|s| {
+                    s.strip_prefix(&root_str)
+                        .unwrap_or(s)
+                        .trim_start_matches('/')
+                })
+                .collect();
+
+            if !orphans.is_empty() {
+                let analysis_index = AppConfig::files_analysis_index(&source);
+                let _ = self
+                    .client
+                    .delete_by_full_path(&files_index, &root_str, &orphans)
+                    .await;
+                let _ = self
+                    .client
+                    .delete_by_full_path(&analysis_index, &root_str, &orphans)
+                    .await;
+            }
+        }
+
+        // Delete meta docs for removed sources
+        let meta_index = AppConfig::meta_index();
+        if all_indices.contains(&meta_index) {
+            let active_paths: Vec<String> = config
+                .get_sources()
+                .iter()
+                .map(|p| p.to_string_lossy().to_string())
+                .collect();
+
+            if !active_paths.is_empty() {
+                let query = json!({
+                    "query": {
+                        "bool": {
+                            "must_not": {
+                                "terms": { "path.keyword": active_paths }
+                            }
+                        }
+                    }
+                });
+                let _ = self.client.delete_by_query(&meta_index, &query).await;
+            }
+        }
+
+        Ok(())
     }
 }
