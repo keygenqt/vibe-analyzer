@@ -9,9 +9,11 @@ use std::path::PathBuf;
 
 use crate::configs::spdx::SpdxConfig;
 use crate::print_info;
+use crate::utils;
 use crate::utils::app;
 use crate::utils::constants;
 use crate::utils::hash::hash_from_path;
+use crate::utils::json5::Json5;
 use crate::utils::path::convert_relative;
 use crate::utils::path::{self};
 
@@ -65,7 +67,7 @@ impl AppConfig {
             Ok(config)
         } else {
             let content = fs::read_to_string(&config_path)?;
-            let mut config: AppConfig = match serde_json::from_str(&content) {
+            let mut config: AppConfig = match json5::from_str(&content) {
                 Ok(config) => config,
                 Err(_) => {
                     return Err(anyhow::anyhow!(
@@ -98,14 +100,43 @@ impl AppConfig {
         }
     }
 
-    /// Save config to file.
+    /// Save config to file in JSON5 format with helpful comments.
     pub fn save(&self) -> Result<()> {
         let config_dir = path::get_config_dir();
         if !config_dir.exists() {
             fs::create_dir_all(&config_dir)?;
         }
-
-        let content = serde_json::to_string_pretty(self)?;
+        let json = json5::to_string(self)?;
+        let content = utils::json5::add_commits(
+            json,
+            vec![
+                Json5::Commit("version", vec!["Configuration version (do not modify)"]),
+                Json5::Commit("opensearch", vec!["OpenSearch connection"]),
+                Json5::Commit(
+                    "ollama",
+                    vec![
+                        "Ollama LLM servers",
+                        "",
+                        "host - API endpoint (default: http://localhost:11434)",
+                        "model - LLM model name",
+                        "max_chunk_chars - Maximum characters per request batch",
+                        "max_chunk_files - Maximum files per request batch",
+                        "timeout_secs - Request timeout in seconds",
+                        "temperature - Sampling temperature (0.0 - 1.0)",
+                        "seed - Random seed for reproducibility",
+                        "num_ctx - Context window size",
+                        "num_predict - Maximum tokens to generate",
+                        "ast_imports - Include imports in AST analysis",
+                        "ast_variables - Include variables in AST analysis",
+                        "ast_functions - Include functions in AST analysis",
+                        "ast_enums - Include enums in AST analysis",
+                        "ast_interfaces - Include interfaces in AST analysis",
+                    ],
+                ),
+                Json5::Commit("spdx", vec!["SPDX license data storage"]),
+                Json5::Commit("sources", vec!["Knowledge sources to index"]),
+            ],
+        );
         fs::write(path::get_config_path(), content)?;
         Ok(())
     }

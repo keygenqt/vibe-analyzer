@@ -53,7 +53,6 @@ Rust, Python, JavaScript, TypeScript, Java, Go, C#, Kotlin, Swift, Dart, Bash, B
 ## TODO
 
 - [ ] Orphaned files cleanup (remove deleted files from index)
-- [ ] Config file in JSON5 format
 - [ ] OpenSearch authentication support
 - [ ] CLI search commands expansion (meta, file, get, stats)
 - [ ] MCP server implementation
