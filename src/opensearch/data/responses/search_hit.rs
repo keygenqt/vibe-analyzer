@@ -1,7 +1,8 @@
 //! Base search hit model.
 //! Contains common metadata for all OpenSearch search results.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Base metadata included in every search hit.
 #[derive(Debug, Serialize, Deserialize)]

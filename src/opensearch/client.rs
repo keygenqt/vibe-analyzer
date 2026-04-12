@@ -1,9 +1,12 @@
 //! OpenSearch HTTP client with retry logic and bulk operations.
 
-use anyhow::{Context, Result};
-use reqwest::{Client, StatusCode};
+use anyhow::Context;
+use anyhow::Result;
+use reqwest::Client;
+use reqwest::StatusCode;
 use serde::Serialize;
-use serde_json::{Value, json};
+use serde_json::Value;
+use serde_json::json;
 use std::time::Duration;
 
 use crate::opensearch::data::HasPath;

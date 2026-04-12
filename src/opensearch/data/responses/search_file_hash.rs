@@ -3,7 +3,8 @@
 
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// File hashes for a specific source.
 #[derive(Debug)]

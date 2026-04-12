@@ -3,12 +3,13 @@
 
 use clap::Subcommand;
 
-use crate::{
-    configs::app::{AppConfig, IndexType},
-    exit_error,
-    opensearch::{client::OpenSearchClient, search::SearchClient},
-    print_info, print_warning,
-};
+use crate::configs::app::AppConfig;
+use crate::configs::app::IndexType;
+use crate::exit_error;
+use crate::opensearch::client::OpenSearchClient;
+use crate::opensearch::search::SearchClient;
+use crate::print_info;
+use crate::print_warning;
 
 /// Search across indexed knowledge base.
 #[derive(Subcommand)]

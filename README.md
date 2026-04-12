@@ -4,28 +4,27 @@ A tool for scanning and analyzing codebases with AST extraction and JSON export.
 
 ## Usage
 
-```bash
+````bash
 # Source management
-vibe-analyzer source add /path/to/source
-vibe-analyzer source remove --target /path/to/source
-vibe-analyzer source list
+vibe-analyzer source add <path>                  # Add knowledge source
+vibe-analyzer source remove --target <path>      # Remove source
+vibe-analyzer source list                        # List all sources
 
 # Scanning
-vibe-analyzer scan ast                          # all sources from config
-vibe-analyzer scan ast --target my-project      # specific source
-vibe-analyzer scan analyze --target my-project
+vibe-analyzer scan ast                           # All sources (AST only)
+vibe-analyzer scan ast --target <name>           # Specific source
+vibe-analyzer scan analyze --target <name>       # With LLM enrichment
 
 # Search
-vibe-analyzer search ast UserService            # search in code structure
-vibe-analyzer search file config                # search in file content
-vibe-analyzer search meta authentication        # search in metadata
-vibe-analyzer search get abc123def456           # get file content by ID
+vibe-analyzer search ast <query>                 # Search in code structure
+vibe-analyzer search ast <query> --target <name> # Search in specific source
+vibe-analyzer search ast <query> --limit <n>     # Limit results
+vibe-analyzer search hash --target <name>        # Get file hashes (incremental)
 
 # MCP Server
-vibe-analyzer serve start                       # start MCP server
-vibe-analyzer serve status                      # check server status
-vibe-analyzer serve stop                        # stop server
-```
+vibe-analyzer serve start                        # Start MCP server
+vibe-analyzer serve status                       # Check server status
+vibe-analyzer serve stop                         # Stop server
 
 ## Output
 
@@ -40,7 +39,7 @@ JSON file in `~/Downloads/` with the following structure:
     "files": [...]
   }]
 }
-```
+````
 
 ## Supported Languages
 

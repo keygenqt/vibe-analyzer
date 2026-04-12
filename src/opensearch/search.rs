@@ -2,17 +2,14 @@
 //! Provides meta, ast, file, and get queries.
 
 use anyhow::Result;
-use serde_json::{Value, json};
+use serde_json::Value;
+use serde_json::json;
 
-use crate::opensearch::{
-    client::OpenSearchClient,
-    data::{
-        requests::source_file_analysis::SourceFileAnalysis,
-        responses::{
-            search_ast::SearchAst, search_file_hash::SearchFileHash, search_hit::SearchHit,
-        },
-    },
-};
+use crate::opensearch::client::OpenSearchClient;
+use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;
+use crate::opensearch::data::responses::search_ast::SearchAst;
+use crate::opensearch::data::responses::search_file_hash::SearchFileHash;
+use crate::opensearch::data::responses::search_hit::SearchHit;
 
 pub struct SearchClient {
     client: OpenSearchClient,

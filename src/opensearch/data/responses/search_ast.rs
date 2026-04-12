@@ -1,18 +1,19 @@
 //! AST search response model.
 //! Contains file path and matching AST elements.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use std::collections::HashMap;
 
-use crate::{
-    opensearch::data::responses::search_hit::SearchHit,
-    scanner::ast::data::{
-        ast_data_class::AstDataClass, ast_data_enum::AstDataEnum,
-        ast_data_function::AstDataFunction, ast_data_heading::AstHeading,
-        ast_data_interface::AstDataInterface, ast_data_links::AstLink,
-        ast_data_struct::AstDataStruct, ast_data_variable::AstDataVariable,
-    },
-};
+use crate::opensearch::data::responses::search_hit::SearchHit;
+use crate::scanner::ast::data::ast_data_class::AstDataClass;
+use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
+use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::data::ast_data_heading::AstHeading;
+use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::scanner::ast::data::ast_data_links::AstLink;
+use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
+use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
 
 /// Response from AST search query containing matched file and filtered AST data.
 #[derive(Debug, Serialize, Deserialize)]
