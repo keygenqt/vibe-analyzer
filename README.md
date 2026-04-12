@@ -1,6 +1,7 @@
 # Vibe Analyzer
 
-A tool for scanning and analyzing codebases with AST extraction and JSON export.
+A tool for scanning and analyzing codebases with AST extraction, LLM-powered enrichment, and OpenSearch indexing.
+Provides semantic search across multiple knowledge sources with incremental updates.
 
 ## Usage
 
@@ -45,9 +46,14 @@ JSON file in `~/Downloads/` with the following structure:
 
 Rust, Python, JavaScript, TypeScript, Java, Go, C#, Kotlin, Swift, Dart, Bash, Batch, ArkTS
 
+## Markdown
+
+Extracted for knowledge base enrichment.
+Used to provide structured documentation context for LLM queries alongside source code.
+
 ## Config
 
-`~/.vibe-analyzer/config.json`
+`~/.vibe-analyzer/config.json5`
 
 ## TODO
 
