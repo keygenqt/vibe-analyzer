@@ -9,12 +9,27 @@ use std::path::PathBuf;
 
 use crate::configs::spdx::SpdxConfig;
 use crate::print_info;
+use crate::utils::app;
 use crate::utils::constants;
+use crate::utils::hash::hash_from_path;
 use crate::utils::path::convert_relative;
 use crate::utils::path::{self};
 
 use super::ollama::OllamaConfig;
 use super::opensearch::OpenSearchConfig;
+
+/// Type of OpenSearch index.
+#[allow(dead_code)]
+pub enum IndexType {
+    /// Metadata index (shared across all sources).
+    Meta,
+    /// Files content index.
+    Files,
+    /// Files analysis index (AST + enrichment).
+    Analysis,
+    /// All index types.
+    All,
+}
 
 /// Main application configuration structure.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -130,18 +145,22 @@ impl AppConfig {
 
     /// Get source by exact path or unique directory name.
     pub fn get_source(&self, target: &str) -> Result<PathBuf> {
-        let path: Vec<&PathBuf> = self
-            .sources
-            .iter()
-            .filter(|source| {
-                source
-                    .to_string_lossy()
-                    .split('/')
-                    .last()
-                    .map(|name| name == target)
-                    .unwrap_or(false)
-            })
-            .collect();
+        let path = PathBuf::from(target);
+        let path: Vec<&PathBuf> = if path.exists() && path.is_dir() {
+            vec![&path]
+        } else {
+            self.sources
+                .iter()
+                .filter(|source| {
+                    source
+                        .to_string_lossy()
+                        .split('/')
+                        .last()
+                        .map(|name| name == target)
+                        .unwrap_or(false)
+                })
+                .collect()
+        };
 
         if path.is_empty() {
             return Err(anyhow::anyhow!("Source not found: {}", target));
@@ -164,5 +183,61 @@ impl AppConfig {
             .filter(|p| p.exists())
             .cloned()
             .collect()
+    }
+
+    /// Get meta index name.
+    pub fn meta_index() -> String {
+        format!("{}-meta", app::app_name())
+    }
+
+    /// Get files index name for a source.
+    pub fn files_index(root: &PathBuf) -> String {
+        format!("{}-files-{}", app::app_name(), hash_from_path(root))
+    }
+
+    /// Get files analysis index name for a source.
+    pub fn files_analysis_index(root: &PathBuf) -> String {
+        format!(
+            "{}-files-analysis-{}",
+            app::app_name(),
+            hash_from_path(root)
+        )
+    }
+
+    /// Get index name for a specific source by target.
+    /// Get index name for a specific source by target.
+    pub fn get_index(&self, target: &str, index_type: IndexType) -> Result<String> {
+        let source = self.get_source(target)?;
+        Ok(match index_type {
+            IndexType::Meta => Self::meta_index(),
+            IndexType::Files => Self::files_index(&source),
+            IndexType::Analysis => Self::files_analysis_index(&source),
+            IndexType::All => unreachable!("All not supported for single source"),
+        })
+    }
+
+    /// Get indexes names for all sources.
+    pub fn get_indexes(&self, index_type: IndexType) -> Vec<String> {
+        match index_type {
+            IndexType::Meta => vec![Self::meta_index()],
+            IndexType::Files => self
+                .get_sources()
+                .iter()
+                .map(|source| Self::files_index(source))
+                .collect(),
+            IndexType::Analysis => self
+                .get_sources()
+                .iter()
+                .map(|source| Self::files_analysis_index(source))
+                .collect(),
+            IndexType::All => {
+                let mut indexes = vec![Self::meta_index()];
+                for source in self.get_sources() {
+                    indexes.push(Self::files_index(&source));
+                    indexes.push(Self::files_analysis_index(&source));
+                }
+                indexes
+            }
+        }
     }
 }

@@ -61,7 +61,7 @@ async fn main() {
     match App::parse().command {
         Some(Commands::Source { action }) => cli::source::run(action),
         Some(Commands::Scan { action }) => cli::scan::run(action).await,
-        Some(Commands::Search { action }) => cli::search::run(action),
+        Some(Commands::Search { action }) => cli::search::run(action).await,
         Some(Commands::Serve { action }) => cli::serve::run(action),
         None => {
             let _ = App::command().print_help();

@@ -54,7 +54,7 @@ impl OllamaClient {
 
     /// Checks if Ollama service is available and warms up the model.
     pub async fn ensure_ready(&self) -> Result<()> {
-        // 1. Check if Ollama server is reachable
+        // Check if Ollama server is reachable
         match self.client.get(&self.config.host).send().await {
             Ok(_) => {}
             Err(e) => {
@@ -62,7 +62,7 @@ impl OllamaClient {
             }
         }
 
-        // 2. Check if model is installed
+        // Check if model is installed
         if !self.is_model_installed().await? {
             anyhow::bail!(
                 "Model '{}' not found. Install it with: ollama pull {}",
@@ -71,7 +71,7 @@ impl OllamaClient {
             );
         }
 
-        // 3. Warm up model (load into memory)
+        // Warm up model (load into memory)
         let url = format!("{}/api/generate", self.config.host);
         let request = serde_json::json!({
             "model": self.config.model,

@@ -9,22 +9,22 @@ use std::path::Path;
 
 /// Detects MIME type of a file using multiple strategies
 pub fn detect_mime(path: &Path) -> Result<Mime> {
-    // Strategy 1: Check by file extension
+    // Check by file extension
     if let Some(mime) = detect_by_extension(path) {
         return Ok(mime);
     }
 
-    // Strategy 2: Check by exact filename
+    // Check by exact filename
     if let Some(mime) = detect_by_filename(path) {
         return Ok(mime);
     }
 
-    // Strategy 3: Use mime_guess crate
+    // Use mime_guess crate
     if let Some(mime) = detect_by_mime_guess(path) {
         return Ok(mime);
     }
 
-    // Strategy 4: Peek content to detect text vs binary
+    // Peek content to detect text vs binary
     if let Ok(mut file) = File::open(path) {
         let mut buffer = [0; 256];
         if let Ok(bytes_read) = file.read(&mut buffer) {

@@ -5,6 +5,7 @@ use anyhow::Result;
 use chrono::Local;
 use std::path::Path;
 
+use crate::opensearch::data::responses::search_file_hash::SearchFileHashSource;
 use crate::scanner::ast::parser::parse_ast;
 use crate::scanner::data::output::file_analysis::FileAnalysis;
 use crate::scanner::data::output::source_analysis::SourceAnalysis;
@@ -18,6 +19,7 @@ use crate::utils::{self};
 /// Scans a source and returns complete analysis results
 pub async fn scan_source(
     source_path: &Path,
+    hashes: &Option<SearchFileHashSource>,
     on_progress: fn(usize, usize, usize),
     on_warning: fn(String),
 ) -> Result<SourceAnalysis> {
@@ -32,7 +34,7 @@ pub async fn scan_source(
         canonical_path.clone()
     };
 
-    let files = path::source_files(&canonical_path)?;
+    let files = path::source_files(&canonical_path, hashes)?;
     let total = files.len();
     let readme = detectors::readme::detect_readme(&files);
     let license = detectors::license::detect_license(&files).await;

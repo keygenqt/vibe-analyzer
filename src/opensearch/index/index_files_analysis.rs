@@ -1,9 +1,11 @@
 //! Files analysis index management for AST and enrichment storage.
 //! Handles creation and management of vibe_files_analysis_{hash} indices.
 
+use std::path::PathBuf;
+
+use crate::configs::app::AppConfig;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::source_file_analysis::SourceFileAnalysis;
-use crate::utils::app;
+use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;
 use anyhow::Result;
 use serde_json::json;
 
@@ -15,10 +17,10 @@ pub struct FilesAnalysisIndex {
 
 impl FilesAnalysisIndex {
     /// Creates new FilesAnalysisIndex instance.
-    pub fn new(client: OpenSearchClient, project_hash: &str) -> Self {
+    pub fn new(client: OpenSearchClient, source: &PathBuf) -> Self {
         Self {
             client,
-            name: format!("{}-files-analysis-{}", app::app_name(), project_hash),
+            name: AppConfig::files_analysis_index(source),
         }
     }
 

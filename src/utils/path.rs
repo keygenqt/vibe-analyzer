@@ -10,10 +10,12 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::export::options::ExportFormat;
+use crate::opensearch::data::responses::search_file_hash::SearchFileHashSource;
 use crate::scanner::data::input::file_info::FileInfo;
 use crate::utils::app;
 use crate::utils::constants::CONFIG_DIR_NAME;
 use crate::utils::constants::CONFIG_FILE_NAME;
+use crate::utils::hash;
 use crate::utils::matcher;
 
 /// Returns file extension (lowercase)
@@ -104,7 +106,10 @@ pub fn convert_relative(path: &str) -> Option<PathBuf> {
 }
 
 /// Returns list of files in a source (supports both single file and directory)
-pub fn source_files(source_path: &Path) -> Result<Vec<FileInfo>> {
+pub fn source_files(
+    source_path: &Path,
+    hashes: &Option<SearchFileHashSource>,
+) -> Result<Vec<FileInfo>> {
     let source_path_abs = dunce::canonicalize(source_path)?;
 
     // Handle single file case
@@ -158,6 +163,19 @@ pub fn source_files(source_path: &Path) -> Result<Vec<FileInfo>> {
             path: path.to_path_buf(),
             relative_path,
             size,
+        });
+    }
+
+    // Filter unchanged files
+    if let Some(hash_source) = hashes {
+        files.retain(|f| {
+            let full_path = f.path.to_string_lossy().to_string();
+            match hash_source.hashes.get(&full_path) {
+                Some(indexed_hash) => {
+                    hash::hash_from_content(&f.path).unwrap_or_default() != *indexed_hash
+                }
+                None => true,
+            }
         });
     }
 

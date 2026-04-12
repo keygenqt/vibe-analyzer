@@ -1,9 +1,9 @@
 //! Metadata index management for project-level information.
 //! Handles creation and management of the vibe_meta index.
 
+use crate::configs::app::AppConfig;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::source_meta::SourceMeta;
-use crate::utils::app;
+use crate::opensearch::data::requests::source_meta::SourceMeta;
 use anyhow::Result;
 use serde_json::json;
 
@@ -18,7 +18,7 @@ impl MetaIndex {
     pub fn new(client: OpenSearchClient) -> Self {
         Self {
             client,
-            name: format!("{}-meta", app::app_name()),
+            name: AppConfig::meta_index(),
         }
     }
 

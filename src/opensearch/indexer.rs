@@ -2,15 +2,14 @@
 //! Manages bulk indexing for meta, files, and analysis indices.
 
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::source_file::SourceFile;
-use crate::opensearch::data::source_file_analysis::SourceFileAnalysis;
-use crate::opensearch::data::source_meta::SourceMeta;
+use crate::opensearch::data::requests::source_file::SourceFile;
+use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;
+use crate::opensearch::data::requests::source_meta::SourceMeta;
 use crate::opensearch::index::index_files::FilesIndex;
 use crate::opensearch::index::index_files_analysis::FilesAnalysisIndex;
 use crate::opensearch::index::index_meta::MetaIndex;
-use crate::utils::hash::hash_from_path;
 use anyhow::Result;
-use std::path::Path;
+use std::path::PathBuf;
 
 /// Report for indexing operations.
 #[derive(Debug, Default)]
@@ -46,14 +45,13 @@ impl Indexer {
     /// Indexes file content and analysis data for a project.
     pub async fn index_files(
         &self,
-        project_root: &Path,
+        root: &PathBuf,
         files: &[SourceFile],
         analyses: &[SourceFileAnalysis],
         force: bool,
     ) -> Result<IndexFilesReport> {
-        let hash = hash_from_path(project_root);
-        let files_index = FilesIndex::new(self.client.clone(), &hash);
-        let analysis_index = FilesAnalysisIndex::new(self.client.clone(), &hash);
+        let files_index = FilesIndex::new(self.client.clone(), &root);
+        let analysis_index = FilesAnalysisIndex::new(self.client.clone(), &root);
 
         // Force reindex: delete and recreate all indices
         if force {

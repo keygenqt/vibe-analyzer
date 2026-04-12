@@ -34,13 +34,13 @@ pub async fn analyze_source(
 ) -> Result<EnrichedSourceAnalysis> {
     let total = source.files.len();
 
-    // Step 1: Get enriched analysis source
+    // Get enriched analysis source
     let summary = cluster
         .next()
         .get_summary_enriched_analysis(&OllamaSummaryRequest::new(&source))
         .await?;
 
-    // Step 2: Create source data
+    // Create source data
     let mut analysis = EnrichedSourceAnalysis {
         root: source.root.clone(),
         indexed_at: Local::now().to_rfc3339(),
@@ -51,7 +51,7 @@ pub async fn analyze_source(
         files: Vec::with_capacity(total),
     };
 
-    // Step 3: Setup parallel workers with shared receiver
+    // Setup parallel workers with shared receiver
     let num_workers = cluster.len();
     let (file_tx, file_rx) = mpsc::channel::<Arc<FileAnalysis>>(num_workers * 2);
     let shared_rx = Arc::new(Mutex::new(file_rx));
@@ -123,7 +123,7 @@ pub async fn analyze_source(
         handles.push(handle);
     }
 
-    // Step 4: Send all files to the shared channel in a background task
+    // Send all files to the shared channel in a background task
     let file_tx = file_tx;
     let source_files = source.files.clone();
     let error_flag_send = error_flag.clone();
@@ -143,7 +143,7 @@ pub async fn analyze_source(
         }
     });
 
-    // Step 5: Collect results from all workers
+    // Collect results from all workers
     let mut queue = handles
         .into_iter()
         .collect::<futures::stream::FuturesUnordered<_>>();

@@ -1,16 +1,14 @@
 //! OpenSearch HTTP client with retry logic and bulk operations.
 
-use anyhow::Context;
-use anyhow::Result;
-use reqwest::Client;
-use reqwest::StatusCode;
+use anyhow::{Context, Result};
+use reqwest::{Client, StatusCode};
 use serde::Serialize;
-use serde_json::Value;
-use serde_json::json;
+use serde_json::{Value, json};
 use std::time::Duration;
 
 use crate::opensearch::data::HasPath;
 
+#[derive(Clone)]
 pub struct OpenSearchClient {
     client: Client,
     base_url: String,
@@ -29,6 +27,10 @@ impl OpenSearchClient {
         })
     }
 
+    pub fn base_url(&self) -> &str {
+        &self.base_url
+    }
+
     pub async fn healthcheck(&self) -> Result<bool> {
         match self
             .client
@@ -44,34 +46,24 @@ impl OpenSearchClient {
 
     pub async fn index_exists(&self, index: &str) -> Result<bool> {
         let url = format!("{}/{}", self.base_url, index);
-        let resp = self
-            .client
-            .head(&url)
-            .send()
-            .await
-            .context("Failed to check index existence")?;
+        let resp = self.client.head(&url).send().await?;
         Ok(resp.status() == StatusCode::OK)
     }
 
     pub async fn create_index(&self, index: &str, mapping: Value) -> Result<()> {
         let url = format!("{}/{}", self.base_url, index);
-        self.client
-            .put(&url)
-            .json(&mapping)
-            .send()
-            .await
-            .context("Failed to create index")?;
+        self.client.put(&url).json(&mapping).send().await?;
         Ok(())
     }
 
     pub async fn delete_index(&self, index: &str) -> Result<()> {
         let url = format!("{}/{}", self.base_url, index);
-        self.client
-            .delete(&url)
-            .send()
-            .await
-            .context("Failed to delete index")?;
+        self.client.delete(&url).send().await?;
         Ok(())
+    }
+
+    pub fn post(&self, url: &str) -> reqwest::RequestBuilder {
+        self.client.post(url)
     }
 
     pub async fn bulk(&self, body: String) -> Result<Value> {
@@ -82,13 +74,10 @@ impl OpenSearchClient {
             .header("Content-Type", "application/x-ndjson")
             .body(body)
             .send()
-            .await
-            .context("Failed to execute bulk request")?;
-
-        resp.json().await.context("Failed to parse bulk response")
+            .await?;
+        Ok(resp.json().await?)
     }
 
-    /// Bulk index documents using Path as _id.
     pub async fn bulk_index<T: Serialize + HasPath>(&self, index: &str, docs: &[&T]) -> Result<()> {
         if docs.is_empty() {
             return Ok(());
@@ -105,27 +94,29 @@ impl OpenSearchClient {
 
         let response = self.bulk(body).await?;
 
-        if let Some(errors) = response.get("errors") {
-            if errors.as_bool().unwrap_or(false) {
-                anyhow::bail!(
-                    "Bulk indexing failed: {}",
-                    serde_json::to_string_pretty(&response)?
-                );
-            }
+        if response
+            .get("errors")
+            .and_then(|e| e.as_bool())
+            .unwrap_or(false)
+        {
+            anyhow::bail!(
+                "Bulk indexing failed: {}",
+                serde_json::to_string_pretty(&response)?
+            );
         }
 
         Ok(())
     }
-}
 
-impl Clone for OpenSearchClient {
-    fn clone(&self) -> Self {
-        Self {
-            client: Client::builder()
-                .timeout(Duration::from_secs(30))
-                .build()
-                .expect("Failed to clone HTTP client"),
-            base_url: self.base_url.clone(),
-        }
+    pub async fn search(&self, index: &str, query: Value) -> Result<Value> {
+        let url = format!("{}/{}/_search", self.base_url, index);
+        Ok(self
+            .client
+            .post(&url)
+            .json(&query)
+            .send()
+            .await?
+            .json()
+            .await?)
     }
 }

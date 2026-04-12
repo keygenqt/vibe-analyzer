@@ -5,3 +5,4 @@ pub mod client;
 pub mod data;
 pub mod index;
 pub mod indexer;
+pub mod search;

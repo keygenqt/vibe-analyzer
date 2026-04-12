@@ -1,9 +1,11 @@
 //! Files index management for raw file content storage.
 //! Handles creation and management of vibe_files_{hash} indices.
 
+use std::path::PathBuf;
+
+use crate::configs::app::AppConfig;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::source_file::SourceFile;
-use crate::utils::app;
+use crate::opensearch::data::requests::source_file::SourceFile;
 use anyhow::Result;
 use serde_json::json;
 
@@ -15,10 +17,10 @@ pub struct FilesIndex {
 
 impl FilesIndex {
     /// Creates new FilesIndex instance.
-    pub fn new(client: OpenSearchClient, project_hash: &str) -> Self {
+    pub fn new(client: OpenSearchClient, source: &PathBuf) -> Self {
         Self {
             client,
-            name: format!("{}-files-{}", app::app_name(), project_hash),
+            name: AppConfig::files_index(source),
         }
     }
 
