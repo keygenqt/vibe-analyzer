@@ -5,7 +5,7 @@ Provides semantic search across multiple knowledge sources with incremental upda
 
 ## Usage
 
-````bash
+```bash
 # Source management
 vibe-analyzer source add <path>                  # Add knowledge source
 vibe-analyzer source remove --target <path>      # Remove source
@@ -26,6 +26,7 @@ vibe-analyzer search hash --target <name>        # Get file hashes (incremental)
 vibe-analyzer serve start                        # Start MCP server
 vibe-analyzer serve status                       # Check server status
 vibe-analyzer serve stop                         # Stop server
+```
 
 ## Output
 
@@ -40,7 +41,7 @@ JSON file in `~/Downloads/` with the following structure:
     "files": [...]
   }]
 }
-````
+```
 
 ## Supported Languages
 
@@ -57,8 +58,8 @@ Used to provide structured documentation context for LLM queries alongside sourc
 
 ## TODO
 
-- [ ] Orphaned files cleanup (remove deleted files from index)
-- [ ] OpenSearch authentication support
-- [ ] CLI search commands expansion (meta, file, get, stats)
-- [ ] MCP server implementation
-- [ ] Watch mode for automatic incremental indexing on file changes
+- Orphaned files cleanup (remove deleted files from index)
+- OpenSearch authentication support
+- CLI search commands expansion (meta, file, get, stats)
+- MCP server implementation
+- Watch mode for automatic incremental indexing on file changes
