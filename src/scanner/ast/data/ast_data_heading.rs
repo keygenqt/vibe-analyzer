@@ -1,7 +1,8 @@
 //! AST data structures for Markdown documents.
 //! Stores frontmatter, headings, links, and code block languages.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Markdown heading structure with level and text.
 #[derive(Debug, Clone, Serialize, Deserialize)]

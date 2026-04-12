@@ -5,7 +5,8 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 use regex::Regex;
-use tree_sitter::{Node, Parser};
+use tree_sitter::Node;
+use tree_sitter::Parser;
 
 use crate::scanner::ast::data::ast_data::AstData;
 use crate::scanner::ast::data::ast_data_heading::AstHeading;

@@ -123,8 +123,8 @@ Provide only the summary text, no additional formatting."#,
                 format!(
                     r#"    {{
       "path": "{}",
-      "description": "[FILL]",
-      "tags": ["[FILL]"]
+      "description": "FILL_DESCRIPTION",
+      "tags": ["TAG1", "TAG2", "TAG3"]
     }}"#,
                     f.path
                 )
@@ -139,29 +139,29 @@ Provide only the summary text, no additional formatting."#,
         );
 
         let prompt = format!(
-            r#"COPY the JSON below EXACTLY, but replace "[FILL]" with appropriate content.
+            r#"COPY this JSON EXACTLY, replacing only the placeholders.
 
-RULES:
-- For "description": Write 2-3 sentences describing the file's purpose
-- For "tags": Replace with 3-5 specific keywords (NO: "file", "code", "markdown")
-- DO NOT change paths, structure, or number of objects
-- DO NOT add or remove any objects from the "files" array
+Placeholders to replace:
+- "FILL_DESCRIPTION" → write 2-3 sentences about the file
+- "TAG1", "TAG2", "TAG3" → replace with 3-5 specific keywords
 
-COPY AND FILL THIS JSON:
+STRICT RULES:
+- Keep ALL {} objects in the array
+- Keep ALL "path" values unchanged
+- Do NOT skip any object
+- Do NOT change JSON structure
+
+JSON TO COPY AND FILL:
 {}"#,
+            data.files.len(),
             template
         );
 
         for attempt in 1..=MAX_RETRIES {
-            let response = self.generate_completion(&prompt).await?;
-            let json_str = response
-                .trim()
-                .trim_start_matches("```json")
-                .trim_start_matches("```")
-                .trim_end_matches("```")
-                .trim();
+            let raw_response = self.generate_completion(&prompt).await?;
+            let json_str = self.clean_llm_json(&raw_response);
 
-            match serde_json::from_str::<OllamaEnrichmentResponse>(json_str) {
+            match serde_json::from_str::<OllamaEnrichmentResponse>(&json_str) {
                 Ok(parsed) => {
                     let mut enriched = Vec::new();
                     for file_response in &parsed.files {
@@ -196,27 +196,28 @@ COPY AND FILL THIS JSON:
                         "LLM returned {} files, expected {}. Response may be truncated or paths mismatch.\n\
                             \n\
                             Troubleshooting:\n\
-                            - Try reducing max_chunk_chars in config (current: {})\n\
+                            - Try reducing max_chunk_chars ({}) or max_chunk_files ({}) in config\n\
                             - Try a more capable model (e.g., qwen2.5-coder:7b, llama3.2:3b)\n\
                             - Split large files into smaller batches\n\
                             \n\
                             Config location: ~/.vibe-analyzer/config.json",
                         enriched.len(),
                         data.files.len(),
-                        self.config.max_chunk_chars
+                        self.config.max_chunk_chars,
+                        self.config.max_chunk_files
                     );
                 }
                 Err(_) if attempt < MAX_RETRIES => {
-                    tokio::time::sleep(Duration::from_millis(500)).await;
+                    tokio::time::sleep(Duration::from_millis(500 * attempt as u64)).await;
                 }
                 Err(e) => {
-                    let preview = &json_str[..json_str.len().min(400)];
+                    let preview = &json_str[..json_str.len().min(1000)];
                     anyhow::bail!(
-                        "LLM JSON parse failed after {} attempts: {}\nPreview: {}...\nReduce max_chunk_chars (current: {})",
+                        "LLM JSON parse failed after {} attempts: {}...\nReduce max_chunk_chars (current: {})\n{}\n...",
                         MAX_RETRIES,
                         e,
+                        self.config.max_chunk_chars,
                         preview,
-                        self.config.max_chunk_chars
                     );
                 }
             }
@@ -236,6 +237,7 @@ COPY AND FILL THIS JSON:
                 "temperature": self.config.temperature,
                 "seed": self.config.seed,
                 "num_ctx": self.config.num_ctx,
+                "num_predict": self.config.num_predict,
             }
         });
 
@@ -265,5 +267,68 @@ COPY AND FILL THIS JSON:
 
         let generate_response: OllamaGenerateResponse = response.json().await?;
         Ok(generate_response.response)
+    }
+
+    /// Cleans and repairs malformed JSON from LLM responses.
+    fn clean_llm_json(&self, raw: &str) -> String {
+        let mut content = raw.trim().to_string();
+
+        // Extract JSON from markdown code blocks
+        if let Some(start_md) = content.find("```") {
+            let after_start = &content[start_md + 3..];
+            let json_start = after_start.find('\n').map(|i| i + 1).unwrap_or(0);
+            let remainder = &after_start[json_start..];
+
+            if let Some(end_md) = remainder.find("```") {
+                content = remainder[..end_md].to_string();
+            } else {
+                content = remainder.to_string();
+            }
+        }
+
+        // Locate JSON object or array boundaries
+        let start = content.find(|c| c == '{' || c == '[').unwrap_or(0);
+        let end = content
+            .rfind(|c| c == '}' || c == ']')
+            .map(|i| i + 1)
+            .unwrap_or(content.len());
+        let mut json_str = content[start..end].trim().to_string();
+
+        // Fix unquoted object keys: , key: -> , "key":
+        let key_regex = regex::Regex::new(r"(?m)([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)").unwrap();
+        json_str = key_regex.replace_all(&json_str, r#"$1"$2"$3"#).to_string();
+
+        // Fix trailing commas: [1, 2, ] -> [1, 2]
+        let trailing_comma_regex = regex::Regex::new(r",(\s*[\]}])").unwrap();
+        json_str = trailing_comma_regex
+            .replace_all(&json_str, r#"$1"#)
+            .to_string();
+
+        // Balance unmatched braces and brackets
+        let mut open_braces = 0;
+        let mut open_brackets = 0;
+
+        for c in json_str.chars() {
+            match c {
+                '{' => open_braces += 1,
+                '}' => {
+                    if open_braces > 0 {
+                        open_braces -= 1
+                    }
+                }
+                '[' => open_brackets += 1,
+                ']' => {
+                    if open_brackets > 0 {
+                        open_brackets -= 1
+                    }
+                }
+                _ => {}
+            }
+        }
+
+        json_str.push_str(&"}".repeat(open_braces));
+        json_str.push_str(&"]".repeat(open_brackets));
+
+        json_str
     }
 }

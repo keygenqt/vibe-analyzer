@@ -1,12 +1,12 @@
 //! File analysis data for OpenSearch indexing.
 //! Contains AST, enrichment, and searchable metadata.
 
-use crate::analyzer::data::output::{
-    enriched_file_analysis::EnrichedFileAnalysis, enriched_source_analysis::EnrichedSourceAnalysis,
-};
+use crate::analyzer::data::output::enriched_file_analysis::EnrichedFileAnalysis;
+use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
 use crate::opensearch::data::HasPath;
 use crate::scanner::ast::data::ast_data::AstData;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// File analysis stored in vibe_smart_{hash} index.
 #[derive(Debug, Clone, Serialize, Deserialize)]

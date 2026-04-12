@@ -1,21 +1,21 @@
 //! Core analyzer that orchestrates scanning and LLM enrichment.
 //! Coordinates file discovery, batching, and Ollama API calls.
 
+use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
 use crate::analyzer::data::requests::ollama_files_request::OllamaFilesRequest;
 use crate::analyzer::data::requests::ollama_summary_request::OllamaSummaryRequest;
 use crate::analyzer::ollama_cluster::OllamaCluster;
+use crate::scanner::data::output::file_analysis::FileAnalysis;
 use crate::scanner::data::output::source_analysis::SourceAnalysis;
-use crate::{
-    analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis,
-    scanner::data::output::file_analysis::FileAnalysis,
-};
 use anyhow::Result;
 use chrono::Local;
 use futures::StreamExt;
 use std::sync::Arc;
+use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::{AtomicBool, Ordering};
-use tokio::sync::{Mutex, mpsc};
+use std::sync::atomic::Ordering;
+use tokio::sync::Mutex;
+use tokio::sync::mpsc;
 
 /// Debug info for worker statistics.
 struct WorkerStats {
@@ -64,7 +64,7 @@ pub async fn analyze_source(
     for worker_id in 0..num_workers {
         let client = cluster.clients[worker_id].clone();
         let rx = shared_rx.clone();
-        let max_chunk = client.config.max_chunk_chars;
+        let config = client.config.clone();
         let files_processed = Arc::new(AtomicUsize::new(0));
         let files_processed_clone = files_processed.clone();
         let error_flag_clone = error_flag.clone();
@@ -80,58 +80,43 @@ pub async fn analyze_source(
             let mut results = Vec::new();
 
             loop {
-                // Leave quietly
                 if error_flag_clone.load(Ordering::Relaxed) {
                     return Ok(vec![]);
                 }
-                // Compete for the next file
-                let file = {
+
+                let file_opt = {
                     let mut rx_guard = rx.lock().await;
                     rx_guard.recv().await
                 };
-                match file {
-                    Some(file) => {
-                        if !batch.add(&file, max_chunk) {
-                            // Batch is full - send it
-                            if !batch.is_empty() {
-                                match client.get_file_enriched_analysis(&batch).await {
-                                    Ok(enriched) => {
-                                        files_processed_clone
-                                            .fetch_add(batch.files.len(), Ordering::Relaxed);
-                                        results.extend(enriched);
-                                    }
-                                    Err(e) => {
-                                        error_flag_clone.store(true, Ordering::Relaxed);
-                                        return Err(e);
-                                    }
-                                }
-                            }
-                            // Start new batch with current file
+
+                let is_last = file_opt.is_none();
+                let is_full = !is_last && !batch.can_fit(file_opt.as_ref().unwrap(), &config)
+                    || batch.files.len() >= config.max_chunk_files;
+                let should_flush = !batch.is_empty() && (is_last || is_full);
+
+                if should_flush {
+                    match client.get_file_enriched_analysis(&batch).await {
+                        Ok(enriched) => {
+                            files_processed_clone.fetch_add(batch.files.len(), Ordering::Relaxed);
+                            results.extend(enriched);
                             batch.clear();
-                            if !batch.add(&file, max_chunk) {
-                                anyhow::bail!(
-                                    "File '{}' is too large for LLM context (exceeds max_chunk_chars: {}). Increase max_chunk_chars in config or split the file.",
-                                    file.path,
-                                    max_chunk
-                                );
-                            }
+                        }
+                        Err(e) => {
+                            error_flag_clone.store(true, Ordering::Relaxed);
+                            return Err(e);
                         }
                     }
-                    None => break, // Channel closed, no more files
                 }
-            }
 
-            // Send last batch
-            if !batch.is_empty() {
-                match client.get_file_enriched_analysis(&batch).await {
-                    Ok(enriched) => {
-                        files_processed_clone.fetch_add(batch.files.len(), Ordering::Relaxed);
-                        results.extend(enriched);
+                match file_opt {
+                    Some(file) => {
+                        if !batch.add(&file, &config) {
+                            anyhow::bail!("File '{}' too large", file.path);
+                        }
                     }
-                    Err(e) => return Err(e),
+                    None => break,
                 }
             }
-
             Ok::<_, anyhow::Error>(results)
         });
         abort_handles.push(handle.abort_handle());

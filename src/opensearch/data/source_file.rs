@@ -2,14 +2,14 @@
 //! Contains raw file content for retrieval.
 
 use anyhow::Result;
-use std::{fs, path::Path};
+use std::fs;
+use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::{
-    analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis,
-    opensearch::data::HasPath,
-};
+use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
+use crate::opensearch::data::HasPath;
 
 /// File content stored in vibe_files_{hash} index.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,7 +35,10 @@ impl SourceFile {
     /// Creates SourceFile from root and relative path.
     pub fn new(root: &str, path: &str, hash: &str) -> Result<Self> {
         let full_path = Path::new(root).join(path);
-        let content = fs::read_to_string(&full_path)?;
+
+        let content = fs::read(&full_path)
+            .map(|bytes| String::from_utf8_lossy(&bytes).to_string())
+            .unwrap_or_else(|_| format!("[Binary file: {}]", path));
 
         Ok(Self {
             root: root.to_string(),

@@ -1,10 +1,9 @@
 //! Files index management for raw file content storage.
 //! Handles creation and management of vibe_files_{hash} indices.
 
-use crate::{
-    opensearch::{client::OpenSearchClient, data::source_file::SourceFile},
-    utils::app,
-};
+use crate::opensearch::client::OpenSearchClient;
+use crate::opensearch::data::source_file::SourceFile;
+use crate::utils::app;
 use anyhow::Result;
 use serde_json::json;
 

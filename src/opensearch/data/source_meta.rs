@@ -1,14 +1,13 @@
 //! Source metadata for OpenSearch indexing.
 //! Contains project-level information: summary, license, README, statistics.
 
+use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
 use crate::opensearch::data::HasPath;
+use crate::scanner::data::output::license_info::LicenseInfo;
 use crate::scanner::data::output::readme_info::ReadmeInfo;
 use crate::scanner::data::output::source_stats::SourceStats;
-use crate::{
-    analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis,
-    scanner::data::output::license_info::LicenseInfo,
-};
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Project metadata stored in vibe_meta_{hash} index.
 #[derive(Debug, Clone, Serialize, Deserialize)]

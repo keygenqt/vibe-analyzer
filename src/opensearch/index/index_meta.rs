@@ -1,10 +1,9 @@
 //! Metadata index management for project-level information.
 //! Handles creation and management of the vibe_meta index.
 
-use crate::{
-    opensearch::{client::OpenSearchClient, data::source_meta::SourceMeta},
-    utils::app,
-};
+use crate::opensearch::client::OpenSearchClient;
+use crate::opensearch::data::source_meta::SourceMeta;
+use crate::utils::app;
 use anyhow::Result;
 use serde_json::json;
 

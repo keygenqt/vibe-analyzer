@@ -6,7 +6,10 @@ use std::path::PathBuf;
 use clap::Subcommand;
 use colored::Colorize;
 
-use crate::{configs::app::AppConfig, exit_error, print_info, print_success};
+use crate::configs::app::AppConfig;
+use crate::exit_error;
+use crate::print_info;
+use crate::print_success;
 
 /// Source management actions.
 #[derive(Subcommand)]

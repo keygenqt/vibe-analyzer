@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::Subcommand;
+use colored::Colorize;
 
 use crate::analyzer::analyzer;
 use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
@@ -95,6 +96,7 @@ pub async fn run(action: ScanAction) {
             };
 
             if !result.is_empty() {
+                print_info!("Saving file...");
                 let options = ExportOptions::new(format, output);
                 match export::writer::export_ast(result, &options) {
                     Ok(json_path) => {
@@ -122,6 +124,7 @@ pub async fn run(action: ScanAction) {
             };
 
             if !result.is_empty() {
+                print_info!("Saving file...");
                 let options = ExportOptions::new(format, output);
                 match export::writer::export_enriched(result, &options) {
                     Ok(json_path) => {
@@ -144,13 +147,10 @@ pub async fn run(action: ScanAction) {
                     if result.files.files_indexed > 0 {
                         let elapsed = start_time.elapsed();
                         print_success!(
-                            "{} (took {:.1}s)",
-                            format!(
-                                "Meta: {}, Files: {} indexed, Analysis: {} indexed",
-                                result.meta.indexed,
-                                result.files.files_indexed,
-                                result.files.analysis_indexed
-                            ),
+                            "Indexing completed. Sources: {}, Files: {}, Analysis: {} (took {:.1}s)",
+                            result.meta.indexed,
+                            result.files.files_indexed,
+                            result.files.analysis_indexed,
                             elapsed.as_secs_f64()
                         );
                     } else {
@@ -176,7 +176,7 @@ pub async fn scan_ast(config: &AppConfig, target: Option<String>) -> Result<Vec<
 
     for source in sources {
         let name = source.file_name().unwrap().to_string_lossy();
-        print_info!("Start scan source: {}", name);
+        print_info!("Start scan source: {}", name.bold().blue());
         match scanner::scan_source(
             &source,
             |percent, current, total| {
@@ -252,12 +252,14 @@ pub async fn scan_enriches(
 
     // Phase 1: Perform standard source scanning
     let all_analyses = scan_ast(config, target).await?;
+    print_success!("AST scanning completed: {} source", all_analyses.len());
 
     // Phase 2: Enrich each source with LLM analysis
     let mut enriched_all_analyses = Vec::new();
 
     for source_analyses in all_analyses {
-        print_info!("Start scan enriched analysis");
+        let name = source_analyses.root.split("/").last().unwrap();
+        print_info!("Start scan enriched analysis: {}", name.bold().blue());
 
         match analyzer::analyze_source(
             &source_analyses,
@@ -265,7 +267,8 @@ pub async fn scan_enriches(
             |percent, current, total| {
                 print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
                 if total == current {
-                    println!()
+                    println!();
+                    print_info!("Cleaning up...");
                 }
             },
             |message| print_info!("{}", message),
@@ -304,11 +307,18 @@ pub async fn index_enriches(
 
     // 4. Get enriched data from analyzer
     let sources = scan_enriches(config, target).await?;
+    let total_files: usize = sources.iter().map(|s| s.files.len()).sum();
+    print_success!(
+        "LLM enrichment completed: {} sources, {} files",
+        sources.len(),
+        total_files
+    );
     // let debug_file = "/Users/keygenqt/Downloads/vibe-analyzer-11-04-2026_13-31-25.json";
     // let content = std::fs::read_to_string(debug_file)?;
     // let sources = serde_json::from_str::<EnrichedSourcesAnalysis>(&content)?.sources;
 
     // 5. Index metadata for all sources
+    print_info!("Starting data indexing to OpenSearch...");
     let meta_items = SourceMeta::from_enriched(&sources);
     let report_meta = indexer.index_meta(&meta_items, force).await?;
 

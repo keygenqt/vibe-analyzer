@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::configs::ollama::OllamaConfig;
 use crate::scanner::ast::data::ast_data_class::AstDataClass;
 use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
 use crate::scanner::ast::data::ast_data_function::AstDataFunction;
@@ -56,50 +57,39 @@ pub struct OllamaFileRequest {
 }
 
 impl OllamaFileRequest {
-    pub fn new(file: &FileAnalysis) -> Self {
+    pub fn new(config: &OllamaConfig, file: &FileAnalysis) -> Self {
+        let ast = file.ast.as_ref();
         Self {
             path: file.path.clone(),
             extension: file.extension.clone(),
-            header_comments: file
-                .ast
-                .as_ref()
-                .map(|ast| ast.header_comments.clone())
-                .unwrap_or_default(),
-            imports: file
-                .ast
-                .as_ref()
-                .map(|ast| ast.imports.clone())
-                .unwrap_or_default(),
-            variables: file
-                .ast
-                .as_ref()
-                .map(|ast| ast.variables.clone())
-                .unwrap_or_default(),
-            functions: file
-                .ast
-                .as_ref()
-                .map(|ast| ast.functions.clone())
-                .unwrap_or_default(),
-            classes: file
-                .ast
-                .as_ref()
-                .map(|ast| ast.classes.clone())
-                .unwrap_or_default(),
-            structs: file
-                .ast
-                .as_ref()
-                .map(|ast| ast.structs.clone())
-                .unwrap_or_default(),
-            enums: file
-                .ast
-                .as_ref()
-                .map(|ast| ast.enums.clone())
-                .unwrap_or_default(),
-            interfaces: file
-                .ast
-                .as_ref()
-                .map(|ast| ast.interfaces.clone())
-                .unwrap_or_default(),
+            header_comments: ast.map(|a| a.header_comments.clone()).unwrap_or_default(),
+            classes: ast.map(|a| a.classes.clone()).unwrap_or_default(),
+            structs: ast.map(|a| a.structs.clone()).unwrap_or_default(),
+            imports: if config.ast_imports {
+                ast.map(|a| a.imports.clone()).unwrap_or_default()
+            } else {
+                Vec::new()
+            },
+            variables: if config.ast_variables {
+                ast.map(|a| a.variables.clone()).unwrap_or_default()
+            } else {
+                Vec::new()
+            },
+            functions: if config.ast_functions {
+                ast.map(|a| a.functions.clone()).unwrap_or_default()
+            } else {
+                Vec::new()
+            },
+            enums: if config.ast_enums {
+                ast.map(|a| a.enums.clone()).unwrap_or_default()
+            } else {
+                Vec::new()
+            },
+            interfaces: if config.ast_interfaces {
+                ast.map(|a| a.interfaces.clone()).unwrap_or_default()
+            } else {
+                Vec::new()
+            },
         }
     }
 }
