@@ -3,6 +3,7 @@
 
 pub mod input {
     pub mod file_info;
+    pub mod file_stats;
 }
 
 pub mod output {

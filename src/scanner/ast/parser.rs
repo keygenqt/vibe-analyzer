@@ -2,7 +2,7 @@
 //! Maintains a registry of language parsers and dispatches parsing requests by file extension.
 
 use crate::scanner::ast::data::ast_data::AstData;
-use crate::scanner::ast::langs::arkts::ArkTSParser;
+use crate::scanner::ast::langs::arkts::ArkTsParser;
 use crate::scanner::ast::langs::bash::BashParser;
 use crate::scanner::ast::langs::batch::BatchParser;
 use crate::scanner::ast::langs::csharp::CSharpParser;
@@ -50,13 +50,18 @@ static PARSERS: Lazy<HashMap<String, Box<dyn LanguageParser>>> = Lazy::new(|| {
     register_parser::<KotlinParser>(&mut map, &["kt", "kts"]);
     register_parser::<JavaScriptParser>(&mut map, &["js", "jsx"]);
     register_parser::<TypeScriptParser>(&mut map, &["ts", "tsx"]);
-    register_parser::<ArkTSParser>(&mut map, &["ets", "arkts"]);
+    register_parser::<ArkTsParser>(&mut map, &["ets", "arkts"]);
     register_parser::<BashParser>(&mut map, &["sh", "bash", "zsh"]);
     register_parser::<BatchParser>(&mut map, &["bat", "cmd"]);
     register_parser::<MarkdownParser>(&mut map, &["md", "markdown"]);
 
     map
 });
+
+/// Returns the language name for a given file extension.
+pub fn get_language_name(extension: &str) -> Option<&'static str> {
+    PARSERS.get(extension).map(|p| p.language_name())
+}
 
 /// Parses source code and returns AST data for the specified language
 pub fn parse_ast(content: &str, extension: &str) -> Result<Option<AstData>> {

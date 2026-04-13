@@ -9,4 +9,7 @@ use crate::scanner::ast::data::ast_data::AstData;
 pub trait LanguageParser: Send + Sync {
     /// Parses source code content and returns AST data
     fn parse(&self, content: &str) -> Result<AstData>;
+
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str;
 }

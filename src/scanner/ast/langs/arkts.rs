@@ -15,11 +15,17 @@ use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
 use crate::scanner::ast::traits::LanguageParser;
 use crate::scanner::ast::utils::extract_signature;
 
-/// Parser for ArkTS (HarmonyOS) language files.
+/// Parser for ArkTs (HarmonyOS) language files.
 #[derive(Default)]
-pub struct ArkTSParser;
+pub struct ArkTsParser;
 
-impl LanguageParser for ArkTSParser {
+impl LanguageParser for ArkTsParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "ArkTs"
+    }
+
+    /// Parses ArkTs source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_arkts::LANGUAGE.into())?;

@@ -20,6 +20,11 @@ use crate::scanner::ast::utils::extract_signature;
 pub struct RustParser;
 
 impl LanguageParser for RustParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "Rust"
+    }
+
     /// Parses Rust source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();

@@ -17,6 +17,12 @@ use crate::scanner::ast::traits::LanguageParser;
 pub struct GoParser;
 
 impl LanguageParser for GoParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "Go"
+    }
+
+    /// Parses Go source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_go::LANGUAGE.into())?;

@@ -18,6 +18,12 @@ use crate::scanner::ast::traits::LanguageParser;
 pub struct KotlinParser;
 
 impl LanguageParser for KotlinParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "Kotlin"
+    }
+
+    /// Parses Kotlin source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         let lang = tree_sitter_kotlin::language();

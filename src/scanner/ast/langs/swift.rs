@@ -19,6 +19,12 @@ use crate::scanner::ast::traits::LanguageParser;
 pub struct SwiftParser;
 
 impl LanguageParser for SwiftParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "Swift"
+    }
+
+    /// Parses Swift source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_swift::LANGUAGE.into())?;

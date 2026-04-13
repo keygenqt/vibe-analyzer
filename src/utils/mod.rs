@@ -2,10 +2,11 @@
 //! Provides helpers for file system, hashing, MIME detection, path handling, and CLI formatting.
 
 pub mod app;
+pub mod check;
 pub mod constants;
 pub mod hash;
 pub mod json5;
 pub mod macros;
 pub mod matcher;
-pub mod mime;
 pub mod path;
+pub mod tree;

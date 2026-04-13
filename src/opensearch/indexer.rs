@@ -143,7 +143,7 @@ impl Indexer {
         // Delete orphaned files for each active source
         for source in config.get_sources() {
             // Files on disk
-            let Ok(fs_files) = utils::path::source_files(&source, &None) else {
+            let Ok(fs_files) = utils::path::source_files(&source) else {
                 continue;
             };
             let fs_paths: HashSet<String> = fs_files
@@ -198,7 +198,7 @@ impl Indexer {
                     "query": {
                         "bool": {
                             "must_not": {
-                                "terms": { "path.keyword": active_paths }
+                                "terms": { "Root": active_paths }
                             }
                         }
                     }

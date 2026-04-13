@@ -20,6 +20,12 @@ use crate::scanner::ast::utils::extract_signature;
 pub struct CSharpParser;
 
 impl LanguageParser for CSharpParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "C#"
+    }
+
+    /// Parses C# source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_c_sharp::LANGUAGE.into())?;

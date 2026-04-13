@@ -1,15 +1,24 @@
 //! Search functionality for OpenSearch indices.
 //! Provides meta, ast, file, and get queries.
 
+use std::collections::HashMap;
+
 use anyhow::Result;
 use serde_json::Value;
 use serde_json::json;
 
+use crate::configs::app::AppConfig;
 use crate::opensearch::client::OpenSearchClient;
 use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;
 use crate::opensearch::data::responses::search_ast::SearchAst;
+use crate::opensearch::data::responses::search_file::SearchFile;
 use crate::opensearch::data::responses::search_file_hash::SearchFileHash;
 use crate::opensearch::data::responses::search_hit::SearchHit;
+use crate::opensearch::data::responses::search_meta::SearchMeta;
+use crate::opensearch::data::responses::search_stats::LanguageStat;
+use crate::opensearch::data::responses::search_stats::SearchStats;
+use crate::opensearch::data::responses::search_tree::SearchTree;
+use crate::scanner::data::output::source_stats::SourceStats;
 
 pub struct SearchClient {
     client: OpenSearchClient,
@@ -20,8 +29,281 @@ impl SearchClient {
         Self { client }
     }
 
+    /// Get statistics for multiple sources.
+    pub async fn get_stats(&self, indexes: &[String]) -> Result<SearchStats> {
+        let mut lang_map: HashMap<String, LanguageStat> = HashMap::new();
+        let mut other_stat = LanguageStat {
+            language: "Other".to_string(),
+            files: 0,
+            lines: 0,
+            ast_objects: 0,
+            size_bytes: 0,
+            size_human: String::new(),
+        };
+
+        for index in indexes {
+            let all_docs = self.get_all_ast(index).await?;
+
+            for doc in all_docs {
+                if !doc.is_text {
+                    continue;
+                }
+
+                let ext = doc.path.split('.').last().unwrap_or("");
+                let language = crate::scanner::ast::parser::get_language_name(ext);
+
+                if let Some(lang_name) = language {
+                    let entry = lang_map
+                        .entry(lang_name.to_string())
+                        .or_insert(LanguageStat {
+                            language: lang_name.to_string(),
+                            files: 0,
+                            lines: 0,
+                            ast_objects: 0,
+                            size_bytes: 0,
+                            size_human: String::new(),
+                        });
+
+                    entry.files += 1;
+                    entry.lines += doc.lines_of_code.unwrap_or(0);
+                    entry.size_bytes += doc.size_bytes;
+
+                    if let Some(ast) = &doc.ast {
+                        entry.ast_objects += ast.functions.len()
+                            + ast.classes.len()
+                            + ast.structs.len()
+                            + ast.enums.len()
+                            + ast.interfaces.len()
+                            + ast.variables.len()
+                            + ast.imports.len()
+                            + ast.headings.len()
+                            + ast.links.len()
+                            + ast.code_blocks.len();
+                    }
+                } else {
+                    other_stat.files += 1;
+                    other_stat.lines += doc.lines_of_code.unwrap_or(0);
+                    other_stat.size_bytes += doc.size_bytes;
+                }
+            }
+        }
+
+        // Convert sizes to human-readable
+        for stat in lang_map.values_mut() {
+            stat.size_human = SourceStats::format_size(stat.size_bytes);
+        }
+        other_stat.size_human = SourceStats::format_size(other_stat.size_bytes);
+
+        let mut languages: Vec<LanguageStat> = lang_map.into_values().collect();
+        languages.sort_by(|a, b| b.lines.cmp(&a.lines));
+
+        // Add Other if it has files
+        if other_stat.files > 0 {
+            languages.push(other_stat);
+        }
+
+        let total_size_bytes = languages.iter().map(|l| l.size_bytes).sum();
+        let total = LanguageStat {
+            language: "Total".to_string(),
+            files: languages.iter().map(|l| l.files).sum(),
+            lines: languages.iter().map(|l| l.lines).sum(),
+            ast_objects: languages.iter().map(|l| l.ast_objects).sum(),
+            size_bytes: total_size_bytes,
+            size_human: SourceStats::format_size(total_size_bytes),
+        };
+
+        Ok(SearchStats { languages, total })
+    }
+
+    /// Get all AST data for a source using scroll API.
+    pub async fn get_all_ast(&self, index: &str) -> Result<Vec<SourceFileAnalysis>> {
+        let mut all_results = Vec::new();
+
+        if !self.client.index_exists(index).await? {
+            return Ok(all_results);
+        }
+
+        let url = format!("{}/{}/_search?scroll=1m", self.client.base_url(), index);
+        let query = json!({
+            "size": 1000,
+            "query": { "match_all": {} }
+        });
+
+        let mut resp: Value = self
+            .client
+            .post(&url)
+            .json(&query)
+            .send()
+            .await?
+            .json()
+            .await?;
+
+        loop {
+            let hits = match resp["hits"]["hits"].as_array() {
+                Some(h) => h,
+                None => break,
+            };
+            if hits.is_empty() {
+                break;
+            }
+            for h in hits {
+                if let Ok(doc) = serde_json::from_value::<SourceFileAnalysis>(h["_source"].clone())
+                {
+                    all_results.push(doc);
+                }
+            }
+            let scroll_id = match resp["_scroll_id"].as_str() {
+                Some(id) => id,
+                None => break,
+            };
+            resp = self
+                .client
+                .post(&format!("{}/_search/scroll", self.client.base_url()))
+                .json(&json!({ "scroll": "1m", "scroll_id": scroll_id }))
+                .send()
+                .await?
+                .json()
+                .await?;
+        }
+
+        Ok(all_results)
+    }
+
+    /// Generate directory tree structure from file paths.
+    pub async fn get_tree(&self, index: &str, level: usize) -> Result<SearchTree> {
+        if !self.client.index_exists(index).await? {
+            return Ok(SearchTree {
+                tree: String::new(),
+                directories: 0,
+                files: 0,
+            });
+        }
+
+        let hashes = self.get_hashes(index).await?;
+        if hashes.is_empty() {
+            return Ok(SearchTree {
+                tree: String::new(),
+                directories: 0,
+                files: 0,
+            });
+        }
+
+        // Extract root from first path
+        let first_path = &hashes[0].path;
+        let root = first_path
+            .rsplit_once('/')
+            .map(|(r, _)| r)
+            .unwrap_or(first_path);
+        let root_name = root.split('/').last().unwrap_or("project");
+
+        // Extract relative paths
+        let paths: Vec<String> = hashes
+            .iter()
+            .map(|h| {
+                h.path
+                    .strip_prefix(&format!("{}/", root))
+                    .unwrap_or(&h.path)
+                    .to_string()
+            })
+            .collect();
+
+        // Build tree
+        let (tree_string, dirs, files) = crate::utils::tree::build_tree(&paths, level);
+
+        Ok(SearchTree {
+            tree: format!("{}\n{}", root_name, tree_string.trim_end()),
+            directories: dirs,
+            files: files,
+        })
+    }
+
+    /// Search files by path pattern in a specific source index.
+    pub async fn get_files(
+        &self,
+        pattern: &str,
+        index: &str,
+        limit: usize,
+    ) -> Result<Vec<SearchFile>> {
+        // Check if index exists
+        if !self.client.index_exists(index).await? {
+            return Ok(Vec::new());
+        }
+
+        let query = json!({
+            "size": limit,
+            "_source": ["Root", "Path", "Content"],
+            "query": {
+                "wildcard": {
+                    "Path": {
+                        "value": format!("*{}*", pattern)
+                    }
+                }
+            },
+            "sort": [
+                {
+                    "_script": {
+                        "type": "number",
+                        "script": {
+                            "source": "doc['Path'].value.length()"
+                        },
+                        "order": "asc"
+                    }
+                },
+                {
+                    "Path": {
+                        "order": "asc"
+                    }
+                }
+            ]
+        });
+
+        let resp = self.client.search(index, query).await?;
+        let hits = resp["hits"]["hits"].as_array().unwrap();
+
+        let results: Vec<SearchFile> = hits
+            .iter()
+            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
+            .collect();
+
+        Ok(results)
+    }
+
+    /// Search in project metadata (root path, license, summary).
+    pub async fn search_meta(&self, pattern: &str, limit: usize) -> Result<Vec<SearchMeta>> {
+        let index = AppConfig::meta_index();
+
+        let query = json!({
+            "size": limit,
+            "query": {
+                "bool": {
+                    "should": [
+                        { "wildcard": { "Root": { "value": format!("*{}*", pattern), "boost": 10.0 } } },
+                        { "match": { "License.Name": { "query": pattern, "boost": 5.0 } } },
+                        { "term": { "License.SpdxId": { "value": pattern, "boost": 5.0 } } },
+                        { "match": { "Summary": { "query": pattern, "boost": 2.0 } } },
+                    ]
+                }
+            }
+        });
+
+        let resp = self.client.search(&index, query).await?;
+        let hits = resp["hits"]["hits"].as_array().unwrap();
+
+        let results: Vec<SearchMeta> = hits
+            .iter()
+            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
+            .collect();
+
+        Ok(results)
+    }
+
     /// Get all file hashes from a files index using scroll API.
     pub async fn get_hashes(&self, index: &str) -> Result<Vec<SearchFileHash>> {
+        // Check if index exists
+        if !self.client.index_exists(index).await? {
+            return Ok(Vec::new());
+        }
+
         let mut all_results = Vec::new();
 
         // Initial search with scroll

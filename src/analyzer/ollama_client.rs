@@ -94,17 +94,30 @@ impl OllamaClient {
         &self,
         data: &OllamaSummaryRequest,
     ) -> Result<String> {
-        let json_data = serde_json::to_string(data)?;
+        let prompt = if let Some(readme) = data.readme.as_ref() {
+            // Limit README to first 3000 characters to keep prompt focused and avoid token waste
+            let preview = &readme.content[..readme.content.len().min(3000)];
+            format!(
+                r#"The JSON below contains a README file and project metadata.
+Extract or write a concise 2-3 sentence summary of what this project does.
+Focus on the project's purpose and main functionality.
+Return only the summary text.
 
-        let prompt = format!(
-            r#"Analyze this source and provide a concise 2-3 sentence summary in English.
+---
+{}"#,
+                preview
+            )
+        } else {
+            format!(
+                r#"Analyze this codebase metadata and write a concise 2-3 sentence summary.
+Describe what the project likely does based on the root name and directory structure.
+Return only the summary text.
 
-Source data:
-{}
-
-Provide only the summary text, no additional formatting."#,
-            json_data
-        );
+---
+{}"#,
+                serde_json::to_string(data)?
+            )
+        };
 
         let response = self.generate_completion(&prompt).await?;
         Ok(response.trim().to_string())

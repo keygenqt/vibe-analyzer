@@ -4,7 +4,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::scanner::ast::data::ast_data::AstData;
+use crate::scanner::data::input::file_stats::FileStats;
 
 /// Aggregated source statistics
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
@@ -16,18 +16,6 @@ pub struct SourceStats {
     pub text_files: usize,
     /// Number of binary files
     pub binary_files: usize,
-    /// Total functions across all files
-    pub total_functions: usize,
-    /// Total classes across all files
-    pub total_classes: usize,
-    /// Total structs across all files
-    pub total_structs: usize,
-    /// Total enums across all files
-    pub total_enums: usize,
-    /// Total interfaces/traits/protocols across all files
-    pub total_interfaces: usize,
-    /// Total import statements across all files
-    pub total_imports: usize,
     /// Total lines of code across all text files
     pub total_lines_of_code: usize,
     /// Total characters across all text files
@@ -39,48 +27,17 @@ pub struct SourceStats {
 }
 
 impl SourceStats {
-    /// Update stats with AST data from a single file
-    pub fn update(&mut self, ast: Option<&AstData>) {
+    /// Updates aggregated statistics with data from a single file.
+    pub fn add_stats(&mut self, stats: &FileStats) {
         self.total_files += 1;
-
-        if let Some(ast_data) = ast {
+        if stats.is_text {
             self.text_files += 1;
-
-            // Functions
-            self.total_functions += ast_data.functions.len();
-
-            // Classes
-            self.total_classes += ast_data.classes.len();
-
-            // Structs
-            self.total_structs += ast_data.structs.len();
-
-            // Enums
-            self.total_enums += ast_data.enums.len();
-
-            // Interfaces/Traits/Protocols
-            self.total_interfaces += ast_data.interfaces.len();
-
-            // Imports
-            self.total_imports += ast_data.imports.len();
         } else {
             self.binary_files += 1;
         }
-    }
-
-    /// Add lines of code to total
-    pub fn add_lines_of_code(&mut self, lines: usize) {
-        self.total_lines_of_code += lines;
-    }
-
-    /// Add characters to total
-    pub fn add_chars(&mut self, chars: usize) {
-        self.total_chars += chars;
-    }
-
-    /// Add file size and update human readable format
-    pub fn add_size_bytes(&mut self, size: u64) {
-        self.total_size_bytes += size;
+        self.total_lines_of_code += stats.lines_of_code;
+        self.total_chars += stats.size_chars;
+        self.total_size_bytes += stats.size_bytes;
         self.total_size_human = Self::format_size(self.total_size_bytes);
     }
 

@@ -18,6 +18,12 @@ use crate::scanner::ast::traits::LanguageParser;
 pub struct MarkdownParser;
 
 impl LanguageParser for MarkdownParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "Markdown"
+    }
+
+    /// Parses Markdown source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut data = AstData::default();
 

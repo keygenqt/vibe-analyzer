@@ -19,6 +19,12 @@ use crate::scanner::ast::utils::extract_signature;
 pub struct DartParser;
 
 impl LanguageParser for DartParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "Dart"
+    }
+
+    /// Parses Dart source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_dart::LANGUAGE.into())?;

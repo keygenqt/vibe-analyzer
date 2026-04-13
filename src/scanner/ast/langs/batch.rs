@@ -15,6 +15,12 @@ use crate::scanner::ast::traits::LanguageParser;
 pub struct BatchParser;
 
 impl LanguageParser for BatchParser {
+    /// Returns the human-readable language name.
+    fn language_name(&self) -> &'static str {
+        "Batch"
+    }
+
+    /// Parses Batch source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
         parser.set_language(&tree_sitter_batch::LANGUAGE.into())?;

@@ -58,7 +58,6 @@ Used to provide structured documentation context for LLM queries alongside sourc
 
 ## TODO
 
-- CLI search commands expansion (meta, file, get, stats)
 - MCP server implementation
 - Docker support (Dockerfile + docker-compose.yml)
 - Documentation (user guide, configuration reference)
