@@ -1,7 +1,8 @@
 //! Indexer coordinator for OpenSearch operations.
 //! Manages bulk indexing for meta, files, and analysis indices.
 
-use crate::configs::app::{AppConfig, IndexType};
+use crate::configs::app::AppConfig;
+use crate::configs::app::IndexType;
 use crate::opensearch::client::OpenSearchClient;
 use crate::opensearch::data::requests::source_file::SourceFile;
 use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;

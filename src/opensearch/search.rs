@@ -20,6 +20,7 @@ use crate::opensearch::data::responses::search_stats::SearchStats;
 use crate::opensearch::data::responses::search_tree::SearchTree;
 use crate::scanner::data::output::source_stats::SourceStats;
 
+#[derive(Clone)]
 pub struct SearchClient {
     client: OpenSearchClient,
 }

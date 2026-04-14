@@ -1,7 +1,8 @@
 //! Directory tree building utilities.
 //! Provides functions to generate formatted tree structures from file paths.
 
-use std::collections::{BTreeMap, HashSet};
+use std::collections::BTreeMap;
+use std::collections::HashSet;
 
 /// Builds a formatted tree string from a list of file paths.
 /// Returns the tree string, number of directories, and number of files within the specified level.

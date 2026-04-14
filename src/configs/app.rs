@@ -7,6 +7,7 @@ use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
 
+use crate::configs::mcp::McpConfig;
 use crate::configs::spdx::SpdxConfig;
 use crate::print_info;
 use crate::utils;
@@ -38,6 +39,7 @@ pub enum IndexType {
 pub struct AppConfig {
     pub version: String,
     pub opensearch: OpenSearchConfig,
+    pub mcp: McpConfig,
     pub ollama: Vec<OllamaConfig>,
     pub spdx: SpdxConfig,
     pub sources: Vec<PathBuf>,
@@ -48,6 +50,7 @@ impl Default for AppConfig {
         Self {
             version: constants::CONFIG_VERSION.to_string(),
             opensearch: OpenSearchConfig::default(),
+            mcp: McpConfig::default(),
             ollama: vec![OllamaConfig::default()],
             spdx: SpdxConfig::default(),
             sources: vec![],
@@ -112,6 +115,15 @@ impl AppConfig {
             vec![
                 Json5::Commit("version", vec!["Configuration version (do not modify)"]),
                 Json5::Commit("opensearch", vec!["OpenSearch connection"]),
+                Json5::Commit(
+                    "mcp",
+                    vec![
+                        "MCP server configuration",
+                        "host - Bind address (0.0.0.0 for all interfaces, 127.0.0.1 for local only)",
+                        "port - Server port (default: 9020)",
+                        "api_key - API key for authentication (empty = no auth)",
+                    ],
+                ),
                 Json5::Commit(
                     "ollama",
                     vec![

@@ -62,10 +62,10 @@ async fn main() {
         Some(Commands::Source { action }) => cli::source::run(action),
         Some(Commands::Scan { action }) => cli::scan::run(action).await,
         Some(Commands::Search { action }) => cli::search::run(action).await,
-        Some(Commands::Serve { action }) => cli::serve::run(action),
+        Some(Commands::Serve { action }) => cli::serve::run(action).await,
         None => {
             let _ = App::command().print_help();
-            println!();
+            print_newline!();
         }
     }
 }

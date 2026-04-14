@@ -1,7 +1,8 @@
 //! Search result structure for directory tree queries.
 //! Contains formatted tree string and counts of directories and files.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Directory tree result returned from tree search queries.
 #[derive(Debug, Serialize, Deserialize)]

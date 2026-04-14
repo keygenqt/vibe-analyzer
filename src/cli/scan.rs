@@ -29,6 +29,7 @@ use crate::opensearch::indexer::Indexer;
 use crate::opensearch::search::SearchClient;
 use crate::print_error;
 use crate::print_info;
+use crate::print_newline;
 use crate::print_progress;
 use crate::print_success;
 use crate::print_warning;
@@ -193,7 +194,7 @@ pub async fn scan_ast(
             |percent, current, total| {
                 print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
                 if total == current {
-                    println!();
+                    print_newline!();
                 }
             },
             |message| print_warning!("{}", message),
@@ -204,7 +205,7 @@ pub async fn scan_ast(
                 all_analyses.push(analysis);
             }
             Err(e) => {
-                println!();
+                print_newline!();
                 print_error!("Failed to scan {}: {}", name, e);
             }
         }
@@ -231,14 +232,14 @@ pub async fn scan_enriches(
         .is_available(|current, total| {
             print_progress!("Checking availability {}/{}", current, total);
             if total == current {
-                println!();
+                print_newline!();
             }
         })
         .await
     {
         Ok(_) => {}
         Err(_) => {
-            println!();
+            print_newline!();
             anyhow::bail!(
                 "One or more Ollama servers are not available. Check config or start Ollama service"
             )
@@ -250,14 +251,14 @@ pub async fn scan_enriches(
         .ensure_ready(|current, total| {
             print_progress!("Warming up server {}/{}", current, total);
             if total == current {
-                println!();
+                print_newline!();
             }
         })
         .await
     {
         Ok(_) => print_success!("All {} Ollama servers ready", cluster.len()),
         Err(e) => {
-            println!();
+            print_newline!();
             Err(e)?
         }
     }
@@ -284,7 +285,7 @@ pub async fn scan_enriches(
             |percent, current, total| {
                 print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
                 if total == current {
-                    println!();
+                    print_newline!();
                     print_info!("Cleaning up...");
                 }
             },
@@ -296,7 +297,7 @@ pub async fn scan_enriches(
                 enriched_all_analyses.push(analysis);
             }
             Err(e) => {
-                println!();
+                print_newline!();
                 Err(e)?
             }
         }

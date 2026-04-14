@@ -18,6 +18,7 @@ clap = { version = "4.6", features = ["derive"] }
 clap-cargo = "0.18"
 colored = "3.1"
 tokio = { version = "1", features = ["full"] }
+lazy_static = "1.5"
 walkdir = "2.5"
 ignore = "0.4"
 blake3 = "1.8"
@@ -41,6 +42,11 @@ zip = "8.5"
 tempfile = "3.27"
 regex = "1.10"
 futures = "0.3"
+axum = { version = "0.8", features = ["macros"] }
+tower = { version = "0.5", features = ["util"] }
+tower-http = { version = "0.6", features = ["cors", "normalize-path"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 # Tree-sitter grammars
 tree-sitter = "0.25.1"

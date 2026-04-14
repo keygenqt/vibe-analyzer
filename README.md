@@ -7,25 +7,29 @@ Provides semantic search across multiple knowledge sources with incremental upda
 
 ```bash
 # Source management
-vibe-analyzer source add <path>                  # Add knowledge source
-vibe-analyzer source remove --target <path>      # Remove source
-vibe-analyzer source list                        # List all sources
+vibe-analyzer source add <path>                     # Add knowledge source
+vibe-analyzer source remove --target <path>         # Remove source
+vibe-analyzer source list                           # List all sources
 
 # Scanning
-vibe-analyzer scan ast                           # All sources (AST only)
-vibe-analyzer scan ast --target <name>           # Specific source
-vibe-analyzer scan analyze --target <name>       # With LLM enrichment
+vibe-analyzer scan ast                              # All sources (AST only)
+vibe-analyzer scan ast --target <name>              # Specific source
+vibe-analyzer scan analyze --target <name>          # With LLM enrichment
 
 # Search
-vibe-analyzer search ast <query>                 # Search in code structure
-vibe-analyzer search ast <query> --target <name> # Search in specific source
-vibe-analyzer search ast <query> --limit <n>     # Limit results
-vibe-analyzer search hash --target <name>        # Get file hashes (incremental)
+vibe-analyzer search ast <query>                    # Search in code structure
+vibe-analyzer search ast <query> --target <name>    # Search in specific source
+vibe-analyzer search ast <query> --limit <n>        # Limit results
+vibe-analyzer search meta <query>                   # Search in project metadata
+vibe-analyzer search file <pattern> --target <name> # Search files by path
+vibe-analyzer search tree --target <name> [-L <n>]  # Show directory tree
+vibe-analyzer search stats [--target <name>]        # Show language statistics
+vibe-analyzer search hash --target <name>           # Get file hashes (incremental)
 
 # MCP Server
-vibe-analyzer serve start                        # Start MCP server
-vibe-analyzer serve status                       # Check server status
-vibe-analyzer serve stop                         # Stop server
+vibe-analyzer serve start                           # Start MCP server
+vibe-analyzer serve status                          # Check server status
+vibe-analyzer serve stop                            # Stop server
 ```
 
 ## Output
@@ -66,3 +70,4 @@ Used to provide structured documentation context for LLM queries alongside sourc
 
 - Watch mode for automatic incremental indexing on file changes
 - OpenSearch authentication support (optional, for public deployments)
+- Generating a knowledge base based on the project

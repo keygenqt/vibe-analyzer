@@ -1,7 +1,8 @@
 //! Statistics response structure for project overview.
 //! Contains per-language breakdown and totals.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Per-language statistics.
 #[derive(Debug, Serialize, Deserialize)]

@@ -5,49 +5,52 @@ use std::path::PathBuf;
 
 use clap::Subcommand;
 
+use crate::exit_error;
+use crate::mcp;
 use crate::print_warning;
 
 /// MCP server management commands.
 #[derive(Subcommand)]
 pub enum ServeAction {
-    /// Start MCP server on specified host and port.
+    /// Start MCP server.
     Start {
-        /// Host address to bind
-        #[arg(long, default_value = "0.0.0.0")]
-        host: String,
+        /// Host address to bind (overrides config).
+        #[arg(long)]
+        host: Option<String>,
 
-        /// Port number to listen on
-        #[arg(long, default_value = "3000")]
-        port: i32,
+        /// Port to listen on (overrides config).
+        #[arg(long)]
+        port: Option<u16>,
 
-        /// Working directory (defaults to current directory)
+        /// Working directory (defaults to current directory).
         #[arg(long)]
         workdir: Option<PathBuf>,
     },
 
-    /// Stop running MCP server gracefully.
+    /// Stop running MCP server.
     Stop,
 
-    /// Show MCP server status and health information.
+    /// Show MCP server status.
     Status,
 }
 
 /// Execute serve commands.
-#[allow(unused_variables)]
-pub fn run(action: ServeAction) {
+pub async fn run(action: ServeAction) {
     match action {
         ServeAction::Start {
             host,
             port,
             workdir,
         } => {
-            print_warning!("Coming soon: serve start");
+            if let Err(e) = mcp::server::run_server(host, port, workdir).await {
+                exit_error!("Failed to start MCP server: {}", e);
+            }
         }
         ServeAction::Stop => {
-            print_warning!("Coming soon: serve stop");
+            print_warning!("serve stop is not yet implemented");
         }
         ServeAction::Status => {
-            print_warning!("Coming soon: serve status");
+            print_warning!("serve status is not yet implemented");
         }
     }
 }
