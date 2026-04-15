@@ -1,0 +1,61 @@
+# OpenSearch + Dashboards Stack
+# Search engine and visualization for Vibe Analyzer
+
+name: opensearch
+
+services:
+  opensearch-node:
+    container_name: opensearch-node
+    image: opensearchproject/opensearch:3.3.0
+    restart: always
+    environment:
+      - node.name=opensearch-node
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=password
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - '9200:9200'
+      - '9600:9600'
+    volumes:
+      - opensearch-data:/usr/share/opensearch/data
+    networks:
+      - internal
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9200']
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  opensearch-dashboards:
+    container_name: opensearch-dashboards
+    image: opensearchproject/opensearch-dashboards:3.3.0
+    restart: always
+    ports:
+      - '5601:5601'
+    environment:
+      - OPENSEARCH_HOSTS=["http://opensearch-node:9200"]
+      - DISABLE_SECURITY_DASHBOARDS_PLUGIN=true
+    depends_on:
+      opensearch-node:
+        condition: service_healthy
+    networks:
+      - internal
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  opensearch-data:
+    driver: local

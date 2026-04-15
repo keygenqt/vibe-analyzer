@@ -62,12 +62,12 @@ Used to provide structured documentation context for LLM queries alongside sourc
 
 ## TODO
 
-- MCP server implementation
-- Docker support (Dockerfile + docker-compose.yml)
-- Documentation (user guide, configuration reference)
+- ⚙️ MCP server implementation
+- ⏳ Docker support (Dockerfile + docker-compose.yml)
+- ⏳ Documentation (user guide, configuration reference)
 
 ## Backlog
 
-- Watch mode for automatic incremental indexing on file changes
 - OpenSearch authentication support (optional, for public deployments)
+- Watch mode for automatic incremental indexing on file changes
 - Generating a knowledge base based on the project

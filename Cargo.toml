@@ -47,6 +47,14 @@ tower = { version = "0.5", features = ["util"] }
 tower-http = { version = "0.6", features = ["cors", "normalize-path"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+rmcp = { version = "1.4.0", features = [
+    "server",
+    "macros",
+    "transport-streamable-http-server",
+    "schemars",
+] }
+rmcp-macros = "1.4.0"
+schemars = "1.2.1"
 
 # Tree-sitter grammars
 tree-sitter = "0.25.1"

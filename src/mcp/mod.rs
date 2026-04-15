@@ -1,10 +1,7 @@
 //! MCP (Model Context Protocol) module for vibe-analyzer.
-//! Provides HTTP server implementation for AI assistant integration
-//! with JSON-RPC endpoint and tool execution.
+//! Provides HTTP server implementation for AI assistant integration.
 
-pub mod api;
-pub mod handlers;
-pub mod models;
-pub mod route;
+pub mod log;
+pub mod router;
 pub mod server;
 pub mod tools;

@@ -14,17 +14,21 @@ use crate::print_warning;
 pub enum ServeAction {
     /// Start MCP server.
     Start {
-        /// Host address to bind (overrides config).
+        /// Host address to bind.
         #[arg(long)]
         host: Option<String>,
 
-        /// Port to listen on (overrides config).
+        /// Port to listen on.
         #[arg(long)]
         port: Option<u16>,
 
         /// Working directory (defaults to current directory).
         #[arg(long)]
         workdir: Option<PathBuf>,
+
+        /// MCP protocol version (2024-11-05, 2025-03-26, 2025-06-18, or "latest").
+        #[arg(long)]
+        protocol: Option<String>,
     },
 
     /// Stop running MCP server.
@@ -41,8 +45,9 @@ pub async fn run(action: ServeAction) {
             host,
             port,
             workdir,
+            protocol,
         } => {
-            if let Err(e) = mcp::server::run_server(host, port, workdir).await {
+            if let Err(e) = mcp::server::run_server(host, port, workdir, protocol).await {
                 exit_error!("Failed to start MCP server: {}", e);
             }
         }

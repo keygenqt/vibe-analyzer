@@ -298,6 +298,23 @@ impl SearchClient {
         Ok(results)
     }
 
+    /// Returns metadata for all indexed projects.
+    pub async fn list_meta(&self) -> Result<Vec<SearchMeta>> {
+        let index = AppConfig::meta_index();
+        let query = json!({
+            "size": 999,
+            "query": { "match_all": {} }
+        });
+        let resp = self.client.search(&index, query).await?;
+        let hits = resp["hits"]["hits"].as_array().unwrap();
+        let results: Vec<SearchMeta> = hits
+            .iter()
+            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
+            .collect();
+
+        Ok(results)
+    }
+
     /// Get all file hashes from a files index using scroll API.
     pub async fn get_hashes(&self, index: &str) -> Result<Vec<SearchFileHash>> {
         // Check if index exists

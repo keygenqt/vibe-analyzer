@@ -1,32 +1,66 @@
 //! get_tree tool handler.
 //! Returns directory tree structure for a source.
 
-use serde_json::Value;
+use rmcp::ErrorData;
+use rmcp::model::CallToolResult;
+use rmcp::model::Content;
+use schemars::JsonSchema;
+use serde::Deserialize;
+use serde::Serialize;
 use serde_json::json;
+use std::sync::Arc;
 
 use crate::configs::app::IndexType;
-use crate::mcp::api::mcp_response::McpResponse;
 use crate::mcp::server::AppState;
 
-/// Execute get_tree tool.
-pub async fn call(id: Option<Value>, args: &Value, state: &AppState) -> McpResponse {
-    // Extract target source name from arguments
-    let target = match args.get("target").and_then(|t| t.as_str()) {
-        Some(t) => t,
-        None => return McpResponse::invalid_params(id),
-    };
-    // Extract level parameter (default: 3)
-    let level = args.get("level").and_then(|l| l.as_u64()).unwrap_or(3) as usize;
-    // Get OpenSearch index for the target source
-    let index = match state.config.get_index(target, IndexType::Files) {
-        Ok(idx) => idx,
-        Err(e) => {
-            return McpResponse::invalid_params(id).with_data(json!({ "detail": e.to_string() }));
-        }
-    };
-    // Execute tree query and return results
-    match state.search_client.get_tree(&index, level).await {
-        Ok(result) => McpResponse::success(id, json!(result)),
-        Err(e) => McpResponse::internal_error(id).with_data(json!({ "detail": e.to_string() })),
+/// Parameters for the get_tree tool.
+#[derive(Debug, Serialize, Deserialize, JsonSchema)]
+pub struct GetTreeParams {
+    /// Target project name.
+    pub target: String,
+    /// Maximum depth (default: 3).
+    #[serde(default = "default_level")]
+    pub level: usize,
+}
+
+/// Default tree depth.
+fn default_level() -> usize {
+    3
+}
+
+/// Tool for generating directory tree structure.
+#[derive(Clone)]
+pub struct GetTreeTool {
+    state: Arc<AppState>,
+}
+
+impl GetTreeTool {
+    /// Creates a new GetTreeTool instance.
+    pub fn new(state: Arc<AppState>) -> Self {
+        Self { state }
+    }
+
+    /// Executes the tree generation.
+    pub async fn get_tree(&self, params: GetTreeParams) -> Result<CallToolResult, ErrorData> {
+        let index = self
+            .state
+            .config
+            .get_index(&params.target, IndexType::Files)
+            .map_err(|e| {
+                ErrorData::invalid_params(e.to_string(), Some(json!({ "detail": e.to_string() })))
+            })?;
+
+        let result = self
+            .state
+            .search_client
+            .get_tree(&index, params.level)
+            .await
+            .map_err(|e| {
+                ErrorData::internal_error(e.to_string(), Some(json!({ "detail": e.to_string() })))
+            })?;
+
+        Ok(CallToolResult::success(vec![Content::text(
+            serde_json::to_string(&result).unwrap(),
+        )]))
     }
 }

@@ -28,11 +28,11 @@ pub fn add_commits(json: String, commits: Vec<Json5>) -> String {
             .join("\n");
 
         // Support both quoted and unquoted keys
-        let pattern_quoted = format!("\"{}\":", field);
-        let pattern_unquoted = format!("{}:", field);
+        let pattern_quoted = format!(" \"{}\":", field);
+        let pattern_unquoted = format!(" {}:", field);
 
-        let replacement_quoted = format!("{}\n  \"{}\":", comment_block, field);
-        let replacement_unquoted = format!("{}\n  {}:", comment_block, field);
+        let replacement_quoted = format!(" {}\n  \"{}\":", comment_block, field);
+        let replacement_unquoted = format!(" {}\n  {}:", comment_block, field);
 
         if result.contains(&pattern_quoted) {
             result = result.replace(&pattern_quoted, &replacement_quoted);

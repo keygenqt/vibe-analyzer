@@ -119,9 +119,11 @@ impl AppConfig {
                     "mcp",
                     vec![
                         "MCP server configuration",
+                        "",
                         "host - Bind address (0.0.0.0 for all interfaces, 127.0.0.1 for local only)",
                         "port - Server port (default: 9020)",
                         "api_key - API key for authentication (empty = no auth)",
+                        "protocol - MCP protocol version (2024-11-05, 2025-03-26, 2025-06-18, or 'latest')",
                     ],
                 ),
                 Json5::Commit(
