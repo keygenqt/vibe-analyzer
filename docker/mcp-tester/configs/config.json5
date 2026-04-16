@@ -1,0 +1,60 @@
+{
+  // Configuration version (do not modify)
+  version: '0.0.1',
+  // OpenSearch connection
+  opensearch: {
+    host: 'http://opensearch:9200',
+  },
+  // MCP server configuration
+  //
+  // host - Bind address (0.0.0.0 for all interfaces, 127.0.0.1 for local only)
+  // port - Server port (default: 9020)
+  // api_key - API key for authentication (empty = no auth)
+  // protocol - MCP protocol version (2024-11-05, 2025-03-26, 2025-06-18, or 'latest')
+  mcp: {
+    host: '0.0.0.0',
+    port: 9020,
+    api_key: '',
+    protocol: 'latest',
+  },
+  // Ollama LLM servers
+  //
+  // host - API endpoint (default: http://localhost:11434)
+  // model - LLM model name
+  // max_chunk_chars - Maximum characters per request batch
+  // max_chunk_files - Maximum files per request batch
+  // timeout_secs - Request timeout in seconds
+  // temperature - Sampling temperature (0.0 - 1.0)
+  // seed - Random seed for reproducibility
+  // num_ctx - Context window size
+  // num_predict - Maximum tokens to generate
+  // ast_imports - Include imports in AST analysis
+  // ast_variables - Include variables in AST analysis
+  // ast_functions - Include functions in AST analysis
+  // ast_enums - Include enums in AST analysis
+  // ast_interfaces - Include interfaces in AST analysis
+  ollama: [
+    {
+      host: 'http://host.docker.internal:11434',
+      model: 'qwen2.5-coder:7b-instruct',
+      max_chunk_chars: 4000,
+      max_chunk_files: 3,
+      timeout_secs: 60,
+      temperature: 0.1,
+      seed: 42,
+      num_ctx: 4096,
+      num_predict: 2048,
+      ast_imports: false,
+      ast_variables: false,
+      ast_functions: true,
+      ast_enums: true,
+      ast_interfaces: true,
+    },
+  ],
+  // SPDX license data storage
+  spdx: {
+    data_path: '/root/.vibe-analyzer/spdx',
+  },
+  // Knowledge sources to index
+  sources: ['/mcp-tester/fixtures/sample_project', '/mcp-tester/fixtures/sample_knowledge'],
+}

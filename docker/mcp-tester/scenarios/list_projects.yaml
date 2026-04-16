@@ -1,0 +1,7 @@
+tool: list_projects
+clear_context: true
+
+queries:
+  - 'What projects are available?'
+  - 'Show all indexed projects'
+  - 'List everything in the database'
