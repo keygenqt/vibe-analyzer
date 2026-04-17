@@ -1,0 +1,35 @@
+name: vibe-analyzer-test
+
+services:
+  opensearch:
+    container_name: test-opensearch
+    image: opensearchproject/opensearch:3.6.0
+    restart: unless-stopped
+    environment:
+      - node.name=test-opensearch
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
+      - DISABLE_SECURITY_PLUGIN=true
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+    ports:
+      - '9222:9200'
+    volumes:
+      - opensearch-test-data:/usr/share/opensearch/data
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:9200']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  opensearch-test-data:
+    driver: local

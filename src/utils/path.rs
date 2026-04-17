@@ -13,7 +13,6 @@ use crate::export::options::ExportFormat;
 use crate::scanner::data::input::file_info::FileInfo;
 use crate::utils::app;
 use crate::utils::constants::CONFIG_DIR_NAME;
-use crate::utils::constants::CONFIG_FILE_NAME;
 use crate::utils::matcher;
 
 /// Returns file extension (lowercase)
@@ -27,11 +26,6 @@ pub fn get_extension(path: &Path) -> Option<String> {
 pub fn get_config_dir() -> PathBuf {
     let home = home_dir().expect("Failed to get home directory");
     home.join(CONFIG_DIR_NAME)
-}
-
-/// Get config file path: ~/.vibe-analyzer/config.json
-pub fn get_config_path() -> PathBuf {
-    get_config_dir().join(CONFIG_FILE_NAME)
 }
 
 /// Get Downloads directory path

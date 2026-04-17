@@ -71,3 +71,8 @@ Used to provide structured documentation context for LLM queries alongside sourc
 - OpenSearch authentication support (optional, for public deployments)
 - Watch mode for automatic incremental indexing on file changes
 - Generating a knowledge base based on the project
+
+
+## Dependency
+
+- libssl-dev

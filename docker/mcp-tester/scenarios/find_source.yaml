@@ -1,9 +1,0 @@
-tool: find_source
-clear_context: true
-
-queries:
-  - 'What projects are in the database?'
-  - 'Find project vibe-analyzer'
-  - 'Show me information about ydx project'
-  - 'What projects use Apache license?'
-  - 'Find something about audio'

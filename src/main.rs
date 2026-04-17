@@ -1,6 +1,8 @@
 //! Vibe Analyzer - Main entry point.
 //! Parses CLI arguments and dispatches to the appropriate subcommands (add, del, list, scan).
 
+use std::path::PathBuf;
+
 use clap::CommandFactory;
 use clap::Parser;
 use clap::Subcommand;
@@ -9,6 +11,7 @@ use crate::cli::scan::ScanAction;
 use crate::cli::search::SearchAction;
 use crate::cli::serve::ServeAction;
 use crate::cli::source::SourceAction;
+use crate::configs::app::AppConfig;
 
 mod analyzer;
 mod cli;
@@ -25,6 +28,10 @@ mod utils;
 #[command(styles = utils::app::app_styles())]
 #[command(version = utils::app::app_version())]
 struct App {
+    /// Path to config directory (overrides default ~/.vibe-analyzer)
+    #[arg(long, global = true)]
+    config_dir: Option<PathBuf>,
+
     #[command(subcommand)]
     command: Option<Commands>,
 }
@@ -58,7 +65,14 @@ enum Commands {
 
 #[tokio::main]
 async fn main() {
-    match App::parse().command {
+    let app = App::parse();
+
+    // Load config with override
+    if let Err(e) = AppConfig::set_global_config_dir(app.config_dir.clone()) {
+        exit_error!("Failed to set config directory: {}", e);
+    }
+
+    match app.command {
         Some(Commands::Source { action }) => cli::source::run(action),
         Some(Commands::Scan { action }) => cli::scan::run(action).await,
         Some(Commands::Search { action }) => cli::search::run(action).await,

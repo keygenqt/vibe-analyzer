@@ -6,6 +6,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::fs;
 use std::path::PathBuf;
+use std::sync::OnceLock;
 
 use crate::configs::mcp::McpConfig;
 use crate::configs::spdx::SpdxConfig;
@@ -20,6 +21,9 @@ use crate::utils::path::{self};
 
 use super::ollama::OllamaConfig;
 use super::opensearch::OpenSearchConfig;
+
+/// Global config directory override.
+static GLOBAL_CONFIG_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
 
 /// Type of OpenSearch index.
 #[allow(dead_code)]
@@ -59,9 +63,31 @@ impl Default for AppConfig {
 }
 
 impl AppConfig {
-    /// Load config from file, create default if not exists.
+    /// Sets the global config directory override.
+    pub fn set_global_config_dir(dir: Option<PathBuf>) -> Result<()> {
+        GLOBAL_CONFIG_DIR
+            .set(dir)
+            .map_err(|_| anyhow::anyhow!("Config directory already set"))?;
+        Ok(())
+    }
+
+    /// Returns the config directory (either global override or default).
+    pub fn config_dir() -> PathBuf {
+        if let Some(Some(dir)) = GLOBAL_CONFIG_DIR.get() {
+            dir.clone()
+        } else {
+            path::get_config_dir()
+        }
+    }
+
+    /// Returns the config file path.
+    pub fn config_path() -> PathBuf {
+        Self::config_dir().join(constants::CONFIG_FILE_NAME)
+    }
+
+    /// Load config from file, respecting global override.
     pub fn load() -> Result<Self> {
-        let config_path = path::get_config_path();
+        let config_path = Self::config_path();
 
         if !config_path.exists() {
             print_info!("Config not found, creating default");
@@ -105,7 +131,7 @@ impl AppConfig {
 
     /// Save config to file in JSON5 format with helpful comments.
     pub fn save(&self) -> Result<()> {
-        let config_dir = path::get_config_dir();
+        let config_dir = Self::config_dir();
         if !config_dir.exists() {
             fs::create_dir_all(&config_dir)?;
         }
@@ -151,7 +177,7 @@ impl AppConfig {
                 Json5::Commit("sources", vec!["Knowledge sources to index"]),
             ],
         );
-        fs::write(path::get_config_path(), content)?;
+        fs::write(Self::config_path(), content)?;
         Ok(())
     }
 
@@ -249,7 +275,6 @@ impl AppConfig {
         )
     }
 
-    /// Get index name for a specific source by target.
     /// Get index name for a specific source by target.
     pub fn get_index(&self, target: &str, index_type: IndexType) -> Result<String> {
         let source = self.get_source(target)?;

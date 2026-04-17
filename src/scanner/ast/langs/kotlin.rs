@@ -26,8 +26,7 @@ impl LanguageParser for KotlinParser {
     /// Parses Kotlin source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
-        let lang = tree_sitter_kotlin::language();
-        parser.set_language(&unsafe { std::mem::transmute(lang) })?;
+        parser.set_language(&tree_sitter_kotlin_ng::LANGUAGE.into())?;
 
         let tree = match parser.parse(content, None) {
             Some(tree) => tree,
@@ -76,10 +75,10 @@ fn visit_node(
     variables: &mut Vec<AstDataVariable>,
 ) {
     match node.kind() {
-        // Module comments (/** */)
-        "multiline_comment" => {
+        // Module comments (/** */) - tree-sitter-kotlin-ng uses "block_comment"
+        "block_comment" => {
             let is_at_root = node.parent().map_or(false, |p| p.kind() == "source_file");
-            let is_first = is_module_comment(node, content);
+            let is_first = is_module_comment(node);
 
             // Capture only top-level comments that are module documentation
             if is_at_root && is_first {
@@ -98,8 +97,7 @@ fn visit_node(
                             .collect();
 
                         let comment_text = lines.join(" ").trim().to_string();
-                        if !comment_text.is_empty() && !data.header_comments.contains(&comment_text)
-                        {
+                        if !comment_text.is_empty() && !data.header_comments.contains(&comment_text) {
                             data.header_comments.push(comment_text);
                         }
                     }
@@ -166,10 +164,13 @@ fn visit_node(
             }
         }
 
-        // Imports
-        "import_header" => {
+        // Imports - tree-sitter-kotlin-ng uses "import"
+        "import" => {
             if let Ok(text) = node.utf8_text(content.as_bytes()) {
-                let cleaned = text.replace("import ", "").trim().to_string();
+                let cleaned = text.strip_prefix("import ").unwrap_or(text).trim().to_string();
+                if cleaned == "import" || cleaned.is_empty() {
+                    return;
+                }
                 let first_line = cleaned.lines().next().unwrap_or(&cleaned).to_string();
                 if !first_line.is_empty() && !data.imports.contains(&first_line) {
                     data.imports.push(first_line);
@@ -270,7 +271,7 @@ fn extract_kotlin_doc_comments(node: &Node, content: &str) -> Vec<String> {
 }
 
 /// Checks if a comment is a module-level comment (first node in the file).
-fn is_module_comment(node: &Node, _content: &str) -> bool {
+fn is_module_comment(node: &Node) -> bool {
     node.prev_sibling().is_none() && node.parent().map_or(false, |p| p.kind() == "source_file")
 }
 
