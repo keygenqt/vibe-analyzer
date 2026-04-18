@@ -75,7 +75,8 @@ pub async fn run_server(
 
     let config = StreamableHttpServerConfig::default()
         .disable_allowed_hosts()
-        .with_stateful_mode(true);
+        .with_stateful_mode(true)
+        .with_json_response(false);
 
     let state_mcp = state.clone();
     let mcp_service = StreamableHttpService::new(

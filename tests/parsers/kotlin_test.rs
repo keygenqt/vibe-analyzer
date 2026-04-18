@@ -8,8 +8,8 @@ use vibe_analyzer::scanner::ast::parser::parse_ast;
 #[test]
 fn test_kotlin_parser() {
     // Arrange
-    let code = fs::read_to_string("tests/fixtures/kotlin/sample.kt").unwrap();
-    let json = fs::read_to_string("tests/fixtures/kotlin/sample.json").unwrap();
+    let code = fs::read_to_string("tests/parsers/fixtures/kotlin/sample.kt").unwrap();
+    let json = fs::read_to_string("tests/parsers/fixtures/kotlin/sample.json").unwrap();
     let expected: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     // Act

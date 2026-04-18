@@ -8,8 +8,8 @@ use vibe_analyzer::scanner::ast::parser::parse_ast;
 #[test]
 fn test_rust_parser() {
     // Arrange
-    let code = fs::read_to_string("tests/fixtures/rust/sample.rs").unwrap();
-    let json = fs::read_to_string("tests/fixtures/rust/sample.json").unwrap();
+    let code = fs::read_to_string("tests/parsers/fixtures/rust/sample.rs").unwrap();
+    let json = fs::read_to_string("tests/parsers/fixtures/rust/sample.json").unwrap();
     let expected: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     // Act
@@ -24,8 +24,8 @@ fn test_rust_parser() {
 #[test]
 fn test_rust_parser2() {
     // Arrange
-    let code = fs::read_to_string("tests/fixtures/rust/sample2.rs").unwrap();
-    let json = fs::read_to_string("tests/fixtures/rust/sample2.json").unwrap();
+    let code = fs::read_to_string("tests/parsers/fixtures/rust/sample2.rs").unwrap();
+    let json = fs::read_to_string("tests/parsers/fixtures/rust/sample2.json").unwrap();
     let expected: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     // Act
@@ -40,8 +40,8 @@ fn test_rust_parser2() {
 #[test]
 fn test_rust_parser3() {
     // Arrange
-    let code = fs::read_to_string("tests/fixtures/rust/sample3.rs").unwrap();
-    let json = fs::read_to_string("tests/fixtures/rust/sample3.json").unwrap();
+    let code = fs::read_to_string("tests/parsers/fixtures/rust/sample3.rs").unwrap();
+    let json = fs::read_to_string("tests/parsers/fixtures/rust/sample3.json").unwrap();
     let expected: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     // Act

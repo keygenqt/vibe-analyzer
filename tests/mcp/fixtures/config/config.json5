@@ -1,0 +1,37 @@
+{
+  version: "0.0.1",
+  opensearch: {
+    host: "http://localhost:9222",
+  },
+  mcp: {
+    host: "0.0.0.0",
+    port: 9020,
+    api_key: "",
+    protocol: "latest",
+  },
+  ollama: [
+    {
+      host: "http://localhost:11434",
+      model: "qwen2.5-coder:3b-instruct",
+      max_chunk_chars: 3000,
+      max_chunk_files: 3,
+      timeout_secs: 60,
+      temperature: 0.1,
+      seed: 42,
+      num_ctx: 4096,
+      num_predict: 2048,
+      ast_imports: false,
+      ast_variables: true,
+      ast_functions: true,
+      ast_enums: true,
+      ast_interfaces: true,
+    },
+  ],
+  spdx: {
+    data_path: "tests/mcp/fixtures/config/spdx",
+  },
+  sources: [
+    "tests/mcp/fixtures/projects/sample_knowledge",
+    "tests/mcp/fixtures/projects/sample_project",
+  ],
+}

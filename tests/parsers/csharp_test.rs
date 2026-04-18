@@ -8,8 +8,8 @@ use vibe_analyzer::scanner::ast::parser::parse_ast;
 #[test]
 fn test_csharp_parser() {
     // Arrange
-    let code = fs::read_to_string("tests/fixtures/csharp/sample.cs").unwrap();
-    let json = fs::read_to_string("tests/fixtures/csharp/sample.json").unwrap();
+    let code = fs::read_to_string("tests/parsers/fixtures/csharp/sample.cs").unwrap();
+    let json = fs::read_to_string("tests/parsers/fixtures/csharp/sample.json").unwrap();
     let expected: serde_json::Value = serde_json::from_str(&json).unwrap();
 
     // Act
