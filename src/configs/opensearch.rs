@@ -5,7 +5,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 /// Configuration for OpenSearch connection
-/// TODO: Add authentication support (username, password, api_key, tls).
+/// TODO: Add authentication support.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenSearchConfig {
     /// OpenSearch endpoint URL

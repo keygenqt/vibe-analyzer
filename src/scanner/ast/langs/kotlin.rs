@@ -97,7 +97,8 @@ fn visit_node(
                             .collect();
 
                         let comment_text = lines.join(" ").trim().to_string();
-                        if !comment_text.is_empty() && !data.header_comments.contains(&comment_text) {
+                        if !comment_text.is_empty() && !data.header_comments.contains(&comment_text)
+                        {
                             data.header_comments.push(comment_text);
                         }
                     }
@@ -167,7 +168,11 @@ fn visit_node(
         // Imports - tree-sitter-kotlin-ng uses "import"
         "import" => {
             if let Ok(text) = node.utf8_text(content.as_bytes()) {
-                let cleaned = text.strip_prefix("import ").unwrap_or(text).trim().to_string();
+                let cleaned = text
+                    .strip_prefix("import ")
+                    .unwrap_or(text)
+                    .trim()
+                    .to_string();
                 if cleaned == "import" || cleaned.is_empty() {
                     return;
                 }

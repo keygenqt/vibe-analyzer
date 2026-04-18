@@ -3,7 +3,8 @@
 
 use anyhow::Result;
 use reqwest::Client;
-use serde_json::{Value, json};
+use serde_json::Value;
+use serde_json::json;
 
 /// Client for interacting with Ollama API.
 #[derive(Debug)]

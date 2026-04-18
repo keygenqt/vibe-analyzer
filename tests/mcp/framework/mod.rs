@@ -4,7 +4,7 @@
 pub mod mcp_client;
 pub mod mcp_engine;
 pub mod mcp_environment;
+pub mod mcp_report;
 pub mod mcp_scenario;
 pub mod mcp_test_builder;
 pub mod ollama_client;
-pub mod ollama_result;

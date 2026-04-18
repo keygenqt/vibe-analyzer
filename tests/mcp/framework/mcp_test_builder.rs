@@ -4,10 +4,10 @@
 use anyhow::Result;
 use std::fs;
 
-use crate::mcp::framework::{
-    mcp_engine::McpEngine, mcp_environment::McpEnvironment, mcp_scenario::McpScenario,
-    ollama_client::OllamaClient,
-};
+use crate::mcp::framework::mcp_engine::McpEngine;
+use crate::mcp::framework::mcp_environment::McpEnvironment;
+use crate::mcp::framework::mcp_scenario::McpScenario;
+use crate::mcp::framework::ollama_client::OllamaClient;
 
 /// Builder for constructing a validated MCP test configuration.
 #[derive(Debug, Default)]
@@ -65,7 +65,6 @@ impl McpEngineBuilder {
 
         let content = fs::read_to_string(&scenario_file)?;
         let scenario: McpScenario = serde_json::from_str(&content)?;
-
         let ollama_client = OllamaClient::new(ollama_host);
 
         Ok(McpEngine {

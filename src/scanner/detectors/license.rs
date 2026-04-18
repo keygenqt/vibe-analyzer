@@ -31,14 +31,15 @@ async fn init_license_store() -> Store {
     // Slow path: first run - download and parse SPDX JSON files
     else {
         let config = AppConfig::load().expect("Failed to load config");
+
         config
-            .spdx
-            .ensure_data()
+            .dev
+            .ensure_spdx_data()
             .await
             .expect("Failed to setup SPDX data");
 
         let mut store = Store::new();
-        let details_path = config.spdx.get_spdx_path();
+        let details_path = config.dev.spdx_details_path();
 
         store
             .load_spdx(&details_path, false)

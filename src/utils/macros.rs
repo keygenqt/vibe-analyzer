@@ -1,15 +1,20 @@
 //! Pretty printing macros for CLI and server output.
 //! Automatically switches between colored console and tracing logs based on runtime mode.
 
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::Ordering;
+use crate::configs::dev::LogLevel;
+use std::sync::OnceLock;
 
-/// Global flag indicating whether running in server mode.
-pub static IS_SERVER: AtomicBool = AtomicBool::new(false);
+/// Global log level for the application.
+pub static LOG_LEVEL: OnceLock<String> = OnceLock::new();
 
-/// Enable server mode (use tracing instead of colored println).
-pub fn set_server_mode(enabled: bool) {
-    IS_SERVER.store(enabled, Ordering::Relaxed);
+/// Sets the global log level.
+pub fn set_log_level(level: &LogLevel) {
+    LOG_LEVEL.set(level.as_str().to_string()).ok();
+}
+
+/// Returns true if tracing is enabled (log_level is not "default").
+pub fn is_tracing() -> bool {
+    LOG_LEVEL.get().map(|s| s.as_str()).unwrap_or("default") != "default"
 }
 
 /// Strip ANSI color codes from a string.
@@ -24,11 +29,11 @@ pub fn strip_ansi(s: &str) -> String {
         .replace("\x1b[94m", "")
 }
 
-/// Print newline - CLI only, ignored in server mode.
+/// Print newline - CLI only, ignored in tracing mode.
 #[macro_export]
 macro_rules! print_newline {
     () => {{
-        if !$crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if !$crate::utils::macros::is_tracing() {
             println!();
         }
     }};
@@ -38,7 +43,7 @@ macro_rules! print_newline {
 #[macro_export]
 macro_rules! print_error {
     ($($arg:tt)*) => {{
-        if $crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if $crate::utils::macros::is_tracing() {
             let msg = format!($($arg)*);
             let clean = $crate::utils::macros::strip_ansi(&msg);
             tracing::error!("{}", clean);
@@ -52,7 +57,7 @@ macro_rules! print_error {
 #[macro_export]
 macro_rules! print_info {
     ($($arg:tt)*) => {{
-        if $crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if $crate::utils::macros::is_tracing() {
             let msg = format!($($arg)*);
             let clean = $crate::utils::macros::strip_ansi(&msg);
             tracing::info!("{}", clean);
@@ -66,7 +71,7 @@ macro_rules! print_info {
 #[macro_export]
 macro_rules! print_warning {
     ($($arg:tt)*) => {{
-        if $crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if $crate::utils::macros::is_tracing() {
             let msg = format!($($arg)*);
             let clean = $crate::utils::macros::strip_ansi(&msg);
             tracing::warn!("{}", clean);
@@ -80,10 +85,10 @@ macro_rules! print_warning {
 #[macro_export]
 macro_rules! print_success {
     ($($arg:tt)*) => {{
-        if $crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if $crate::utils::macros::is_tracing() {
             let msg = format!($($arg)*);
             let clean = $crate::utils::macros::strip_ansi(&msg);
-            tracing::info!(target: "success", "{}", clean);
+            tracing::info!("{}", clean);
         } else {
             println!("{}", format!("\x1b[1m\x1b[32msuccess\x1b[0m: {}", format!($($arg)*)));
         }
@@ -94,7 +99,7 @@ macro_rules! print_success {
 #[macro_export]
 macro_rules! print_state {
     ($($arg:tt)*) => {{
-        if $crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if $crate::utils::macros::is_tracing() {
             let msg = format!($($arg)*);
             let clean = $crate::utils::macros::strip_ansi(&msg);
             tracing::debug!("{}", clean);
@@ -108,7 +113,7 @@ macro_rules! print_state {
 #[macro_export]
 macro_rules! print_progress {
     ($($arg:tt)*) => {{
-        if !$crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if !$crate::utils::macros::is_tracing() {
             print!("\r\x1b[1m\x1b[36mprogress\x1b[0m: {}", format!($($arg)*));
             std::io::Write::flush(&mut std::io::stdout()).unwrap();
         }
@@ -119,7 +124,7 @@ macro_rules! print_progress {
 #[macro_export]
 macro_rules! exit_info {
     ($($arg:tt)*) => {{
-        if $crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if $crate::utils::macros::is_tracing() {
             let msg = format!($($arg)*);
             let clean = $crate::utils::macros::strip_ansi(&msg);
             tracing::info!("{}", clean);
@@ -135,7 +140,7 @@ macro_rules! exit_info {
 #[macro_export]
 macro_rules! exit_error {
     ($($arg:tt)*) => {{
-        if $crate::utils::macros::IS_SERVER.load(std::sync::atomic::Ordering::Relaxed) {
+        if $crate::utils::macros::is_tracing() {
             let msg = format!($($arg)*);
             let clean = $crate::utils::macros::strip_ansi(&msg);
             tracing::error!("{}", clean);

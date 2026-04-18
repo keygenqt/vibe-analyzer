@@ -4,14 +4,12 @@
 use anyhow::Result;
 use serde_json::{Value, json};
 
-use crate::mcp::framework::{
-    mcp_client::McpClient,
-    mcp_environment::McpEnvironment,
-    mcp_scenario::McpScenario,
-    mcp_test_builder::McpEngineBuilder,
-    ollama_client::{OllamaClient, OllamaResponse},
-    ollama_result::OllamaResult,
-};
+use crate::mcp::framework::mcp_client::McpClient;
+use crate::mcp::framework::mcp_environment::McpEnvironment;
+use crate::mcp::framework::mcp_report::{McpReport, QueryReport, ToolCall};
+use crate::mcp::framework::mcp_scenario::McpScenario;
+use crate::mcp::framework::mcp_test_builder::McpEngineBuilder;
+use crate::mcp::framework::ollama_client::{OllamaClient, OllamaResponse};
 
 /// Complete MCP test configuration with execution logic.
 #[derive(Debug)]
@@ -28,14 +26,17 @@ impl McpEngine {
         McpEngineBuilder::new()
     }
 
-    /// Runs the test scenario against all models and returns results.
-    pub async fn run(mut self) -> Result<Vec<OllamaResult>> {
+    /// Runs the test scenario against all models and returns a report.
+    pub async fn run(mut self) -> Result<McpReport> {
         self.environment.start().await?;
         self.environment.index_fixtures()?;
 
         let mcp_server_url = self.environment.mcp_url();
         let mcp_client = McpClient::new(&mcp_server_url).await?;
         let tools = mcp_client.list_tools().await?;
+
+        let tool_names: Vec<String> = tools.iter().map(|t| t.name.to_string()).collect();
+        let tool_names_str = format!("{:?}", tool_names);
 
         let tool_values: Vec<serde_json::Value> = tools
             .iter()
@@ -51,24 +52,46 @@ impl McpEngine {
             })
             .collect();
 
-        let mut results = Vec::new();
+        let model = self.models.first().cloned().unwrap_or_default();
+        let mut queries = Vec::new();
 
-        for model in &self.models {
-            for query in &self.scenario.queries {
-                let response = self.ollama_client.chat(model, query, &tool_values).await?;
-                let final_response = self
-                    .process_response(&mcp_client, model, query, response)
-                    .await?;
+        for query in &self.scenario.queries {
+            tracing::info!("Start query ({}): '{}'", model, query);
 
-                results.push(OllamaResult {
-                    tool: self.scenario.tool.clone(),
-                    model: model.clone(),
-                    response: final_response,
-                });
-            }
+            self.environment.log(
+                "LLM request",
+                &[
+                    ("model", &model),
+                    ("query", query),
+                    ("tools", &tool_names_str),
+                ],
+            );
+
+            let request_time = chrono::Utc::now();
+            let response = self.ollama_client.chat(&model, query, &tool_values).await?;
+            let final_response = self
+                .process_response(&mcp_client, &model, query, response)
+                .await?;
+            let duration_ms = (chrono::Utc::now() - request_time).num_milliseconds() as u64;
+
+            self.environment.log(
+                "LLM final response",
+                &[("model", &model), ("response", &final_response)],
+            );
+
+            queries.push(QueryReport {
+                query: query.clone(),
+                tool_calls: vec![ToolCall {
+                    name: self.scenario.tool.clone(),
+                    args: "{}".to_string(),
+                }],
+                response: final_response,
+                duration_ms,
+                timestamp: request_time.to_rfc3339(),
+            });
         }
 
-        Ok(results)
+        Ok(McpReport::new(self.scenario.tool.clone(), model, queries))
     }
 
     async fn process_response(
@@ -79,6 +102,11 @@ impl McpEngine {
         response: OllamaResponse,
     ) -> Result<String> {
         let content = response.message.content.trim();
+
+        self.environment.log(
+            "LLM raw response",
+            &[("model", model), ("raw_content", content)],
+        );
 
         let json_str = if content.starts_with("```json") {
             content
@@ -101,10 +129,15 @@ impl McpEngine {
         if let Ok(parsed) = serde_json::from_str::<Value>(json_str) {
             if let Some(tool_name) = parsed.get("name").and_then(|n| n.as_str()) {
                 let tool_args = parsed.get("arguments").cloned().unwrap_or(json!({}));
+                let tool_args_str = format!("{}", tool_args);
 
-                println!(
-                    "[DEBUG] Calling tool: {} with args: {}",
-                    tool_name, tool_args
+                self.environment.log(
+                    "LLM tool call detected",
+                    &[
+                        ("model", model),
+                        ("tool", tool_name),
+                        ("args", &tool_args_str),
+                    ],
                 );
 
                 let tool_result = mcp_client

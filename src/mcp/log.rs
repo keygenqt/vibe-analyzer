@@ -5,22 +5,51 @@ use axum::extract::Request;
 use axum::middleware::Next;
 use axum::response::Response;
 
-/// Logs HTTP errors for monitoring and debugging.
+/// Logs HTTP requests and responses for monitoring and debugging.
 pub async fn log_app_responses(request: Request, next: Next) -> Response {
     let method = request.method().clone();
     let uri = request.uri().clone();
-
+    let start = std::time::Instant::now();
     if method == axum::http::Method::POST {
         let (parts, body) = request.into_parts();
         match axum::body::to_bytes(body, usize::MAX).await {
             Ok(bytes) => {
                 let body_str = String::from_utf8_lossy(&bytes);
-                tracing::info!(%method, %uri, body = %body_str, "POST request");
+                // Parse JSON to extract MCP method
+                let mcp_method = serde_json::from_str::<serde_json::Value>(&body_str)
+                    .ok()
+                    .and_then(|json| {
+                        json.get("method")
+                            .and_then(|m| m.as_str())
+                            .map(String::from)
+                    });
+                // Prepare body preview for trace logs
+                let body_preview = if body_str.len() > 500 {
+                    format!("{}... (truncated)", &body_str[..500])
+                } else {
+                    body_str.to_string()
+                };
+                // INFO only for important MCP methods
+                if let Some(ref m) = mcp_method {
+                    if m == "initialize" || m == "tools/call" {
+                        tracing::info!(%method, %uri, mcp.method = %m, "MCP request");
+                        tracing::trace!(%method, %uri, mcp.method = %m, body = %body_preview, "MCP request body");
+                    } else {
+                        tracing::trace!(%method, %uri, mcp.method = %m, body = %body_preview, "MCP request");
+                    }
+                } else {
+                    tracing::trace!(%method, %uri, body = %body_preview, "POST request");
+                }
+
                 let new_request = Request::from_parts(parts, axum::body::Body::from(bytes));
                 let response = next.run(new_request).await;
                 let status = response.status();
+                let elapsed = start.elapsed();
+
                 if status.is_client_error() || status.is_server_error() {
-                    tracing::error!(%method, %uri, %status, "POST request failed");
+                    tracing::error!(%method, %uri, %status, ?elapsed, "POST request failed");
+                } else {
+                    tracing::trace!(%method, %uri, %status, ?elapsed, "POST request completed");
                 }
                 return response;
             }
@@ -34,8 +63,13 @@ pub async fn log_app_responses(request: Request, next: Next) -> Response {
 
     let response = next.run(request).await;
     let status = response.status();
+    let elapsed = start.elapsed();
+
     if status.is_client_error() || status.is_server_error() {
-        tracing::error!(%method, %uri, %status, "HTTP error");
+        tracing::error!(%method, %uri, %status, ?elapsed, "HTTP error");
+    } else {
+        tracing::trace!(%method, %uri, %status, ?elapsed, "HTTP request completed");
     }
+
     response
 }

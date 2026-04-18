@@ -10,19 +10,13 @@ use axum::middleware::from_fn;
 use axum::routing::get;
 use rmcp::model::ProtocolVersion;
 use rmcp::transport::StreamableHttpServerConfig;
+use rmcp::transport::streamable_http_server::StreamableHttpService;
+use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
 use std::path::PathBuf;
 use std::sync::Arc;
 use tower::ServiceBuilder;
 use tower_http::cors::CorsLayer;
 use tower_http::normalize_path::NormalizePathLayer;
-use tracing_subscriber::EnvFilter;
-use tracing_subscriber::fmt;
-use tracing_subscriber::layer::SubscriberExt;
-use tracing_subscriber::registry;
-use tracing_subscriber::util::SubscriberInitExt;
-
-use rmcp::transport::streamable_http_server::StreamableHttpService;
-use rmcp::transport::streamable_http_server::session::local::LocalSessionManager;
 
 use crate::configs::app::AppConfig;
 use crate::mcp::log;
@@ -46,8 +40,6 @@ pub async fn run_server(
     workdir: Option<PathBuf>,
     protocol: Option<String>,
 ) -> anyhow::Result<()> {
-    crate::utils::macros::set_server_mode(true);
-
     let config = AppConfig::load()?;
     let mcp_config = config.mcp.clone();
     let host_str = host.unwrap_or(mcp_config.host);
@@ -109,10 +101,6 @@ pub async fn run_server(
 
     let route_str = format!("{}:{}", host_str, port_val);
     let listener = tokio::net::TcpListener::bind(&route_str).await?;
-
-    let layer = EnvFilter::try_from_default_env()
-        .unwrap_or_else(|_| format!("{}=debug", env!("CARGO_CRATE_NAME")).into());
-    registry().with(layer).with(fmt::layer()).init();
 
     let app = ServiceBuilder::new()
         .layer(NormalizePathLayer::trim_trailing_slash())

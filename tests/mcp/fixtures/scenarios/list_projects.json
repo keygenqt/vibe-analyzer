@@ -1,7 +1,7 @@
 {
   "tool": "list_projects",
   "queries": [
-    "What projects are in the database?",
-    "Show me all available projects"
+    "Перечисли количество файлов в проектах по типам",
+    "Дай список проектов без описания"
   ]
 }

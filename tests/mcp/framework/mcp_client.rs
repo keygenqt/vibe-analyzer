@@ -2,16 +2,18 @@
 //! Provides connection to MCP server and tool calling.
 
 use anyhow::Result;
-use rmcp::{
-    RoleClient, ServiceExt,
-    model::{
-        CallToolRequestParams, ClientCapabilities, ClientInfo, Implementation,
-        InitializeRequestParams, Tool,
-    },
-    service::RunningService,
-    transport::StreamableHttpClientTransport,
-};
-use serde_json::{Value, json};
+use rmcp::RoleClient;
+use rmcp::ServiceExt;
+use rmcp::model::CallToolRequestParams;
+use rmcp::model::ClientCapabilities;
+use rmcp::model::ClientInfo;
+use rmcp::model::Implementation;
+use rmcp::model::InitializeRequestParams;
+use rmcp::model::Tool;
+use rmcp::service::RunningService;
+use rmcp::transport::StreamableHttpClientTransport;
+use serde_json::Value;
+use serde_json::json;
 
 /// Client for interacting with MCP server via streamable HTTP.
 pub struct McpClient {

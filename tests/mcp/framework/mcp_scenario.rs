@@ -1,7 +1,8 @@
 //! Test scenario structures.
 //! Defines scenario format for MCP tests.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Test scenario loaded from JSON file.
 #[derive(Debug, Serialize, Deserialize)]

@@ -8,8 +8,9 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
+use crate::configs::dev::DevConfig;
+use crate::configs::dev::LogLevel;
 use crate::configs::mcp::McpConfig;
-use crate::configs::spdx::SpdxConfig;
 use crate::print_info;
 use crate::utils;
 use crate::utils::app;
@@ -45,8 +46,11 @@ pub struct AppConfig {
     pub opensearch: OpenSearchConfig,
     pub mcp: McpConfig,
     pub ollama: Vec<OllamaConfig>,
-    pub spdx: SpdxConfig,
     pub sources: Vec<PathBuf>,
+
+    /// Development and debugging configuration
+    #[serde(default, skip_serializing_if = "DevConfig::should_skip")]
+    pub dev: DevConfig,
 }
 
 impl Default for AppConfig {
@@ -56,8 +60,8 @@ impl Default for AppConfig {
             opensearch: OpenSearchConfig::default(),
             mcp: McpConfig::default(),
             ollama: vec![OllamaConfig::default()],
-            spdx: SpdxConfig::default(),
             sources: vec![],
+            dev: DevConfig::default(),
         }
     }
 }
@@ -89,11 +93,11 @@ impl AppConfig {
     pub fn load() -> Result<Self> {
         let config_path = Self::config_path();
 
-        if !config_path.exists() {
+        let config = if !config_path.exists() {
             print_info!("Config not found, creating default");
             let config = AppConfig::default();
             config.save()?;
-            Ok(config)
+            config
         } else {
             let content = fs::read_to_string(&config_path)?;
             let mut config: AppConfig = match json5::from_str(&content) {
@@ -101,7 +105,7 @@ impl AppConfig {
                 Err(_) => {
                     return Err(anyhow::anyhow!(
                         "Failed to parse config file (possibly from older version).\n\
-                     Delete {} and run again to create a new one.",
+                 Delete {} and run again to create a new one.",
                         config_path.display()
                     ));
                 }
@@ -110,7 +114,7 @@ impl AppConfig {
             if config.version != constants::CONFIG_VERSION {
                 return Err(anyhow::anyhow!(
                     "Config version mismatch: found {}, expected {}\n\
-                 Delete {} and run again to create a new one.",
+             Delete {} and run again to create a new one.",
                     config.version,
                     constants::CONFIG_VERSION,
                     config_path.display()
@@ -125,7 +129,21 @@ impl AppConfig {
                 }
             }
 
-            Ok(config)
+            config
+        };
+
+        // Initialize tracing with log level from config
+        Self::init_tracing(&config.dev.log_level);
+
+        Ok(config)
+    }
+
+    /// Initializes tracing subscriber with the given log level.
+    fn init_tracing(level: &LogLevel) {
+        crate::utils::macros::set_log_level(level);
+        if crate::utils::macros::is_tracing() {
+            let filter = format!("vibe_analyzer={0},mcp_test={0}", level.as_str());
+            tracing_subscriber::fmt().with_env_filter(filter).init();
         }
     }
 
@@ -135,48 +153,59 @@ impl AppConfig {
         if !config_dir.exists() {
             fs::create_dir_all(&config_dir)?;
         }
+
+        let mut commits = vec![
+            Json5::Commit("version", vec!["Configuration version (do not modify)"]),
+            Json5::Commit("opensearch", vec!["OpenSearch connection"]),
+            Json5::Commit(
+                "mcp",
+                vec![
+                    "MCP server configuration",
+                    "",
+                    "host - Bind address (0.0.0.0 for all interfaces, 127.0.0.1 for local only)",
+                    "port - Server port (default: 9020)",
+                    "protocol - MCP protocol version (2024-11-05, 2025-03-26, 2025-06-18, or 'latest')",
+                ],
+            ),
+            Json5::Commit(
+                "ollama",
+                vec![
+                    "Ollama LLM servers",
+                    "",
+                    "host - API endpoint (default: http://localhost:11434)",
+                    "model - LLM model name",
+                    "max_chunk_chars - Maximum characters per request batch",
+                    "max_chunk_files - Maximum files per request batch",
+                    "timeout_secs - Request timeout in seconds",
+                    "temperature - Sampling temperature (0.0 - 1.0)",
+                    "seed - Random seed for reproducibility",
+                    "num_ctx - Context window size",
+                    "num_predict - Maximum tokens to generate",
+                    "ast_imports - Include imports in AST analysis",
+                    "ast_variables - Include variables in AST analysis",
+                    "ast_functions - Include functions in AST analysis",
+                    "ast_enums - Include enums in AST analysis",
+                    "ast_interfaces - Include interfaces in AST analysis",
+                ],
+            ),
+            Json5::Commit("sources", vec!["Knowledge sources to index"]),
+        ];
+
+        // Add dev block with comments only if it existed in the original config
+        if self.dev.exists_in_config() {
+            commits.push(Json5::Commit(
+                "dev",
+                vec![
+                    "Development configuration",
+                    "",
+                    "log_level - Log level: default, trace, debug, info, warn, error",
+                    "spdx_data_path - Override SPDX data path for license detection",
+                ],
+            ));
+        }
+
         let json = json5::to_string(self)?;
-        let content = utils::json5::add_commits(
-            json,
-            vec![
-                Json5::Commit("version", vec!["Configuration version (do not modify)"]),
-                Json5::Commit("opensearch", vec!["OpenSearch connection"]),
-                Json5::Commit(
-                    "mcp",
-                    vec![
-                        "MCP server configuration",
-                        "",
-                        "host - Bind address (0.0.0.0 for all interfaces, 127.0.0.1 for local only)",
-                        "port - Server port (default: 9020)",
-                        "api_key - API key for authentication (empty = no auth)",
-                        "protocol - MCP protocol version (2024-11-05, 2025-03-26, 2025-06-18, or 'latest')",
-                    ],
-                ),
-                Json5::Commit(
-                    "ollama",
-                    vec![
-                        "Ollama LLM servers",
-                        "",
-                        "host - API endpoint (default: http://localhost:11434)",
-                        "model - LLM model name",
-                        "max_chunk_chars - Maximum characters per request batch",
-                        "max_chunk_files - Maximum files per request batch",
-                        "timeout_secs - Request timeout in seconds",
-                        "temperature - Sampling temperature (0.0 - 1.0)",
-                        "seed - Random seed for reproducibility",
-                        "num_ctx - Context window size",
-                        "num_predict - Maximum tokens to generate",
-                        "ast_imports - Include imports in AST analysis",
-                        "ast_variables - Include variables in AST analysis",
-                        "ast_functions - Include functions in AST analysis",
-                        "ast_enums - Include enums in AST analysis",
-                        "ast_interfaces - Include interfaces in AST analysis",
-                    ],
-                ),
-                Json5::Commit("spdx", vec!["SPDX license data storage"]),
-                Json5::Commit("sources", vec!["Knowledge sources to index"]),
-            ],
-        );
+        let content = utils::json5::add_commits(json, commits);
         fs::write(Self::config_path(), content)?;
         Ok(())
     }
