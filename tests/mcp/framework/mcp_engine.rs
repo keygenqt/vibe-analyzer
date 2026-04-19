@@ -144,42 +144,59 @@ impl McpEngine {
             content
         };
 
-        let mut tool_name = None;
-        let mut tool_args = None;
-        let mut tool_result = None;
-
         if let Ok(parsed) = serde_json::from_str::<Value>(json_str) {
-            if let Some(name) = parsed.get("name").and_then(|n| n.as_str()) {
+            // Support both "name" (standard) and "function" (legacy/hallucination)
+            let name = parsed
+                .get("name")
+                .or_else(|| parsed.get("function"))
+                .or_else(|| parsed.get("tool"))
+                .or_else(|| parsed.get("method"))
+                .or_else(|| parsed.get("call"))
+                .and_then(|n| n.as_str());
+
+            if let Some(name) = name {
                 let args = parsed.get("arguments").cloned().unwrap_or(json!({}));
                 let args_str = format!("{}", args);
 
-                tool_name = Some(name.to_string());
-                tool_args = Some(args_str.clone());
+                let tool_name = Some(name.to_string());
+                let tool_args = Some(args_str.clone());
 
                 self.environment.log(
                     "LLM tool call detected",
                     &[("model", model), ("tool", name), ("args", &args_str)],
                 );
 
+                // Call tool — let it fail if something wrong
                 let result = mcp_client.call_tool(name.to_string(), args).await?;
+
+                // If result is empty — that's a bug, fail the test
+                if result.is_null() {
+                    anyhow::bail!("Tool '{}' returned null for query: '{}'", name, query);
+                }
+
                 let result_str = serde_json::to_string_pretty(&result)?;
-                tool_result = Some(result_str.clone());
+                let tool_result = Some(result_str.clone());
 
                 let follow_up = self
-                    .ollama_client
-                    .chat_simple(
-                        model,
-                        &format!(
-                            "You called the tool '{}' and got this result:\n{}\n\nNow provide a natural language response to the original query: '{}'",
-                            name, result_str, query
-                        ),
-                    )
-                    .await?;
+                .ollama_client
+                .chat_simple(
+                    model,
+                    &format!(
+                        "You successfully called tool '{}'. Result:\n{}\n\nProvide a concise natural language response to: '{}'",
+                        name, result_str, query
+                    ),
+                )
+                .await?;
 
                 return Ok((tool_name, tool_args, tool_result, follow_up.message.content));
             }
         }
 
-        Ok((tool_name, tool_args, tool_result, response.message.content))
+        // Model didn't call a tool when it should — that's a bug
+        anyhow::bail!(
+            "Model did not call any tool for query: '{}'. Response: '{}'",
+            query,
+            content
+        );
     }
 }

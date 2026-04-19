@@ -1,0 +1,10 @@
+{
+  "tool": "index_projects",
+  "queries": [
+    "Обнови индекс",
+    "Переиндексируй проекты",
+    "Refresh knowledge base",
+    "Update index",
+    "Reindex everything"
+  ]
+}

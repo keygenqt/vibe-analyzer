@@ -1,0 +1,10 @@
+{
+  "tool": "list_projects",
+  "queries": [
+    "Какие проекты есть в базе",
+    "Покажи все доступные проекты",
+    "Что у нас есть",
+    "List projects",
+    "What projects are available"
+  ]
+}

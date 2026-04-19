@@ -13,7 +13,6 @@ use rmcp::model::Tool;
 use rmcp::service::RunningService;
 use rmcp::transport::StreamableHttpClientTransport;
 use serde_json::Value;
-use serde_json::json;
 
 /// Client for interacting with MCP server via streamable HTTP.
 pub struct McpClient {
@@ -42,17 +41,23 @@ impl McpClient {
     /// Calls a tool with the given name and arguments.
     pub async fn call_tool(&self, name: String, args: Value) -> Result<Value> {
         let params = if let Some(obj) = args.as_object() {
-            CallToolRequestParams::new(name).with_arguments(obj.clone())
+            CallToolRequestParams::new(name.clone()).with_arguments(obj.clone())
         } else {
-            CallToolRequestParams::new(name)
+            CallToolRequestParams::new(name.clone())
         };
-        let result = self.client.call_tool(params).await?;
+
+        let result = self
+            .client
+            .call_tool(params)
+            .await
+            .map_err(|e| anyhow::anyhow!("Tool '{}' call failed: {}", name, e))?;
 
         let content = result
             .content
             .into_iter()
             .next()
-            .map(|c| json!({ "raw": format!("{:?}", c) }))
+            .and_then(|c| c.as_text().map(|t| t.text.clone()))
+            .and_then(|text| serde_json::from_str::<Value>(&text).ok())
             .unwrap_or(Value::Null);
 
         Ok(content)
