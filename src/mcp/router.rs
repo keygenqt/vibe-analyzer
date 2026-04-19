@@ -3,6 +3,7 @@
 
 use rmcp::ErrorData;
 use rmcp::ServerHandler;
+use rmcp::handler::server::wrapper::Parameters;
 use rmcp::model::CallToolResult;
 use rmcp::model::Implementation;
 use rmcp::model::ServerInfo;
@@ -12,6 +13,8 @@ use rmcp::tool_router;
 use std::sync::Arc;
 
 use crate::mcp::server::AppState;
+use crate::mcp::tools::data::requests::get_tree::GetTreeParams;
+use crate::mcp::tools::tool_get_tree::ToolGetTree;
 use crate::mcp::tools::tool_index_projects::ToolIndexProjects;
 use crate::mcp::tools::tool_list_projects::ToolListProjects;
 use crate::utils::app;
@@ -64,26 +67,36 @@ impl RouterTools {
     #[tool(
         name = "index_projects",
         description = r#"
-Call this tool only when the user explicitly asks to update or refresh the index.
-Triggers: "update index", "refresh knowledge base", "reindex", "rescan".
-Do not call proactively. The index maintains itself automatically.
-    "#
+Updates the knowledge base index.
+ONLY call when user explicitly says: "update index", "refresh", "reindex", "rescan", "обнови индекс".
+DO NOT call for any other reason. Index auto-updates.
+This is an admin tool, not for regular queries.
+"#
     )]
     async fn index_projects(&self) -> Result<CallToolResult, ErrorData> {
         ToolIndexProjects::new(self.state.clone()).execute().await
     }
 
-    #[tool(name = "update_index", description = "Alias for index_projects")]
+    #[tool(
+        name = "update_index",
+        description = "Same as index_projects. Admin tool for updating index."
+    )]
     async fn update_index(&self) -> Result<CallToolResult, ErrorData> {
         self.index_projects().await
     }
 
-    #[tool(name = "refresh_index", description = "Alias for index_projects")]
+    #[tool(
+        name = "refresh_index",
+        description = "Same as index_projects. Admin tool for refreshing index."
+    )]
     async fn refresh_index(&self) -> Result<CallToolResult, ErrorData> {
         self.index_projects().await
     }
 
-    #[tool(name = "reindex", description = "Alias for index_projects")]
+    #[tool(
+        name = "reindex",
+        description = "Same as index_projects. Admin tool for reindexing."
+    )]
     async fn reindex(&self) -> Result<CallToolResult, ErrorData> {
         self.index_projects().await
     }
@@ -94,33 +107,82 @@ Do not call proactively. The index maintains itself automatically.
     #[tool(
         name = "list_projects",
         description = r#"
-List all available projects in the knowledge base.
-
-Use this tool first when:
-
-- User asks what projects are available
-- Another tool requires a project name
-- Starting any exploration of the knowledge base
-
-Returns minimal metadata for each project:
-
-- path: unique identifier, use this as project ID for other tools
-- name: display name extracted from path
-
-Do not guess project names or paths - always list them first.
-    "#
+Shows NAMES and SUMMARIES of all projects.
+Use when asked: "what projects exist", "list projects", "show all projects", "какие проекты есть".
+This tool shows ONLY project list, NOT files inside.
+To see files/folders inside a project, use get_tree.
+"#
     )]
     async fn list_projects(&self) -> Result<CallToolResult, ErrorData> {
         ToolListProjects::new(self.state.clone()).execute().await
     }
 
-    #[tool(name = "get_projects", description = "Alias for list_projects")]
+    #[tool(
+        name = "get_projects",
+        description = "Same as list_projects. Shows project names and summaries only."
+    )]
     async fn get_projects(&self) -> Result<CallToolResult, ErrorData> {
         self.list_projects().await
     }
 
-    #[tool(name = "show_projects", description = "Alias for list_projects")]
+    #[tool(
+        name = "show_projects",
+        description = "Same as list_projects. Shows project names and summaries only."
+    )]
     async fn show_projects(&self) -> Result<CallToolResult, ErrorData> {
         self.list_projects().await
+    }
+
+    // -------------------------------------------------------------------------------
+    // -- Get tree project -----------------------------------------------------------
+
+    #[tool(
+        name = "get_tree",
+        description = r#"
+Shows FILES and FOLDERS inside a specific project.
+Use when asked: "show structure", "tree", "what's inside", "files in", "структура", "дерево", "файлы в".
+Parameter 'target' (required) - exact project name from list_projects.
+Parameter 'level' (optional) - depth 1-10, default 3.
+Call list_projects first if you don't know project names.
+"#
+    )]
+    async fn get_tree(
+        &self,
+        Parameters(params): Parameters<GetTreeParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        ToolGetTree::new(self.state.clone()).execute(params).await
+    }
+
+    #[tool(
+        name = "show_tree",
+        description = "Same as get_tree. Shows files and folders inside a project."
+    )]
+    async fn show_tree(
+        &self,
+        Parameters(params): Parameters<GetTreeParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.get_tree(Parameters(params)).await
+    }
+
+    #[tool(
+        name = "tree",
+        description = "Same as get_tree. Shows files and folders inside a project."
+    )]
+    async fn tree(
+        &self,
+        Parameters(params): Parameters<GetTreeParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.get_tree(Parameters(params)).await
+    }
+
+    #[tool(
+        name = "list_files",
+        description = "Same as get_tree. Shows files and folders inside a project."
+    )]
+    async fn list_files(
+        &self,
+        Parameters(params): Parameters<GetTreeParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.get_tree(Parameters(params)).await
     }
 }

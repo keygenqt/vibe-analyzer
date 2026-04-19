@@ -1,6 +1,7 @@
 //! Response structure for the index_projects tool.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Response from index_projects tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -37,5 +38,18 @@ impl IndexProjectsResponse {
             result: IndexResult::AlreadyRunning,
             message: "Indexing is already running. Please wait.".to_string(),
         }
+    }
+
+    /// Returns a formatted tool result with JSON data.
+    pub fn format(&self) -> String {
+        let json = serde_json::to_string_pretty(self).unwrap_or_default();
+        let status = match self.result {
+            IndexResult::Started => "started",
+            IndexResult::AlreadyRunning => "already_running",
+        };
+        format!(
+            "[TOOL RESULT - Indexing status: {}]\n{}\n\nUse this data to respond to the user.",
+            status, json
+        )
     }
 }

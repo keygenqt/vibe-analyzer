@@ -34,7 +34,7 @@ const MODELS: &[&str] = &[
 ];
 
 /// MCP tool scenarios to execute.
-const SCENARIOS: &[&str] = &["tool_index_projects", "tool_list_projects"];
+const SCENARIOS: &[&str] = &["tool_get_tree", "tool_index_projects", "tool_list_projects"];
 
 #[tokio::test]
 #[ignore = "requires MCP server and Ollama running"]

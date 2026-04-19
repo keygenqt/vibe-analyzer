@@ -57,7 +57,10 @@ impl McpClient {
             .into_iter()
             .next()
             .and_then(|c| c.as_text().map(|t| t.text.clone()))
-            .and_then(|text| serde_json::from_str::<Value>(&text).ok())
+            .map(|text| {
+                // Try to parse as JSON, fallback to plain string
+                serde_json::from_str::<Value>(&text).unwrap_or_else(|_| Value::String(text))
+            })
             .unwrap_or(Value::Null);
 
         Ok(content)

@@ -34,11 +34,8 @@ impl McpEnvironment {
         opensearch_url: impl Into<String>,
         config_dir: impl Into<String>,
     ) -> Self {
-        let release_path = "target/release/vibe-analyzer";
         let debug_path = "target/debug/vibe-analyzer";
-        let vibe_analyzer_path = if std::path::Path::new(release_path).exists() {
-            release_path.to_string()
-        } else if std::path::Path::new(debug_path).exists() {
+        let vibe_analyzer_path = if std::path::Path::new(debug_path).exists() {
             debug_path.to_string()
         } else {
             "vibe-analyzer".to_string()
@@ -72,6 +69,8 @@ impl McpEnvironment {
         let log_path = log_dir.path().join("mcp_test.log");
         let log_file = std::fs::File::create(&log_path)?;
         let shared_file = Arc::new(Mutex::new(log_file));
+
+        tracing::info!("Log path: {}", &log_path.to_string_lossy());
 
         self.log_file = Some(shared_file.clone());
         self.log_dir = Some(log_dir);

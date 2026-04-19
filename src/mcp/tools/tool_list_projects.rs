@@ -10,7 +10,8 @@ use rmcp::model::Content;
 use serde_json::json;
 
 use crate::mcp::server::AppState;
-use crate::mcp::tools::data::responses::list_projects::{ListProjectsResponse, ProjectInfo};
+use crate::mcp::tools::data::responses::list_projects::ListProjectsResponse;
+use crate::mcp::tools::data::responses::list_projects::ProjectInfo;
 
 /// Tool for listing all knowledge sources.
 #[derive(Clone)]
@@ -51,7 +52,7 @@ impl ToolListProjects {
         let response = ListProjectsResponse { projects, total };
 
         Ok(CallToolResult::success(vec![Content::text(
-            serde_json::to_string_pretty(&response).unwrap(),
+            response.format(),
         )]))
     }
 }

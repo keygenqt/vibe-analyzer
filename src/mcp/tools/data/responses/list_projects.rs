@@ -1,6 +1,7 @@
 //! Response structure for the list_projects tool.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Response from list_projects tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -22,4 +23,15 @@ pub struct ProjectInfo {
     pub name: String,
     /// Brief description of the project.
     pub summary: String,
+}
+
+impl ListProjectsResponse {
+    /// Returns a formatted tool result with JSON data.
+    pub fn format(&self) -> String {
+        let json = serde_json::to_string_pretty(self).unwrap_or_default();
+        format!(
+            "[TOOL RESULT - Project list ({} projects)]\n{}\n\nUse this data to respond to the user.",
+            self.total, json
+        )
+    }
 }

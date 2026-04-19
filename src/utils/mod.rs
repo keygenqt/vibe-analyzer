@@ -8,6 +8,7 @@ pub mod hash;
 pub mod json5;
 pub mod macros;
 pub mod matcher;
+pub mod mcp_normalize;
 pub mod path;
 pub mod spdx;
 pub mod tree;

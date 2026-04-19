@@ -189,32 +189,36 @@ impl SearchClient {
             });
         }
 
-        // Extract root from first path
-        let first_path = &hashes[0].path;
-        let root = first_path
-            .rsplit_once('/')
-            .map(|(r, _)| r)
-            .unwrap_or(first_path);
-        let root_name = root.split('/').last().unwrap_or("project");
-
-        // Extract relative paths
-        let paths: Vec<String> = hashes
+        // Find common root prefix of all paths
+        let common_root = hashes
             .iter()
-            .map(|h| {
-                h.path
-                    .strip_prefix(&format!("{}/", root))
-                    .unwrap_or(&h.path)
-                    .to_string()
+            .map(|h| h.path.as_str())
+            .reduce(|a, b| {
+                let common: String = a
+                    .chars()
+                    .zip(b.chars())
+                    .take_while(|(x, y)| x == y)
+                    .map(|(c, _)| c)
+                    .collect();
+                Box::leak(Box::new(common)) as &str
             })
-            .collect();
+            .unwrap_or("");
 
+        // Trim to last '/' to get the project root directory
+        let root = if let Some(last_slash) = common_root.rfind('/') {
+            &common_root[..last_slash]
+        } else {
+            common_root
+        };
+        // Collect all paths
+        let paths: Vec<String> = hashes.iter().map(|h| h.path.clone()).collect();
         // Build tree
-        let (tree_string, dirs, files) = crate::utils::tree::build_tree(&paths, level);
-
+        let (tree, dirs, files) = crate::utils::tree::build_tree(root, &paths, level);
+        // Result
         Ok(SearchTree {
-            tree: format!("{}\n{}", root_name, tree_string.trim_end()),
+            tree,
             directories: dirs,
-            files: files,
+            files,
         })
     }
 

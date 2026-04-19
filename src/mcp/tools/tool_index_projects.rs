@@ -2,7 +2,8 @@
 //! Triggers incremental indexing for all knowledge sources.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::Ordering;
 
 use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
@@ -30,7 +31,7 @@ impl ToolIndexProjects {
     pub async fn execute(&self) -> Result<CallToolResult, ErrorData> {
         if INDEXING.swap(true, Ordering::SeqCst) {
             return Ok(CallToolResult::success(vec![Content::text(
-                serde_json::to_string_pretty(&IndexProjectsResponse::already_running()).unwrap(),
+                IndexProjectsResponse::already_running().format(),
             )]));
         }
 
@@ -54,7 +55,7 @@ impl ToolIndexProjects {
         });
 
         Ok(CallToolResult::success(vec![Content::text(
-            serde_json::to_string_pretty(&IndexProjectsResponse::started()).unwrap(),
+            IndexProjectsResponse::started().format(),
         )]))
     }
 }
