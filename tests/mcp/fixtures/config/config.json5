@@ -1,17 +1,17 @@
 {
-  version: "0.0.1",
+  version: '0.0.1',
   opensearch: {
-    host: "http://localhost:9222",
+    host: 'http://localhost:9222',
   },
   mcp: {
-    host: "0.0.0.0",
+    host: '0.0.0.0',
     port: 9020,
-    protocol: "latest",
+    protocol: 'latest',
   },
   ollama: [
     {
-      host: "http://192.168.1.10:11434",
-      model: "qwen2.5-coder:7b-instruct",
+      host: 'http://192.168.1.10:11434',
+      model: 'qwen2.5-coder:7b-instruct',
       max_chunk_chars: 3000,
       max_chunk_files: 3,
       timeout_secs: 120,
@@ -26,13 +26,9 @@
       ast_interfaces: true,
     },
   ],
-  sources: [
-    "tests/mcp/fixtures/projects/knowledge",
-    "tests/mcp/fixtures/projects/legends",
-    "tests/mcp/fixtures/projects/rust_project",
-  ],
+  sources: ['tests/mcp/fixtures/source/knowledge', 'tests/mcp/fixtures/source/projects'],
   dev: {
-    log_level: "trace",
-    spdx_data_path: "tests/mcp/fixtures/config/spdx",
+    log_level: 'trace',
+    spdx_data_path: 'tests/mcp/fixtures/config/spdx',
   },
 }

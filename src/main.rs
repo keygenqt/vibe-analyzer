@@ -68,9 +68,7 @@ async fn main() {
     let app = App::parse();
 
     // Load config with override
-    if let Err(e) = AppConfig::set_global_config_dir(app.config_dir.clone()) {
-        exit_error!("Failed to set config directory: {}", e);
-    }
+    AppConfig::set_global_config_dir(app.config_dir.clone());
 
     match app.command {
         Some(Commands::Source { action }) => cli::source::run(action),

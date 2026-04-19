@@ -2,21 +2,25 @@
 //! Holds validated parameters and executes test scenarios.
 
 use anyhow::Result;
-use serde_json::{Value, json};
+use serde_json::Value;
+use serde_json::json;
 
 use crate::mcp::framework::mcp_client::McpClient;
 use crate::mcp::framework::mcp_environment::McpEnvironment;
-use crate::mcp::framework::mcp_report::{McpReport, QueryReport, ToolCall};
+use crate::mcp::framework::mcp_report::McpReport;
+use crate::mcp::framework::mcp_report::QueryReport;
+use crate::mcp::framework::mcp_report::ToolCall;
 use crate::mcp::framework::mcp_scenario::McpScenario;
 use crate::mcp::framework::mcp_test_builder::McpEngineBuilder;
-use crate::mcp::framework::ollama_client::{OllamaClient, OllamaResponse};
+use crate::mcp::framework::ollama_client::OllamaClient;
+use crate::mcp::framework::ollama_client::OllamaResponse;
 
 /// Complete MCP test configuration with execution logic.
 #[derive(Debug)]
 pub struct McpEngine {
     pub ollama_client: OllamaClient,
     pub models: Vec<String>,
-    pub scenario: McpScenario,
+    pub scenarios: Vec<McpScenario>,
     pub environment: McpEnvironment,
 }
 
@@ -26,8 +30,8 @@ impl McpEngine {
         McpEngineBuilder::new()
     }
 
-    /// Runs the test scenario against all models and returns a report.
-    pub async fn run(mut self) -> Result<McpReport> {
+    /// Runs all test scenarios against all models and returns a report.
+    pub async fn run(mut self) -> Result<Vec<McpReport>> {
         self.environment.start().await?;
         self.environment.index_fixtures()?;
 
@@ -52,55 +56,69 @@ impl McpEngine {
             })
             .collect();
 
-        let model = self.models.first().cloned().unwrap_or_default();
-        let mut queries = Vec::new();
+        let mut reports = Vec::new();
 
-        for query in &self.scenario.queries {
-            tracing::info!("Start query ({}): '{}'", model, query);
+        for model in &self.models {
+            for scenario in &self.scenarios {
+                let mut queries = Vec::new();
 
-            self.environment.log(
-                "LLM request",
-                &[
-                    ("model", &model),
-                    ("query", query),
-                    ("tools", &tool_names_str),
-                ],
-            );
+                for query in &scenario.queries {
+                    tracing::info!("Start query ({}): '{}'", model, query);
 
-            let request_time = chrono::Utc::now();
-            let response = self.ollama_client.chat(&model, query, &tool_values).await?;
-            let final_response = self
-                .process_response(&mcp_client, &model, query, response)
-                .await?;
-            let duration_ms = (chrono::Utc::now() - request_time).num_milliseconds() as u64;
+                    self.environment.log(
+                        "LLM request",
+                        &[
+                            ("model", model),
+                            ("query", query),
+                            ("tools", &tool_names_str),
+                        ],
+                    );
 
-            self.environment.log(
-                "LLM final response",
-                &[("model", &model), ("response", &final_response)],
-            );
+                    let request_time = chrono::Utc::now();
+                    let response = self.ollama_client.chat(model, query, &tool_values).await?;
+                    let (tool_name, tool_args, tool_result, final_response) = self
+                        .process_response(&mcp_client, model, query, response)
+                        .await?;
+                    let duration_ms = (chrono::Utc::now() - request_time).num_milliseconds() as u64;
 
-            queries.push(QueryReport {
-                query: query.clone(),
-                tool_calls: vec![ToolCall {
-                    name: self.scenario.tool.clone(),
-                    args: "{}".to_string(),
-                }],
-                response: final_response,
-                duration_ms,
-                timestamp: request_time.to_rfc3339(),
-            });
+                    self.environment.log(
+                        "LLM final response",
+                        &[("model", model), ("response", &final_response)],
+                    );
+
+                    queries.push(QueryReport {
+                        query: query.clone(),
+                        tool_calls: vec![ToolCall {
+                            name: tool_name.unwrap_or_else(|| scenario.tool.clone()),
+                            args: tool_args.unwrap_or_else(|| "{}".to_string()),
+                            result: tool_result.unwrap_or_default(),
+                        }],
+                        response: final_response,
+                        duration_ms,
+                        timestamp: request_time.to_rfc3339(),
+                    });
+                }
+
+                reports.push(McpReport::new(
+                    scenario.tool.clone(),
+                    model.clone(),
+                    queries,
+                ));
+            }
         }
 
-        Ok(McpReport::new(self.scenario.tool.clone(), model, queries))
+        Ok(reports)
     }
 
+    /// Processes LLM response and handles tool calls.
+    /// Returns (tool_name, tool_args, tool_result, final_response)
     async fn process_response(
         &self,
         mcp_client: &McpClient,
         model: &str,
         query: &str,
         response: OllamaResponse,
-    ) -> Result<String> {
+    ) -> Result<(Option<String>, Option<String>, Option<String>, String)> {
         let content = response.message.content.trim();
 
         self.environment.log(
@@ -126,24 +144,26 @@ impl McpEngine {
             content
         };
 
+        let mut tool_name = None;
+        let mut tool_args = None;
+        let mut tool_result = None;
+
         if let Ok(parsed) = serde_json::from_str::<Value>(json_str) {
-            if let Some(tool_name) = parsed.get("name").and_then(|n| n.as_str()) {
-                let tool_args = parsed.get("arguments").cloned().unwrap_or(json!({}));
-                let tool_args_str = format!("{}", tool_args);
+            if let Some(name) = parsed.get("name").and_then(|n| n.as_str()) {
+                let args = parsed.get("arguments").cloned().unwrap_or(json!({}));
+                let args_str = format!("{}", args);
+
+                tool_name = Some(name.to_string());
+                tool_args = Some(args_str.clone());
 
                 self.environment.log(
                     "LLM tool call detected",
-                    &[
-                        ("model", model),
-                        ("tool", tool_name),
-                        ("args", &tool_args_str),
-                    ],
+                    &[("model", model), ("tool", name), ("args", &args_str)],
                 );
 
-                let tool_result = mcp_client
-                    .call_tool(tool_name.to_string(), tool_args)
-                    .await?;
-                let tool_result_str = serde_json::to_string_pretty(&tool_result)?;
+                let result = mcp_client.call_tool(name.to_string(), args).await?;
+                let result_str = serde_json::to_string_pretty(&result)?;
+                tool_result = Some(result_str.clone());
 
                 let follow_up = self
                     .ollama_client
@@ -151,15 +171,15 @@ impl McpEngine {
                         model,
                         &format!(
                             "You called the tool '{}' and got this result:\n{}\n\nNow provide a natural language response to the original query: '{}'",
-                            tool_name, tool_result_str, query
+                            name, result_str, query
                         ),
                     )
                     .await?;
 
-                return Ok(follow_up.message.content);
+                return Ok((tool_name, tool_args, tool_result, follow_up.message.content));
             }
         }
 
-        Ok(response.message.content)
+        Ok((tool_name, tool_args, tool_result, response.message.content))
     }
 }

@@ -68,11 +68,10 @@ impl Default for AppConfig {
 
 impl AppConfig {
     /// Sets the global config directory override.
-    pub fn set_global_config_dir(dir: Option<PathBuf>) -> Result<()> {
-        GLOBAL_CONFIG_DIR
-            .set(dir)
-            .map_err(|_| anyhow::anyhow!("Config directory already set"))?;
-        Ok(())
+    pub fn set_global_config_dir(dir: Option<PathBuf>) {
+        if GLOBAL_CONFIG_DIR.get().is_none() {
+            let _ = GLOBAL_CONFIG_DIR.set(dir);
+        }
     }
 
     /// Returns the config directory (either global override or default).

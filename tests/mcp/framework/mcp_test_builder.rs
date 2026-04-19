@@ -14,7 +14,7 @@ use crate::mcp::framework::ollama_client::OllamaClient;
 pub struct McpEngineBuilder {
     ollama_host: Option<String>,
     models: Option<Vec<String>>,
-    scenario_file: Option<String>,
+    scenarios: Option<Vec<String>>,
     environment: Option<McpEnvironment>,
 }
 
@@ -31,14 +31,22 @@ impl McpEngineBuilder {
     }
 
     /// Sets the list of models to test.
-    pub fn models(mut self, models: Vec<&str>) -> Self {
-        self.models = Some(models.into_iter().map(String::from).collect());
+    pub fn models<I, S>(mut self, models: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        self.models = Some(models.into_iter().map(|s| s.as_ref().to_string()).collect());
         self
     }
 
-    /// Sets the path to the scenario JSON file.
-    pub fn scenario_file(mut self, path: impl Into<String>) -> Self {
-        self.scenario_file = Some(path.into());
+    /// Sets the paths to the scenario JSON files.
+    pub fn scenarios<I, S>(mut self, paths: I) -> Self
+    where
+        I: IntoIterator<Item = S>,
+        S: AsRef<str>,
+    {
+        self.scenarios = Some(paths.into_iter().map(|s| s.as_ref().to_string()).collect());
         self
     }
 
@@ -56,21 +64,26 @@ impl McpEngineBuilder {
         let models = self
             .models
             .ok_or_else(|| anyhow::anyhow!("Models not specified"))?;
-        let scenario_file = self
-            .scenario_file
-            .ok_or_else(|| anyhow::anyhow!("Scenario file not specified"))?;
+        let scenario_files = self
+            .scenarios
+            .ok_or_else(|| anyhow::anyhow!("Scenario files not specified"))?;
         let environment = self
             .environment
             .ok_or_else(|| anyhow::anyhow!("Test environment not specified"))?;
 
-        let content = fs::read_to_string(&scenario_file)?;
-        let scenario: McpScenario = serde_json::from_str(&content)?;
+        let mut scenarios = Vec::new();
+        for file in scenario_files {
+            let content = fs::read_to_string(&file)?;
+            let scenario: McpScenario = serde_json::from_str(&content)?;
+            scenarios.push(scenario);
+        }
+
         let ollama_client = OllamaClient::new(ollama_host);
 
         Ok(McpEngine {
             ollama_client,
             models,
-            scenario,
+            scenarios,
             environment,
         })
     }

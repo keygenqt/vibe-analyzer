@@ -6,7 +6,8 @@ use std::io::Write;
 use std::path::PathBuf;
 use std::process::Child;
 use std::process::Command;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::time::Duration;
 use tempfile::TempDir;
 use tokio::time::sleep;
@@ -63,7 +64,7 @@ impl McpEnvironment {
     /// Starts all services: OpenSearch container and MCP server.
     pub async fn start(&mut self) -> Result<()> {
         // Initialize tracing for the test runner
-        AppConfig::set_global_config_dir(Some(PathBuf::from(&self.config_dir)))?;
+        AppConfig::set_global_config_dir(Some(PathBuf::from(&self.config_dir)));
         let _ = AppConfig::load()?;
 
         // Create temp dir for logs

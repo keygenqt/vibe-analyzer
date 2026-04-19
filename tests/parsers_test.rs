@@ -1,4 +1,6 @@
 //! Integration tests for language parsers.
+//!
+//! cargo test --test parsers_test
 
 mod parsers {
     mod bash_test;

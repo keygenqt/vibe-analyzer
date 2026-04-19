@@ -2,7 +2,8 @@
 //! Builds structured JSON reports from test data.
 
 use anyhow::Result;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use std::path::Path;
 
 /// Complete test report.
@@ -30,6 +31,7 @@ pub struct QueryReport {
 pub struct ToolCall {
     pub name: String,
     pub args: String,
+    pub result: String,
 }
 
 /// Report summary.
