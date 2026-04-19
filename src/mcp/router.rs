@@ -71,6 +71,9 @@ Updates the knowledge base index.
 ONLY call when user explicitly says: "update index", "refresh", "reindex", "rescan", "обнови индекс".
 DO NOT call for any other reason. Index auto-updates.
 This is an admin tool, not for regular queries.
+
+IMPORTANT: This tool accepts NO parameters. Call exactly like this:
+{"name": "index_projects", "arguments": {}}
 "#
     )]
     async fn index_projects(&self) -> Result<CallToolResult, ErrorData> {
@@ -79,7 +82,7 @@ This is an admin tool, not for regular queries.
 
     #[tool(
         name = "update_index",
-        description = "Same as index_projects. Admin tool for updating index."
+        description = "Same as index_projects. Call with empty arguments: {}."
     )]
     async fn update_index(&self) -> Result<CallToolResult, ErrorData> {
         self.index_projects().await
@@ -87,7 +90,7 @@ This is an admin tool, not for regular queries.
 
     #[tool(
         name = "refresh_index",
-        description = "Same as index_projects. Admin tool for refreshing index."
+        description = "Same as index_projects. Call with empty arguments: {}."
     )]
     async fn refresh_index(&self) -> Result<CallToolResult, ErrorData> {
         self.index_projects().await
@@ -95,7 +98,7 @@ This is an admin tool, not for regular queries.
 
     #[tool(
         name = "reindex",
-        description = "Same as index_projects. Admin tool for reindexing."
+        description = "Same as index_projects. Call with empty arguments: {}."
     )]
     async fn reindex(&self) -> Result<CallToolResult, ErrorData> {
         self.index_projects().await
@@ -111,6 +114,9 @@ Shows NAMES and SUMMARIES of all projects.
 Use when asked: "what projects exist", "list projects", "show all projects", "какие проекты есть".
 This tool shows ONLY project list, NOT files inside.
 To see files/folders inside a project, use get_tree.
+
+Call exactly like this:
+{"name": "list_projects", "arguments": {}}
 "#
     )]
     async fn list_projects(&self) -> Result<CallToolResult, ErrorData> {
@@ -119,7 +125,7 @@ To see files/folders inside a project, use get_tree.
 
     #[tool(
         name = "get_projects",
-        description = "Same as list_projects. Shows project names and summaries only."
+        description = "Same as list_projects. Shows project names and summaries only. Call with empty arguments: {}."
     )]
     async fn get_projects(&self) -> Result<CallToolResult, ErrorData> {
         self.list_projects().await
@@ -127,7 +133,7 @@ To see files/folders inside a project, use get_tree.
 
     #[tool(
         name = "show_projects",
-        description = "Same as list_projects. Shows project names and summaries only."
+        description = "Same as list_projects. Shows project names and summaries only. Call with empty arguments: {}."
     )]
     async fn show_projects(&self) -> Result<CallToolResult, ErrorData> {
         self.list_projects().await
@@ -144,6 +150,10 @@ Use when asked: "show structure", "tree", "what's inside", "files in", "стру
 Parameter 'target' (required) - exact project name from list_projects.
 Parameter 'level' (optional) - depth 1-10, default 3.
 Call list_projects first if you don't know project names.
+
+Example call:
+{"name": "get_tree", "arguments": {"target": "knowledge"}}
+{"name": "get_tree", "arguments": {"target": "projects", "level": 2}}
 "#
     )]
     async fn get_tree(
@@ -155,7 +165,7 @@ Call list_projects first if you don't know project names.
 
     #[tool(
         name = "show_tree",
-        description = "Same as get_tree. Shows files and folders inside a project."
+        description = "Same as get_tree. Shows files and folders inside a project. Example: {\"name\": \"show_tree\", \"arguments\": {\"target\": \"knowledge\"}}"
     )]
     async fn show_tree(
         &self,
@@ -166,7 +176,7 @@ Call list_projects first if you don't know project names.
 
     #[tool(
         name = "tree",
-        description = "Same as get_tree. Shows files and folders inside a project."
+        description = "Same as get_tree. Shows files and folders inside a project. Example: {\"name\": \"tree\", \"arguments\": {\"target\": \"knowledge\"}}"
     )]
     async fn tree(
         &self,
@@ -177,7 +187,7 @@ Call list_projects first if you don't know project names.
 
     #[tool(
         name = "list_files",
-        description = "Same as get_tree. Shows files and folders inside a project."
+        description = "Same as get_tree. Shows files and folders inside a project. Example: {\"name\": \"list_files\", \"arguments\": {\"target\": \"knowledge\"}}"
     )]
     async fn list_files(
         &self,

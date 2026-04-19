@@ -29,8 +29,8 @@ const REPORTS_DIR: &str = "tests/reports";
 /// Ollama models to test against.
 const MODELS: &[&str] = &[
     "qwen2.5-coder:3b-instruct",
-    // "qwen2.5-coder:7b-instruct",
-    // "qwen2.5-coder:14b-instruct",
+    "qwen2.5-coder:7b-instruct",
+    "qwen2.5-coder:14b-instruct",
 ];
 
 /// MCP tool scenarios to execute.
