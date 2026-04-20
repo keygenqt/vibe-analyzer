@@ -2,9 +2,9 @@
   "tool": "get_tree",
   "queries": [
     "Покажи дерево файлов в knowledge",
-    "Выведи структуру projects",
+    "Выведи структуру samples",
     "Покажи файлы и папки в knowledge",
-    "Какая структура у проекта projects",
+    "Какая структура у проекта samples",
     "Выведи дерево knowledge"
   ]
 }

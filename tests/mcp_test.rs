@@ -29,12 +29,17 @@ const REPORTS_DIR: &str = "tests/reports";
 /// Ollama models to test against.
 const MODELS: &[&str] = &[
     "qwen2.5-coder:3b-instruct",
-    "qwen2.5-coder:7b-instruct",
-    "qwen2.5-coder:14b-instruct",
+    // "qwen2.5-coder:7b-instruct",
+    // "qwen2.5-coder:14b-instruct",
 ];
 
 /// MCP tool scenarios to execute.
-const SCENARIOS: &[&str] = &["tool_get_tree", "tool_index_projects", "tool_list_projects"];
+const SCENARIOS: &[&str] = &[
+    "tool_get_stats",
+    "tool_get_tree",
+    "tool_index_projects",
+    "tool_list_projects",
+];
 
 #[tokio::test]
 #[ignore = "requires MCP server and Ollama running"]

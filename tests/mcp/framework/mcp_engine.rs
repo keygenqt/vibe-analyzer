@@ -12,7 +12,8 @@ use crate::mcp::framework::mcp_report::QueryReport;
 use crate::mcp::framework::mcp_report::ToolCall;
 use crate::mcp::framework::mcp_scenario::McpScenario;
 use crate::mcp::framework::mcp_test_builder::McpEngineBuilder;
-use crate::mcp::framework::ollama_client::{ChatMessage, OllamaClient};
+use crate::mcp::framework::ollama_client::ChatMessage;
+use crate::mcp::framework::ollama_client::OllamaClient;
 
 /// Max turns per query to prevent infinite loops.
 const MAX_TURNS: usize = 5;

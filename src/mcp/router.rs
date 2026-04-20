@@ -13,7 +13,9 @@ use rmcp::tool_router;
 use std::sync::Arc;
 
 use crate::mcp::server::AppState;
+use crate::mcp::tools::data::requests::get_stats::GetStatsParams;
 use crate::mcp::tools::data::requests::get_tree::GetTreeParams;
+use crate::mcp::tools::tool_get_stats::ToolGetStats;
 use crate::mcp::tools::tool_get_tree::ToolGetTree;
 use crate::mcp::tools::tool_index_projects::ToolIndexProjects;
 use crate::mcp::tools::tool_list_projects::ToolListProjects;
@@ -194,5 +196,62 @@ Example call:
         Parameters(params): Parameters<GetTreeParams>,
     ) -> Result<CallToolResult, ErrorData> {
         self.get_tree(Parameters(params)).await
+    }
+
+    // -------------------------------------------------------------------------------
+    // -- Get stats ------------------------------------------------------------------
+
+    #[tool(
+        name = "get_stats",
+        description = r#"
+Shows project statistics: files, lines of code, languages breakdown, AST objects.
+Parameter 'target' (optional) - project name from list_projects.
+If target not specified, shows stats for all projects.
+
+Use when asked: "stats", "statistics", "how many files", "lines of code", "languages", "статистика", "сколько файлов".
+
+Example call:
+{"name": "get_stats", "arguments": {}}
+{"name": "get_stats", "arguments": {"target": "knowledge"}}
+"#
+    )]
+    async fn get_stats(
+        &self,
+        Parameters(params): Parameters<GetStatsParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        ToolGetStats::new(self.state.clone()).execute(params).await
+    }
+
+    #[tool(
+        name = "stats",
+        description = "Same as get_stats. Shows project statistics. Example: {\"name\": \"stats\", \"arguments\": {}}"
+    )]
+    async fn stats(
+        &self,
+        Parameters(params): Parameters<GetStatsParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.get_stats(Parameters(params)).await
+    }
+
+    #[tool(
+        name = "show_stats",
+        description = "Same as get_stats. Shows project statistics. Example: {\"name\": \"show_stats\", \"arguments\": {\"target\": \"knowledge\"}}"
+    )]
+    async fn show_stats(
+        &self,
+        Parameters(params): Parameters<GetStatsParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.get_stats(Parameters(params)).await
+    }
+
+    #[tool(
+        name = "project_stats",
+        description = "Same as get_stats. Shows project statistics. Example: {\"name\": \"project_stats\", \"arguments\": {\"target\": \"projects\"}}"
+    )]
+    async fn project_stats(
+        &self,
+        Parameters(params): Parameters<GetStatsParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.get_stats(Parameters(params)).await
     }
 }

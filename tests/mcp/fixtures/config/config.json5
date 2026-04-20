@@ -26,7 +26,7 @@
       ast_interfaces: true,
     },
   ],
-  sources: ['tests/mcp/fixtures/source/knowledge', 'tests/mcp/fixtures/source/projects'],
+  sources: ['tests/mcp/fixtures/source/knowledge', 'tests/mcp/fixtures/source/samples'],
   dev: {
     log_level: 'trace',
     spdx_data_path: 'tests/mcp/fixtures/config/spdx',
