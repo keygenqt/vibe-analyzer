@@ -8,7 +8,6 @@ use crate::scanner::ast::data::ast_data::AstData;
 
 /// Analysis results for a single file
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct FileAnalysis {
     /// Relative path from source root
     pub path: String,

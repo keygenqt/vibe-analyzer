@@ -1,6 +1,8 @@
 //! Ollama API client.
 //! Provides chat completion with tool calling support.
 
+use std::time::Duration;
+
 use anyhow::Result;
 use reqwest::Client;
 use serde::Serialize;
@@ -42,6 +44,7 @@ impl ChatMessage {
 pub struct OllamaClient {
     client: Client,
     host: String,
+    timeout: Duration,
 }
 
 impl OllamaClient {
@@ -50,7 +53,13 @@ impl OllamaClient {
         Self {
             client: Client::new(),
             host: host.into(),
+            timeout: Duration::from_secs(60),
         }
+    }
+
+    /// Sets the request timeout.
+    pub fn set_timeout(&mut self, timeout: Duration) {
+        self.timeout = timeout;
     }
 
     /// Sends a chat request with message history and tools.
@@ -72,16 +81,24 @@ impl OllamaClient {
                 "temperature": 0.1,
                 "seed": 42,
                 "num_ctx": 4096,
-                "num_predict": 2048,
+                "num_predict": 1024,
             }
         });
 
         let response = self
             .client
             .post(&url)
+            .timeout(self.timeout)
             .json(&body)
             .send()
-            .await?
+            .await
+            .map_err(|e| {
+                if e.is_timeout() {
+                    anyhow::anyhow!("Ollama request timed out after {:?}", self.timeout)
+                } else {
+                    anyhow::anyhow!("Ollama request failed: {}", e)
+                }
+            })?
             .json::<OllamaResponse>()
             .await?;
 

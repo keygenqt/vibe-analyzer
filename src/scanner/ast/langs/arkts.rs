@@ -64,7 +64,7 @@ impl LanguageParser for ArkTsParser {
         data.interfaces = interfaces;
         data.variables = variables;
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

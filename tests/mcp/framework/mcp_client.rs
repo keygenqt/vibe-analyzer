@@ -13,6 +13,7 @@ use rmcp::model::Tool;
 use rmcp::service::RunningService;
 use rmcp::transport::StreamableHttpClientTransport;
 use serde_json::Value;
+use std::time::Duration;
 
 /// Client for interacting with MCP server via streamable HTTP.
 pub struct McpClient {
@@ -39,17 +40,16 @@ impl McpClient {
     }
 
     /// Calls a tool with the given name and arguments.
-    pub async fn call_tool(&self, name: String, args: Value) -> Result<Value> {
+    pub async fn call_tool(&self, name: String, args: Value, timeout: Duration) -> Result<Value> {
         let params = if let Some(obj) = args.as_object() {
             CallToolRequestParams::new(name.clone()).with_arguments(obj.clone())
         } else {
             CallToolRequestParams::new(name.clone())
         };
 
-        let result = self
-            .client
-            .call_tool(params)
+        let result = tokio::time::timeout(timeout, self.client.call_tool(params))
             .await
+            .map_err(|_| anyhow::anyhow!("Tool '{}' call timed out after {:?}", name, timeout))?
             .map_err(|e| anyhow::anyhow!("Tool '{}' call failed: {}", name, e))?;
 
         let content = result

@@ -10,7 +10,6 @@ use serde::Serialize;
 
 /// Complete analysis results for a single source
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct SourceAnalysis {
     /// Absolute path to source root
     pub root: String,

@@ -15,7 +15,6 @@ pub struct SearchFileHashSource {
 
 /// Response containing file path and its content hash.
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct SearchFileHash {
     /// Relative file path.
     pub path: String,

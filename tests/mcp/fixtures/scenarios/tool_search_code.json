@@ -1,0 +1,15 @@
+{
+  "tool": "search_code",
+  "queries": [
+    "Найди функцию add в проекте samples",
+    "Где объявлен struct User в Rust",
+    "Покажи все методы Calculator",
+    "Найди класс User в Python",
+    "Покажи код функции divide с обработкой ошибок",
+    "Найди enum MathError в rust_lib",
+    "Покажи импорты в python_sample",
+    "Где используется thiserror в проекте",
+    "Найди main функцию",
+    "Покажи где в коде написаны тесты"
+  ]
+}

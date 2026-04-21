@@ -51,7 +51,7 @@ impl LanguageParser for PythonParser {
         data.classes = classes;
         data.variables = variables;
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

@@ -6,7 +6,6 @@ use serde::Serialize;
 
 /// Container for struct-related AST data
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct AstDataStruct {
     /// Full struct signature (e.g., "struct ScanOptions { path: Option<PathBuf> }")
     pub signature: String,

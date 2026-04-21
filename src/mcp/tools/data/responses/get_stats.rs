@@ -4,7 +4,6 @@ use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub struct GetStatsResponse {
     /// Target project (None means all projects).
     pub target: Option<String>,
@@ -15,7 +14,6 @@ pub struct GetStatsResponse {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub struct LanguageStat {
     pub language: String,
     pub files: usize,
@@ -25,7 +23,6 @@ pub struct LanguageStat {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub struct TotalStat {
     pub files: usize,
     pub lines: usize,

@@ -63,7 +63,7 @@ impl LanguageParser for JavaParser {
         data.interfaces = interfaces;
         data.variables = variables;
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

@@ -7,7 +7,6 @@ use serde::Serialize;
 
 /// File analysis enriched with LLM-generated description and search tags.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct EnrichedFileAnalysis {
     /// LLM-generated description of file purpose and main functionality
     pub description: Option<String>,

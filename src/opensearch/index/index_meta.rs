@@ -25,40 +25,71 @@ impl MetaIndex {
     /// Creates the index with proper mapping.
     pub async fn create(&self) -> Result<()> {
         let mapping = json!({
+            "settings": {
+                "analysis": {
+                    "analyzer": {
+                        "russian_analyzer": {
+                            "type": "russian"
+                        },
+                        "english_analyzer": {
+                            "type": "english"
+                        },
+                        "chinese_analyzer": {
+                            "type": "chinese"
+                        }
+                    }
+                }
+            },
             "mappings": {
+                "dynamic": "strict",
                 "properties": {
-                    "Root": { "type": "keyword" },
-                    "Summary": { "type": "text" },
-                    "Readme": {
-                        "properties": {
-                            "Path": { "type": "keyword" },
-                            "Content": { "type": "text", "index": false, "store": true },
-                            "SizeBytes": { "type": "long" }
+                    "root": { "type": "keyword" },
+                    "summary": {
+                        "type": "text",
+                        "fields": {
+                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
                         }
                     },
-                    "License": {
+                    "readme": {
                         "properties": {
-                            "SpdxId": { "type": "keyword" },
-                            "Name": { "type": "text" },
-                            "Confidence": { "type": "float" },
-                            "Path": { "type": "keyword" }
+                            "path": { "type": "keyword" },
+                            "content": {
+                                "type": "text",
+                                "store": true,
+                                "fields": {
+                                    "russian": { "type": "text", "analyzer": "russian_analyzer", "store": true },
+                                    "english": { "type": "text", "analyzer": "english_analyzer", "store": true },
+                                    "chinese": { "type": "text", "analyzer": "chinese_analyzer", "store": true }
+                                }
+                            },
+                            "size_bytes": { "type": "long" }
                         }
                     },
-                    "Stats": {
+                    "license": {
                         "properties": {
-                            "TotalFiles": { "type": "integer" },
-                            "TextFiles": { "type": "integer" },
-                            "BinaryFiles": { "type": "integer" },
-                            "TotalFunctions": { "type": "integer" },
-                            "TotalClasses": { "type": "integer" },
-                            "TotalStructs": { "type": "integer" },
-                            "TotalEnums": { "type": "integer" },
-                            "TotalInterfaces": { "type": "integer" },
-                            "TotalImports": { "type": "integer" },
-                            "TotalLinesOfCode": { "type": "integer" },
-                            "TotalChars": { "type": "integer" },
-                            "TotalSizeBytes": { "type": "long" },
-                            "TotalSizeHuman": { "type": "keyword" }
+                            "spdx_id": { "type": "keyword" },
+                            "name": { "type": "text" },
+                            "confidence": { "type": "float" },
+                            "path": { "type": "keyword" }
+                        }
+                    },
+                    "stats": {
+                        "properties": {
+                            "total_files": { "type": "integer" },
+                            "text_files": { "type": "integer" },
+                            "binary_files": { "type": "integer" },
+                            "total_functions": { "type": "integer" },
+                            "total_classes": { "type": "integer" },
+                            "total_structs": { "type": "integer" },
+                            "total_enums": { "type": "integer" },
+                            "total_interfaces": { "type": "integer" },
+                            "total_imports": { "type": "integer" },
+                            "total_lines_of_code": { "type": "integer" },
+                            "total_chars": { "type": "integer" },
+                            "total_size_bytes": { "type": "long" },
+                            "total_size_human": { "type": "keyword" }
                         }
                     }
                 }

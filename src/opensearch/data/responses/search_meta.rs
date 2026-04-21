@@ -9,7 +9,6 @@ use crate::scanner::data::output::source_stats::SourceStats;
 
 /// Project metadata returned from search queries.
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct SearchMeta {
     /// Absolute path to source root.
     pub root: String,

@@ -5,7 +5,6 @@ use serde::Serialize;
 
 /// Response from index_projects tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub struct IndexProjectsResponse {
     /// What happened with the indexing request.
     pub result: IndexResult,
@@ -15,7 +14,6 @@ pub struct IndexProjectsResponse {
 
 /// What happened when index was requested.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub enum IndexResult {
     /// Indexing just started - it's working now.
     Started,

@@ -47,7 +47,7 @@ impl LanguageParser for BashParser {
         data.functions = functions;
         data.variables = variables;
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

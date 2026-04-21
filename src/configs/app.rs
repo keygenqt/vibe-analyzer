@@ -142,7 +142,7 @@ impl AppConfig {
         crate::utils::macros::set_log_level(level);
         if crate::utils::macros::is_tracing() {
             let filter = format!("vibe_analyzer={0},mcp_test={0}", level.as_str());
-            tracing_subscriber::fmt().with_env_filter(filter).init();
+            let _ = tracing_subscriber::fmt().with_env_filter(filter).try_init();
         }
     }
 
@@ -225,20 +225,18 @@ impl AppConfig {
 
     /// Remove source from config by target path.
     pub fn remove_source(&mut self, target: &str) -> Result<PathBuf> {
-        let normalized_target = match convert_relative(target) {
-            Some(p) => p,
-            None => PathBuf::from(target),
-        };
+        // Try to resolve path, but don't require it to exist
+        let search_path = convert_relative(target).unwrap_or_else(|| PathBuf::from(target));
 
-        if let Some(pos) = self.sources.iter().position(|p| *p == normalized_target) {
+        // Search by exact match OR by matching the end of the path (name)
+        if let Some(pos) = self.sources.iter().position(|p| {
+            *p == search_path || p.ends_with(target) || p.to_string_lossy().ends_with(target)
+        }) {
             let removed = self.sources.remove(pos);
             self.save()?;
             Ok(removed)
         } else {
-            Err(anyhow::anyhow!(
-                "Source not found: {}",
-                normalized_target.display()
-            ))
+            Err(anyhow::anyhow!("Source not found: {}", target))
         }
     }
 

@@ -9,7 +9,6 @@ use serde::Serialize;
 
 /// Complete analysis results for a single source with LLM enrichment.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct EnrichedSourceAnalysis {
     /// Absolute path to source root
     pub root: String,

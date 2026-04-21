@@ -5,7 +5,6 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 
-use crate::opensearch::data::responses::search_hit::SearchHit;
 use crate::scanner::ast::data::ast_data_class::AstDataClass;
 use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
 use crate::scanner::ast::data::ast_data_function::AstDataFunction;
@@ -17,8 +16,9 @@ use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
 
 /// Response from AST search query containing matched file and filtered AST data.
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct SearchAst {
+    /// Source root path.
+    pub root: String,
     /// Relative file path where matches were found.
     pub path: String,
     /// Top-level documentation comments.
@@ -57,6 +57,7 @@ pub struct SearchAst {
     /// Code block languages found in markdown.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub code_blocks: Vec<String>,
-    /// Base metadata included in every search result.
-    pub hit: SearchHit,
+    /// Full file content (only if requested with include_content=true).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub content: Option<String>,
 }

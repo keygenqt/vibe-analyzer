@@ -43,6 +43,24 @@ impl OllamaClient {
         }
     }
 
+    /// Checks if the model is currently loaded in memory.
+    pub async fn is_model_loaded(&self) -> Result<bool> {
+        let url = format!("{}/api/ps", self.config.host);
+        let Ok(response) = self.client.get(&url).send().await else {
+            return Ok(false);
+        };
+        let json: serde_json::Value = response.json().await?;
+        Ok(json
+            .pointer("/models")
+            .and_then(|m| m.as_array())
+            .map(|models| {
+                models
+                    .iter()
+                    .any(|m| m.get("name").and_then(|n| n.as_str()) == Some(&self.config.model))
+            })
+            .unwrap_or(false))
+    }
+
     /// Checks if the configured model is already installed.
     pub async fn is_model_installed(&self) -> Result<bool> {
         let url = format!("{}/api/tags", self.config.host);
@@ -119,7 +137,7 @@ Return only the summary text.
             )
         };
 
-        let response = self.generate_completion(&prompt).await?;
+        let response = self.generate_completion(&prompt, None).await?;
         Ok(response.trim().to_string())
     }
 
@@ -171,7 +189,7 @@ JSON TO COPY AND FILL:
         );
 
         for attempt in 1..=MAX_RETRIES {
-            let raw_response = self.generate_completion(&prompt).await?;
+            let raw_response = self.generate_completion(&prompt, None).await?;
             let json_str = self.clean_llm_json(&raw_response);
 
             match serde_json::from_str::<OllamaEnrichmentResponse>(&json_str) {
@@ -239,7 +257,7 @@ JSON TO COPY AND FILL:
     }
 
     /// Sends a completion request to Ollama API.
-    async fn generate_completion(&self, prompt: &str) -> Result<String> {
+    async fn generate_completion(&self, prompt: &str, timeout_secs: Option<u64>) -> Result<String> {
         let url = format!("{}/api/generate", self.config.host);
 
         let request = serde_json::json!({
@@ -254,20 +272,35 @@ JSON TO COPY AND FILL:
             }
         });
 
+        let timeout_duration =
+            Duration::from_secs(timeout_secs.unwrap_or(self.config.timeout_secs));
+
         let response = self.client
         .post(&url)
         .json(&request)
-        .timeout(Duration::from_secs(self.config.timeout_secs))
+        .timeout(timeout_duration)
         .send()
         .await
         .map_err(|e| {
             if e.is_timeout() {
+                tracing::debug!(
+                    prompt_preview = %&prompt[..prompt.len().min(100)],
+                    timeout_secs = timeout_duration.as_secs(),
+                    model = %self.config.model,
+                    "Ollama request timed out"
+                );
                 anyhow::anyhow!(
                     "Ollama request timed out ({}s). Try reducing max_chunk_chars in config (current: {})",
                     self.config.timeout_secs,
                     self.config.max_chunk_chars
                 )
             } else {
+                tracing::debug!(
+                    prompt_preview = %&prompt[..prompt.len().min(100)],
+                    error = %e,
+                    model = %self.config.model,
+                    "Ollama request failed"
+                );
                 anyhow::anyhow!("Ollama request failed: {}", e)
             }
         })?;
@@ -275,6 +308,12 @@ JSON TO COPY AND FILL:
         if !response.status().is_success() {
             let status = response.status();
             let error_text = response.text().await?;
+            tracing::debug!(
+                status = %status,
+                error = %error_text,
+                model = %self.config.model,
+                "Ollama API error"
+            );
             anyhow::bail!("Ollama API error ({}): {}", status, error_text);
         }
 
@@ -343,5 +382,43 @@ JSON TO COPY AND FILL:
         json_str.push_str(&"]".repeat(open_brackets));
 
         json_str
+    }
+
+    pub async fn get_search_keywords(&self, query: &str) -> Vec<String> {
+        if query.len() < 3 {
+            return vec![query.to_string()];
+        }
+
+        let prompt = format!(
+            r#"Generate 3-5 KEYWORDS (not phrases) for this query in Russian, English, and Chinese.
+Return ONLY a JSON array of strings. Use single words or short compound terms.
+
+Query: "{}"
+
+Example response format:
+["keyword", "ключ", "关键", "word", "слово", "词"]
+
+Rules:
+- Return 3-5 keywords total, NOT sentences
+- Include original query if it's a single word
+- Add 1-2 synonyms in each language
+- Keep technical terms as-is (e.g., "Rust", "Git", "API")
+- Maximum 5 keywords total
+- NO phrases longer than 2 words"#,
+            query
+        );
+
+        let response = match self.generate_completion(&prompt, Some(30)).await {
+            Ok(value) => value,
+            Err(_) => return vec![query.to_string()],
+        };
+
+        let json_str = self.clean_llm_json(&response);
+
+        // Limit to 5 keywords max
+        match serde_json::from_str::<Vec<String>>(&json_str) {
+            Ok(keywords) => keywords.into_iter().take(5).collect(),
+            Err(_) => vec![query.to_string()],
+        }
     }
 }

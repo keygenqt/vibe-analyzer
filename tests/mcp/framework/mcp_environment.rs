@@ -1,6 +1,7 @@
 //! Test environment management.
 //! Provides setup and cleanup for OpenSearch test container and MCP server.
 
+use anyhow::Context;
 use anyhow::Result;
 use std::io::Write;
 use std::path::PathBuf;
@@ -9,48 +10,32 @@ use std::process::Command;
 use std::sync::Arc;
 use std::sync::Mutex;
 use std::time::Duration;
-use tempfile::TempDir;
 use tokio::time::sleep;
-use vibe_analyzer::configs::app::AppConfig;
+use tracing::Level;
+
+use crate::mcp::framework::mcp_environment_builder::McpEnvironmentBuilder;
+use crate::mcp::framework::tee_writer::TeeWriter;
 
 /// Test environment with OpenSearch container, MCP server, and fixtures.
 #[derive(Debug)]
 pub struct McpEnvironment {
-    compose_file: String,
-    opensearch_url: String,
-    config_dir: String,
-    vibe_analyzer_path: String,
-    mcp_port: u16,
-    mcp_server: Option<Child>,
-    log_dir: Option<TempDir>,
+    pub compose_file: String,
+    pub opensearch_url: String,
+    pub config_dir: String,
+    pub vibe_analyzer_path: String,
+    pub mcp_port: u16,
+    pub mcp_server: Option<Child>,
+    pub reports_dir: Option<PathBuf>,
     pub log_path: Option<PathBuf>,
-    log_file: Option<Arc<Mutex<std::fs::File>>>,
+    pub log_file: Option<Arc<Mutex<std::fs::File>>>,
+    pub log_level: Level,
+    pub request_timeout: Duration,
 }
 
 impl McpEnvironment {
-    /// Creates a new test environment.
-    pub fn new(
-        compose_file: impl Into<String>,
-        opensearch_url: impl Into<String>,
-        config_dir: impl Into<String>,
-    ) -> Self {
-        let debug_path = "target/debug/vibe-analyzer";
-        let vibe_analyzer_path = if std::path::Path::new(debug_path).exists() {
-            debug_path.to_string()
-        } else {
-            "vibe-analyzer".to_string()
-        };
-        Self {
-            compose_file: compose_file.into(),
-            opensearch_url: opensearch_url.into(),
-            config_dir: config_dir.into(),
-            vibe_analyzer_path,
-            mcp_port: 9021,
-            mcp_server: None,
-            log_dir: None,
-            log_path: None,
-            log_file: None,
-        }
+    /// Creates a new builder for constructing the test environment.
+    pub fn builder() -> McpEnvironmentBuilder {
+        McpEnvironmentBuilder::new()
     }
 
     /// Returns MCP server URL.
@@ -60,39 +45,49 @@ impl McpEnvironment {
 
     /// Starts all services: OpenSearch container and MCP server.
     pub async fn start(&mut self) -> Result<()> {
-        // Initialize tracing for the test runner
-        AppConfig::set_global_config_dir(Some(PathBuf::from(&self.config_dir)));
-        let _ = AppConfig::load()?;
+        // Setup tracing with the configured log level
+        let filter = format!(
+            "mcp_test={0},vibe_analyzer={0}",
+            self.log_level.as_str().to_lowercase()
+        );
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(filter)
+            .with_writer(std::io::stdout)
+            .try_init();
 
-        // Create temp dir for logs
-        let log_dir = TempDir::new()?;
-        let log_path = log_dir.path().join("mcp_test.log");
+        // Create reports directory with timestamp
+        let timestamp = chrono::Local::now().format("%Y-%m-%d_%H-%M-%S").to_string();
+        let reports_dir = PathBuf::from("tests/reports").join(&timestamp);
+        std::fs::create_dir_all(&reports_dir)?;
+        self.reports_dir = Some(reports_dir.clone());
+
+        // Log file in reports directory
+        let log_path = reports_dir.join("mcp_test.log");
         let log_file = std::fs::File::create(&log_path)?;
         let shared_file = Arc::new(Mutex::new(log_file));
 
-        tracing::info!("Log path: {}", &log_path.to_string_lossy());
+        tracing::info!("Reports directory: {}", reports_dir.display());
 
         self.log_file = Some(shared_file.clone());
-        self.log_dir = Some(log_dir);
         self.log_path = Some(log_path);
 
         // Start OpenSearch
         tracing::info!("Start OpenSearch...");
         {
-            let cmd_file = shared_file.lock().unwrap().try_clone()?;
+            let tee_writer = TeeWriter::new(shared_file.clone(), self.log_level);
             Command::new("docker")
                 .args(["compose", "-f", &self.compose_file, "up", "-d"])
-                .stdout(cmd_file.try_clone()?)
-                .stderr(cmd_file)
+                .stdout(tee_writer.clone())
+                .stderr(tee_writer)
                 .status()?;
         }
 
         self.wait_for_opensearch().await?;
 
-        // Start MCP server with logs redirected
+        // Start MCP server with logs redirected to both terminal and file
         tracing::info!("Start MCP server...");
         {
-            let cmd_file = shared_file.lock().unwrap().try_clone()?;
+            let tee_writer = TeeWriter::new(shared_file.clone(), self.log_level);
             let child = Command::new(&self.vibe_analyzer_path)
                 .args([
                     "--config-dir",
@@ -102,28 +97,91 @@ impl McpEnvironment {
                     "--port",
                     &self.mcp_port.to_string(),
                 ])
-                .stdout(cmd_file.try_clone()?)
-                .stderr(cmd_file)
+                .stdout(tee_writer.clone())
+                .stderr(tee_writer)
                 .spawn()?;
             self.mcp_server = Some(child);
         }
-        tokio::time::sleep(Duration::from_secs(2)).await;
+
+        // Wait for MCP server to become ready
+        self.wait_for_mcp_server().await?;
+
         Ok(())
     }
 
+    /// Waits for MCP server to become ready.
+    async fn wait_for_mcp_server(&self) -> Result<()> {
+        let client = reqwest::Client::new();
+        let url = format!("http://localhost:{}/mcp/health", self.mcp_port);
+        tracing::info!("Waiting for MCP server to become ready...");
+        let start = std::time::Instant::now();
+        let max_wait = self.request_timeout;
+        loop {
+            if start.elapsed() > max_wait {
+                anyhow::bail!("MCP server failed to start within {:?}", max_wait);
+            }
+            match client
+                .get(&url)
+                .timeout(Duration::from_secs(1))
+                .send()
+                .await
+            {
+                Ok(resp) if resp.status().is_success() => {
+                    tracing::info!("MCP server is ready after {:?}", start.elapsed());
+                    return Ok(());
+                }
+                Ok(resp) => {
+                    tracing::trace!("MCP server responded with status {}", resp.status());
+                }
+                Err(_) => {
+                    // Still waiting
+                }
+            }
+            sleep(Duration::from_millis(500)).await;
+        }
+    }
+
     /// Indexes fixtures into OpenSearch using predefined config directory.
-    pub fn index_fixtures(&self) -> Result<()> {
+    pub async fn index_fixtures(&self) -> Result<()> {
         if let Some(shared) = &self.log_file {
             tracing::info!("Start indexing projects...");
-            let cmd_file = shared.lock().unwrap().try_clone()?;
+            let tee_writer = TeeWriter::new(shared.clone(), self.log_level);
             Command::new(&self.vibe_analyzer_path)
                 .args(["--config-dir", &self.config_dir])
                 .args(["scan", "index"])
-                .stdout(cmd_file.try_clone()?)
-                .stderr(cmd_file)
+                .stdout(tee_writer.clone())
+                .stderr(tee_writer)
                 .status()?;
+
+            // Wait for documents to become searchable
+            self.wait_for_indexed_documents().await?;
         }
         Ok(())
+    }
+
+    /// Waits for indexed documents to become searchable in OpenSearch.
+    async fn wait_for_indexed_documents(&self) -> Result<()> {
+        let client = reqwest::Client::new();
+        let url = format!("{}/_refresh", self.opensearch_url);
+
+        tracing::info!("Refreshing OpenSearch indices...");
+
+        let response = client
+            .post(&url)
+            .timeout(self.request_timeout)
+            .send()
+            .await
+            .with_context(|| "Failed to refresh OpenSearch indices")?;
+
+        if response.status().is_success() {
+            tracing::info!("OpenSearch indices refreshed successfully");
+            Ok(())
+        } else {
+            anyhow::bail!(
+                "OpenSearch refresh failed with status: {}",
+                response.status()
+            )
+        }
     }
 
     /// Stops all services.
@@ -132,7 +190,6 @@ impl McpEnvironment {
             let _ = child.kill();
             let _ = child.wait();
         }
-
         tracing::info!("Stop OpenSearch...");
         {
             Command::new("docker")
@@ -141,7 +198,6 @@ impl McpEnvironment {
                 .stderr(std::process::Stdio::null())
                 .status()?;
         }
-
         Ok(())
     }
 

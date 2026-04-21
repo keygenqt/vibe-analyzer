@@ -6,7 +6,6 @@ use serde::Serialize;
 
 /// Container for interface-related AST data
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct AstDataInterface {
     /// Full interface signature (e.g., "trait Display { fn fmt(&self) -> String }")
     pub signature: String,

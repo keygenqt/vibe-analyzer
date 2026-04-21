@@ -154,8 +154,8 @@ impl OpenSearchClient {
                 json!({
                     "bool": {
                         "must": [
-                            { "term": { "Root": root } },
-                            { "term": { "Path": path } }
+                            { "term": { "root": root } },
+                            { "term": { "path": path } }
                         ]
                     }
                 })

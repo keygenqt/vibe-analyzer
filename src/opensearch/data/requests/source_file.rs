@@ -13,7 +13,6 @@ use crate::opensearch::data::HasPath;
 
 /// File content stored in vibe_files_{hash} index.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct SourceFile {
     /// Absolute path to source root
     pub root: String,

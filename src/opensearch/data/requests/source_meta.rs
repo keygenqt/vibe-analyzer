@@ -11,7 +11,6 @@ use serde::Serialize;
 
 /// Project metadata stored in vibe_meta_{hash} index.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct SourceMeta {
     /// Absolute path to source root
     pub root: String,

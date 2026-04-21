@@ -2,6 +2,7 @@
 //! Provides meta, ast, file, and get queries.
 
 use std::collections::HashMap;
+use std::path::PathBuf;
 
 use anyhow::Result;
 use serde_json::Value;
@@ -11,9 +12,7 @@ use crate::configs::app::AppConfig;
 use crate::opensearch::client::OpenSearchClient;
 use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;
 use crate::opensearch::data::responses::search_ast::SearchAst;
-use crate::opensearch::data::responses::search_file::SearchFile;
 use crate::opensearch::data::responses::search_file_hash::SearchFileHash;
-use crate::opensearch::data::responses::search_hit::SearchHit;
 use crate::opensearch::data::responses::search_meta::SearchMeta;
 use crate::opensearch::data::responses::search_stats::LanguageStat;
 use crate::opensearch::data::responses::search_stats::SearchStats;
@@ -222,86 +221,6 @@ impl SearchClient {
         })
     }
 
-    /// Search files by path pattern in a specific source index.
-    pub async fn get_files(
-        &self,
-        pattern: &str,
-        index: &str,
-        limit: usize,
-    ) -> Result<Vec<SearchFile>> {
-        // Check if index exists
-        if !self.client.index_exists(index).await? {
-            return Ok(Vec::new());
-        }
-
-        let query = json!({
-            "size": limit,
-            "_source": ["Root", "Path", "Content"],
-            "query": {
-                "wildcard": {
-                    "Path": {
-                        "value": format!("*{}*", pattern)
-                    }
-                }
-            },
-            "sort": [
-                {
-                    "_script": {
-                        "type": "number",
-                        "script": {
-                            "source": "doc['Path'].value.length()"
-                        },
-                        "order": "asc"
-                    }
-                },
-                {
-                    "Path": {
-                        "order": "asc"
-                    }
-                }
-            ]
-        });
-
-        let resp = self.client.search(index, query).await?;
-        let hits = resp["hits"]["hits"].as_array().unwrap();
-
-        let results: Vec<SearchFile> = hits
-            .iter()
-            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
-            .collect();
-
-        Ok(results)
-    }
-
-    /// Search in project metadata (root path, license, summary).
-    pub async fn search_meta(&self, pattern: &str, limit: usize) -> Result<Vec<SearchMeta>> {
-        let index = AppConfig::meta_index();
-
-        let query = json!({
-            "size": limit,
-            "query": {
-                "bool": {
-                    "should": [
-                        { "wildcard": { "Root": { "value": format!("*{}*", pattern), "boost": 10.0 } } },
-                        { "match": { "License.Name": { "query": pattern, "boost": 5.0 } } },
-                        { "term": { "License.SpdxId": { "value": pattern, "boost": 5.0 } } },
-                        { "match": { "Summary": { "query": pattern, "boost": 2.0 } } },
-                    ]
-                }
-            }
-        });
-
-        let resp = self.client.search(&index, query).await?;
-        let hits = resp["hits"]["hits"].as_array().unwrap();
-
-        let results: Vec<SearchMeta> = hits
-            .iter()
-            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
-            .collect();
-
-        Ok(results)
-    }
-
     /// Returns metadata for all indexed projects.
     pub async fn list_meta(&self) -> Result<Vec<SearchMeta>> {
         let index = AppConfig::meta_index();
@@ -332,7 +251,7 @@ impl SearchClient {
         let url = format!("{}/{}/_search?scroll=1m", self.client.base_url(), index);
         let query = json!({
             "size": 1000,
-            "_source": ["Root", "Path", "Hash"],
+            "_source": ["root", "path", "hash"],
             "query": { "match_all": {} }
         });
 
@@ -354,9 +273,9 @@ impl SearchClient {
 
             for h in hits {
                 if let (Some(root), Some(path), Some(hash)) = (
-                    h["_source"]["Root"].as_str(),
-                    h["_source"]["Path"].as_str(),
-                    h["_source"]["Hash"].as_str(),
+                    h["_source"]["root"].as_str(),
+                    h["_source"]["path"].as_str(),
+                    h["_source"]["hash"].as_str(),
                 ) {
                     all_results.push(SearchFileHash {
                         path: format!("{}/{}", root, path),
@@ -388,286 +307,315 @@ impl SearchClient {
         &self,
         indexes: &[String],
         pattern: &str,
+        keywords: &[String],
         limit: usize,
+        include_content: bool,
     ) -> Result<Vec<SearchAst>> {
+        // Combine original query with translations for multilingual search
+        let mut all_terms = vec![pattern.to_string()];
+        all_terms.extend(keywords.iter().take(5).cloned());
+        let query_string = all_terms.join(" OR ");
+
         // Join indexes with comma for multi-index search
         let index_list = indexes.join(",");
+
         // Query to OpenSearch
+        // Optimized OpenSearch query
         let query = json!({
             "size": limit,
+            "timeout": "30s",
             "query": {
                 "bool": {
                     "should": [
+                        // Tags (combined)
                         {
-                            "match": {
-                                "Summary": {
-                                    "query": pattern,
-                                    "boost": 4.5
+                            "multi_match": {
+                                "query": query_string,
+                                "fields": [
+                                    "tags^5.0",
+                                    "tags.*^5.0",
+                                    "ast.tags^4.0"
+                                ],
+                                "fuzziness": "AUTO"
+                            }
+                        },
+                        // Headings (critical)
+                        {
+                            "nested": {
+                                "path": "ast.headings",
+                                "query": {
+                                    "multi_match": {
+                                        "query": query_string,
+                                        "fields": [
+                                            "ast.headings.title^4.0",
+                                            "ast.headings.title.*^4.0"
+                                        ],
+                                        "fuzziness": "AUTO"
+                                    }
                                 }
                             }
                         },
+                        // Summary + Description + README (combined)
+                        {
+                            "multi_match": {
+                                "query": query_string,
+                                "fields": [
+                                    "summary^3.5",
+                                    "summary.*^3.5",
+                                    "description^3.5",
+                                    "description.*^3.5",
+                                    "readme.content^3.5",
+                                    "readme.content.*^3.5"
+                                ],
+                                "fuzziness": "AUTO"
+                            }
+                        },
+                        // Header comments
+                        {
+                            "multi_match": {
+                                "query": query_string,
+                                "fields": [
+                                    "ast.header_comments^4.0",
+                                    "ast.header_comments.*^4.0"
+                                ],
+                                "fuzziness": "AUTO"
+                            }
+                        },
+                        // Frontmatter
                         {
                             "match": {
-                                "Path": {
-                                    "query": pattern,
-                                    "boost": 5.0
+                                "ast.frontmatter": {
+                                    "query": query_string,
+                                    "boost": 4.0,
+                                    "fuzziness": "AUTO"
                                 }
                             }
                         },
+                        // Functions
                         {
-                            "match": {
-                                "Tags": {
-                                    "query": pattern,
-                                    "boost": 5.0
+                            "nested": {
+                                "path": "ast.functions",
+                                "query": {
+                                    "bool": {
+                                        "should": [
+                                            {
+                                                "match": {
+                                                    "ast.functions.signature": {
+                                                        "query": query_string,
+                                                        "boost": 4.0
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "multi_match": {
+                                                    "query": query_string,
+                                                    "fields": [
+                                                        "ast.functions.comments^3.5",
+                                                        "ast.functions.comments.*^3.5"
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
                                 }
                             }
                         },
+                        // Classes
                         {
-                            "match": {
-                                "Description": {
-                                    "query": pattern,
-                                    "boost": 4.0
+                            "nested": {
+                                "path": "ast.classes",
+                                "query": {
+                                    "bool": {
+                                        "should": [
+                                            {
+                                                "match": {
+                                                    "ast.classes.signature": {
+                                                        "query": query_string,
+                                                        "boost": 4.0
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "multi_match": {
+                                                    "query": query_string,
+                                                    "fields": [
+                                                        "ast.classes.comments^3.5",
+                                                        "ast.classes.comments.*^3.5"
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
                                 }
                             }
                         },
+                        // Structs
+                        {
+                            "nested": {
+                                "path": "ast.structs",
+                                "query": {
+                                    "bool": {
+                                        "should": [
+                                            {
+                                                "match": {
+                                                    "ast.structs.signature": {
+                                                        "query": query_string,
+                                                        "boost": 4.0
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "multi_match": {
+                                                    "query": query_string,
+                                                    "fields": [
+                                                        "ast.structs.comments^3.5",
+                                                        "ast.structs.comments.*^3.5"
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        // Enums
+                        {
+                            "nested": {
+                                "path": "ast.enums",
+                                "query": {
+                                    "bool": {
+                                        "should": [
+                                            {
+                                                "match": {
+                                                    "ast.enums.signature": {
+                                                        "query": query_string,
+                                                        "boost": 4.0
+                                                    }
+                                                }
+                                            },
+                                            {
+                                                "multi_match": {
+                                                    "query": query_string,
+                                                    "fields": [
+                                                        "ast.enums.comments^3.5",
+                                                        "ast.enums.comments.*^3.5"
+                                                    ]
+                                                }
+                                            }
+                                        ]
+                                    }
+                                }
+                            }
+                        },
+                        // Interfaces (signature only, no comments)
+                        {
+                            "nested": {
+                                "path": "ast.interfaces",
+                                "query": {
+                                    "match": {
+                                        "ast.interfaces.signature": {
+                                            "query": query_string,
+                                            "boost": 4.0
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        // Imports
                         {
                             "match": {
-                                "Ast.HeaderComments": {
-                                    "query": pattern,
+                                "ast.imports": {
+                                    "query": query_string,
                                     "boost": 3.5
                                 }
                             }
                         },
+                        // Links
                         {
                             "nested": {
-                                "path": "Ast.Functions",
+                                "path": "ast.links",
                                 "query": {
-                                    "bool": {
-                                        "should": [
-                                            {
-                                                "match": {
-                                                    "Ast.Functions.Signature": {
-                                                        "query": pattern,
-                                                        "boost": 3.0
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "match": {
-                                                    "Ast.Functions.Comments": {
-                                                        "query": pattern,
-                                                        "boost": 2.0
-                                                    }
-                                                }
-                                            }
-                                        ]
+                                    "multi_match": {
+                                        "query": query_string,
+                                        "fields": [
+                                            "ast.links.text^3.0",
+                                            "ast.links.text.*^3.0"
+                                        ],
+                                        "fuzziness": "AUTO"
                                     }
-                                }
-                            }
-                        },
-                        {
-                            "nested": {
-                                "path": "Ast.Classes",
-                                "query": {
-                                    "bool": {
-                                        "should": [
-                                            {
-                                                "match": {
-                                                    "Ast.Classes.Signature": {
-                                                        "query": pattern,
-                                                        "boost": 3.0
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "match": {
-                                                    "Ast.Classes.Comments": {
-                                                        "query": pattern,
-                                                        "boost": 2.0
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "nested": {
-                                "path": "Ast.Structs",
-                                "query": {
-                                    "bool": {
-                                        "should": [
-                                            {
-                                                "match": {
-                                                    "Ast.Structs.Signature": {
-                                                        "query": pattern,
-                                                        "boost": 2.5
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "match": {
-                                                    "Ast.Structs.Comments": {
-                                                        "query": pattern,
-                                                        "boost": 1.5
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "nested": {
-                                "path": "Ast.Interfaces",
-                                "query": {
-                                    "bool": {
-                                        "should": [
-                                            {
-                                                "match": {
-                                                    "Ast.Interfaces.Signature": {
-                                                        "query": pattern,
-                                                        "boost": 2.5
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "match": {
-                                                    "Ast.Interfaces.Comments": {
-                                                        "query": pattern,
-                                                        "boost": 1.5
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "nested": {
-                                "path": "Ast.Enums",
-                                "query": {
-                                    "bool": {
-                                        "should": [
-                                            {
-                                                "match": {
-                                                    "Ast.Enums.Signature": {
-                                                        "query": pattern,
-                                                        "boost": 2.0
-                                                    }
-                                                }
-                                            },
-                                            {
-                                                "match": {
-                                                    "Ast.Enums.Comments": {
-                                                        "query": pattern,
-                                                        "boost": 1.5
-                                                    }
-                                                }
-                                            }
-                                        ]
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "nested": {
-                                "path": "Ast.Variables",
-                                "query": {
-                                    "match": {
-                                        "Ast.Variables.Signature": {
-                                            "query": pattern,
-                                            "boost": 1.0
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "match": {
-                                "Ast.Imports": {
-                                    "query": pattern,
-                                    "boost": 1.0
-                                }
-                            }
-                        },
-                        {
-                            "nested": {
-                                "path": "Ast.Headings",
-                                "query": {
-                                    "match": {
-                                        "Ast.Headings.Title": {
-                                            "query": pattern,
-                                            "boost": 1.5
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "nested": {
-                                "path": "Ast.Links",
-                                "query": {
-                                    "match": {
-                                        "Ast.Links.Text": {
-                                            "query": pattern,
-                                            "boost": 1.0
-                                        }
-                                    }
-                                }
-                            }
-                        },
-                        {
-                            "match": {
-                                "Ast.Frontmatter": {
-                                    "query": pattern,
-                                    "boost": 2.0
                                 }
                             }
                         }
                     ],
                     "minimum_should_match": 1
                 }
-            }
+            },
         });
 
         let resp = self.client.search(&index_list, query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
 
-        let results: Vec<SearchAst> = hits
-            .iter()
-            .filter_map(|h| {
-                let analysis: SourceFileAnalysis =
-                    serde_json::from_value(h["_source"].clone()).ok()?;
-                let ast = analysis.ast.as_ref()?;
-                let index = h["_index"].as_str().unwrap_or("").to_string();
+        let mut results: Vec<SearchAst> = Vec::new();
 
-                Some(SearchAst {
-                    hit: SearchHit {
-                        root: analysis.root,
-                        index,
-                        path: analysis.path.clone(),
-                    },
-                    path: analysis.path,
-                    header_comments: ast.header_comments.clone(),
-                    imports: ast.imports.clone(),
-                    variables: ast.variables.clone(),
-                    functions: ast.functions.clone(),
-                    classes: ast.classes.clone(),
-                    structs: ast.structs.clone(),
-                    enums: ast.enums.clone(),
-                    interfaces: ast.interfaces.clone(),
-                    frontmatter: ast.frontmatter.clone(),
-                    headings: ast.headings.clone(),
-                    links: ast.links.clone(),
-                    code_blocks: ast.code_blocks.clone(),
-                })
-            })
-            .collect();
+        for h in hits {
+            let analysis: SourceFileAnalysis = match serde_json::from_value(h["_source"].clone()) {
+                Ok(a) => a,
+                Err(_) => continue,
+            };
+            let ast = match analysis.ast.as_ref() {
+                Some(a) => a,
+                None => continue,
+            };
+            let mut search_ast = SearchAst {
+                root: analysis.root.clone(),
+                path: analysis.path.clone(),
+                header_comments: ast.header_comments.clone(),
+                imports: ast.imports.clone(),
+                variables: ast.variables.clone(),
+                functions: ast.functions.clone(),
+                classes: ast.classes.clone(),
+                structs: ast.structs.clone(),
+                enums: ast.enums.clone(),
+                interfaces: ast.interfaces.clone(),
+                frontmatter: ast.frontmatter.clone(),
+                headings: ast.headings.clone(),
+                links: ast.links.clone(),
+                code_blocks: ast.code_blocks.clone(),
+                content: None,
+            };
+
+            // If include_content, fetch full file from files index
+            if include_content {
+                let root = PathBuf::from(&analysis.root);
+                let files_index = AppConfig::files_index(&root);
+                if let Ok(content) = self.get_file_content(&files_index, &analysis.path).await {
+                    search_ast.content = Some(content);
+                }
+            }
+
+            results.push(search_ast);
+        }
 
         Ok(results)
+    }
+
+    /// Fetches full file content from files index.
+    async fn get_file_content(&self, index: &str, path: &str) -> Result<String> {
+        let query = json!({
+            "size": 1,
+            "query": {
+                "term": {
+                    "path": path
+                }
+            }
+        });
+        let resp = self.client.search(index, query).await?;
+        let hits = resp["hits"]["hits"].as_array().unwrap();
+        if let Some(hit) = hits.first() {
+            if let Some(content) = hit["_source"]["content"].as_str() {
+                return Ok(content.to_string());
+            }
+        }
+        anyhow::bail!("File not found: {}", path)
     }
 }

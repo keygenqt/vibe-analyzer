@@ -28,10 +28,12 @@ impl FilesIndex {
     pub async fn create(&self) -> Result<()> {
         let mapping = json!({
             "mappings": {
+                "dynamic": "strict",
                 "properties": {
-                    "Root": { "type": "keyword" },
-                    "Path": { "type": "keyword" },
-                    "Content": { "type": "text", "index": false, "store": true }
+                    "root": { "type": "keyword" },
+                    "path": { "type": "keyword" },
+                    "hash": { "type": "keyword" },
+                    "content": { "type": "text", "index": false, "store": true }
                 }
             }
         });

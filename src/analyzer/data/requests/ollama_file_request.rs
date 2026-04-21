@@ -14,7 +14,6 @@ use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
 use crate::scanner::data::output::file_analysis::FileAnalysis;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct OllamaFileRequest {
     /// Relative path from source root
     pub path: String,

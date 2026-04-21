@@ -10,7 +10,6 @@ use serde::Serialize;
 
 /// File analysis stored in vibe_smart_{hash} index.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct SourceFileAnalysis {
     /// Absolute path to source root
     pub root: String,

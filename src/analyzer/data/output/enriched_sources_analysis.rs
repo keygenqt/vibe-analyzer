@@ -7,7 +7,6 @@ use serde::Serialize;
 
 /// Container for multiple enriched source analyses exported to JSON.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct EnrichedSourcesAnalysis {
     /// When the initial scan was performed
     pub indexed_at: String,

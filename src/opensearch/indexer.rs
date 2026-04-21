@@ -199,7 +199,7 @@ impl Indexer {
                     "query": {
                         "bool": {
                             "must_not": {
-                                "terms": { "Root": active_paths }
+                                "terms": { "root": active_paths }
                             }
                         }
                     }

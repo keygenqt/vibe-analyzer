@@ -52,7 +52,7 @@ impl LanguageParser for JavaScriptParser {
         data.classes = classes;
         data.variables = variables;
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

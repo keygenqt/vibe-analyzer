@@ -14,7 +14,7 @@
       model: 'qwen2.5-coder:7b-instruct',
       max_chunk_chars: 3000,
       max_chunk_files: 3,
-      timeout_secs: 120,
+      timeout_secs: 60,
       temperature: 0.1,
       seed: 42,
       num_ctx: 4096,

@@ -59,7 +59,7 @@ impl LanguageParser for KotlinParser {
         data.interfaces = interfaces;
         data.variables = variables;
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

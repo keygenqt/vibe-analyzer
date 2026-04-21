@@ -8,7 +8,6 @@ use crate::scanner::data::input::file_stats::FileStats;
 
 /// Aggregated source statistics
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "PascalCase")]
 pub struct SourceStats {
     /// Total number of files
     pub total_files: usize,

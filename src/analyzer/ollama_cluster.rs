@@ -73,4 +73,19 @@ impl OllamaCluster {
 
         Ok(())
     }
+
+    /// Returns a client with the model loaded in memory.
+    /// If none are loaded, returns the first client.
+    pub async fn get_active(&self) -> Result<&OllamaClient> {
+        // Try to find a client with the model loaded in memory
+        for client in &self.clients {
+            if let Ok(true) = client.is_model_loaded().await {
+                return Ok(client);
+            }
+        }
+        // Fallback to first client
+        self.clients
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("Cluster has no clients"))
+    }
 }

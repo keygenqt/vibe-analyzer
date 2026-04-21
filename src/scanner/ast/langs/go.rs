@@ -55,7 +55,7 @@ impl LanguageParser for GoParser {
         data.enums = enums;
         data.variables = variables;
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

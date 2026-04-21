@@ -90,7 +90,7 @@ impl LanguageParser for MarkdownParser {
         data.code_blocks.sort();
         data.code_blocks.dedup();
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

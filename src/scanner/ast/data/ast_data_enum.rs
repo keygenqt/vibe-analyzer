@@ -6,7 +6,6 @@ use serde::Serialize;
 
 /// Container for enum-related AST data
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct AstDataEnum {
     /// Full enum signature (e.g., "enum Color { Red, Green, Blue }")
     pub signature: String,

@@ -5,7 +5,6 @@ use serde::Serialize;
 
 /// Response from list_projects tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub struct ListProjectsResponse {
     /// List of available projects.
     pub projects: Vec<ProjectInfo>,
@@ -15,7 +14,6 @@ pub struct ListProjectsResponse {
 
 /// Information about a single project.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub struct ProjectInfo {
     /// Unique identifier - full path to the project.
     pub path: String,

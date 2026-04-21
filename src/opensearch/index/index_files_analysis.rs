@@ -27,86 +27,194 @@ impl FilesAnalysisIndex {
     /// Creates index with proper mapping.
     pub async fn create(&self) -> Result<()> {
         let mapping = json!({
+            "settings": {
+                "analysis": {
+                    "analyzer": {
+                        "russian_analyzer": {
+                            "type": "russian"
+                        },
+                        "english_analyzer": {
+                            "type": "english"
+                        },
+                        "chinese_analyzer": {
+                            "type": "chinese"
+                        }
+                    }
+                }
+            },
             "mappings": {
+                "dynamic": "strict",
                 "properties": {
-                    "Root": { "type": "keyword" },
-                    "Path": { "type": "keyword" },
-                    "Hash": { "type": "keyword" },
-                    "Extension": { "type": "keyword" },
-                    "IsText": { "type": "boolean" },
-                    "SizeBytes": { "type": "long" },
-                    "LinesOfCode": { "type": "integer" },
-                    "SizeChars": { "type": "integer" },
-                    "Ast": {
+                    "root": { "type": "keyword" },
+                    "path": { "type": "keyword" },
+                    "hash": { "type": "keyword" },
+                    "extension": { "type": "keyword" },
+                    "is_text": { "type": "boolean" },
+                    "size_bytes": { "type": "long" },
+                    "lines_of_code": { "type": "integer" },
+                    "size_chars": { "type": "integer" },
+                    "ast": {
                         "properties": {
-                            "HeaderComments": { "type": "text" },
-                            "Imports": { "type": "keyword" },
-                            "Variables": {
-                                "type": "nested",
-                                "properties": {
-                                    "Signature": { "type": "text" },
-                                    "Comments": { "type": "text" }
+                            "header_comments": {
+                                "type": "text",
+                                "fields": {
+                                    "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                    "english": { "type": "text", "analyzer": "english_analyzer" },
+                                    "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
                                 }
                             },
-                            "Functions": {
+                            "imports": { "type": "text" },
+                            "variables": {
                                 "type": "nested",
                                 "properties": {
-                                    "Signature": { "type": "text" },
-                                    "Comments": { "type": "text" }
+                                    "signature": { "type": "text" },
+                                    "comments": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    }
                                 }
                             },
-                            "Classes": {
+                            "functions": {
                                 "type": "nested",
                                 "properties": {
-                                    "Signature": { "type": "text" },
-                                    "Comments": { "type": "text" }
+                                    "signature": { "type": "text" },
+                                    "comments": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    }
                                 }
                             },
-                            "Structs": {
+                            "classes": {
                                 "type": "nested",
                                 "properties": {
-                                    "Signature": { "type": "text" },
-                                    "Comments": { "type": "text" }
+                                    "signature": { "type": "text" },
+                                    "comments": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    }
                                 }
                             },
-                            "Enums": {
+                            "structs": {
                                 "type": "nested",
                                 "properties": {
-                                    "Signature": { "type": "text" },
-                                    "Comments": { "type": "text" }
+                                    "signature": { "type": "text" },
+                                    "comments": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    }
                                 }
                             },
-                            "Interfaces": {
+                            "enums": {
                                 "type": "nested",
                                 "properties": {
-                                    "Signature": { "type": "text" },
-                                    "Comments": { "type": "text" }
+                                    "signature": { "type": "text" },
+                                    "comments": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    }
                                 }
                             },
-                            "Frontmatter": {
+                            "interfaces": {
+                                "type": "nested",
+                                "properties": {
+                                    "signature": { "type": "text" },
+                                    "comments": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    }
+                                }
+                            },
+                            "frontmatter": {
                                 "type": "object",
                                 "dynamic": true
                             },
-                            "Headings": {
+                            "headings": {
                                 "type": "nested",
                                 "properties": {
-                                    "Level": { "type": "integer" },
-                                    "Title": { "type": "text" },
-                                    "Preview": { "type": "text" }
+                                    "level": { "type": "integer" },
+                                    "title": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    },
+                                    "preview": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    }
                                 }
                             },
-                            "Links": {
+                            "links": {
                                 "type": "nested",
                                 "properties": {
-                                    "Text": { "type": "text" },
-                                    "Url": { "type": "keyword" }
+                                    "text": {
+                                        "type": "text",
+                                        "fields": {
+                                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                        }
+                                    },
+                                    "url": { "type": "keyword" }
                                 }
                             },
-                            "CodeBlocks": { "type": "keyword" }
+                            "code_blocks": { "type": "keyword" },
+                            "tags": {
+                                "type": "text",
+                                "fields": {
+                                    "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                    "english": { "type": "text", "analyzer": "english_analyzer" },
+                                    "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                }
+                            }
                         }
                     },
-                    "Description": { "type": "text" },
-                    "Tags": { "type": "text" }
+                    "description": {
+                        "type": "text",
+                        "fields": {
+                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                        }
+                    },
+                    "tags": {
+                        "type": "text",
+                        "fields": {
+                            "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                            "english": { "type": "text", "analyzer": "english_analyzer" },
+                            "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                        }
+                    }
                 }
             }
         });

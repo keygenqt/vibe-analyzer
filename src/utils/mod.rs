@@ -10,5 +10,6 @@ pub mod macros;
 pub mod matcher;
 pub mod mcp_normalize;
 pub mod path;
+pub mod serde_helpers;
 pub mod spdx;
 pub mod tree;

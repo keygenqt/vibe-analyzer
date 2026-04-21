@@ -1,22 +1,22 @@
 //! MCP test configuration and runner.
 //! Holds validated parameters and executes test scenarios.
 
+use std::time::Duration;
+
 use anyhow::Result;
 use serde_json::Value;
 use serde_json::json;
+use tokio::time::sleep;
 
 use crate::mcp::framework::mcp_client::McpClient;
+use crate::mcp::framework::mcp_engine_builder::McpEngineBuilder;
 use crate::mcp::framework::mcp_environment::McpEnvironment;
 use crate::mcp::framework::mcp_report::McpReport;
 use crate::mcp::framework::mcp_report::QueryReport;
 use crate::mcp::framework::mcp_report::ToolCall;
 use crate::mcp::framework::mcp_scenario::McpScenario;
-use crate::mcp::framework::mcp_test_builder::McpEngineBuilder;
 use crate::mcp::framework::ollama_client::ChatMessage;
 use crate::mcp::framework::ollama_client::OllamaClient;
-
-/// Max turns per query to prevent infinite loops.
-const MAX_TURNS: usize = 5;
 
 /// Complete MCP test configuration with execution logic.
 #[derive(Debug)]
@@ -36,7 +36,15 @@ impl McpEngine {
     /// Runs all test scenarios against all models and returns a report.
     pub async fn run(mut self) -> Result<Vec<McpReport>> {
         self.environment.start().await?;
-        self.environment.index_fixtures()?;
+        self.environment.index_fixtures().await?;
+        self.ollama_client
+            .set_timeout(self.environment.request_timeout);
+
+        let reports_dir = self
+            .environment
+            .reports_dir
+            .clone()
+            .ok_or_else(|| anyhow::anyhow!("Reports directory not set"))?;
 
         let mcp_server_url = self.environment.mcp_url();
         let mcp_client = McpClient::new(&mcp_server_url).await?;
@@ -77,6 +85,8 @@ impl McpEngine {
 
                     let duration_ms = (chrono::Utc::now() - request_time).num_milliseconds() as u64;
 
+                    sleep(Duration::from_secs(1)).await;
+
                     queries.push(QueryReport {
                         query: query.clone(),
                         tool_calls,
@@ -84,6 +94,11 @@ impl McpEngine {
                         duration_ms,
                         timestamp: request_time.to_rfc3339(),
                     });
+
+                    // Save intermediate report after each query
+                    let intermediate_report =
+                        McpReport::new(scenario.tool.clone(), model.clone(), queries.clone());
+                    intermediate_report.save(&reports_dir)?;
                 }
 
                 reports.push(McpReport::new(
@@ -97,7 +112,8 @@ impl McpEngine {
         Ok(reports)
     }
 
-    /// Runs a multi-turn dialog for a single query.
+    /// Runs a single-turn dialog for a query.
+    /// Model MUST call exactly one tool, then provide final response.
     async fn run_dialog(
         &self,
         mcp_client: &McpClient,
@@ -107,10 +123,20 @@ impl McpEngine {
         tool_names_str: &str,
     ) -> Result<(Vec<ToolCall>, String)> {
         let session_id = uuid::Uuid::new_v4().to_string();
-        // Fresh history for each query
         let mut messages = vec![ChatMessage::user(query)];
         let mut tool_calls = Vec::new();
         let final_response;
+
+        // Build list of available tool names for validation
+        let available_tools: Vec<String> = tool_values
+            .iter()
+            .filter_map(|v| {
+                v.get("function")
+                    .and_then(|f| f.get("name"))
+                    .and_then(|n| n.as_str())
+                    .map(|s| s.to_string())
+            })
+            .collect();
 
         self.environment.log(
             "LLM dialog start",
@@ -121,101 +147,106 @@ impl McpEngine {
             ],
         );
 
-        // Main dialog loop - model decides when to stop
-        loop {
-            // Safety check - prevent infinite loops
-            if tool_calls.len() >= MAX_TURNS {
-                tracing::warn!(
-                    "Reached MAX_TURNS ({}), breaking loop to prevent infinite dialog",
-                    MAX_TURNS
+        // === TURN 1: Model MUST call a tool ===
+        let response = self
+            .ollama_client
+            .chat_with_history(&session_id, model, &messages, tool_values)
+            .await?;
+        let content = response.message.content.trim();
+
+        self.environment.log(
+            "LLM turn 1 response",
+            &[("model", model), ("raw_content", content)],
+        );
+
+        let json_str = self.extract_json(content);
+
+        if let Some((name, args)) = self.parse_tool_call(&json_str).await {
+            // Validate tool exists
+            if !available_tools.contains(&name) {
+                tracing::error!(
+                    "Model '{}' called non-existent tool '{}'. Available: {:?}",
+                    model,
+                    name,
+                    available_tools
                 );
-                final_response = "Max turns reached without final response".to_string();
-                break;
+                final_response = format!("[ERROR] Model called non-existent tool: {}", name);
+                return Ok((tool_calls, final_response));
             }
 
-            // TOOL AVAILABILITY STRATEGY FOR OLLAMA MCP
-            //
-            // Problem: Ollama API does not support `finish_reason` field like OpenAI.
-            // Models will infinitely generate tool calls if tools are provided on every turn.
-            // Tested on 3B, 7B, 14B models — all fail with infinite loops when tools are always available.
-            //
-            // Solution: Provide tools ONLY on the first turn. After the first tool call,
-            // force the model to respond with text by passing an empty tools array.
-            // This ensures exactly one tool call per user query and prevents infinite loops.
-            //
-            // Result: 100% stability across all tested models and scenarios.
-            // Trade-off: Multi-tool chains are not supported. Each tool must be self-contained.
-            //
-            let current_tools = if tool_calls.is_empty() {
-                // First turn: model can choose any available tool
-                tool_values
-            } else {
-                // Subsequent turns: model must respond with text only
-                &[]
-            };
-
-            let response = self
-                .ollama_client
-                .chat_with_history(&session_id, model, &messages, current_tools)
-                .await?;
-            let content = response.message.content.trim();
+            let args_str = format!("{}", args);
 
             self.environment.log(
-                "LLM raw response",
-                &[("model", model), ("raw_content", content)],
+                "LLM tool call detected",
+                &[("model", model), ("tool", &name), ("args", &args_str)],
             );
 
-            // Parse tool call
-            let json_str = self.extract_json(content);
-
-            if let Some((name, args)) = self.parse_tool_call(&json_str).await {
-                // Model wants to call a tool
-                let args_str = format!("{}", args);
-
-                self.environment.log(
-                    "LLM tool call detected",
-                    &[("model", model), ("tool", &name), ("args", &args_str)],
-                );
-
-                // Call tool
-                let result = match mcp_client.call_tool(name.clone(), args.clone()).await {
-                    Ok(r) => r,
-                    Err(e) => {
-                        tracing::warn!("Tool '{}' failed: {}", &name, e);
-                        self.environment.log(
-                            "LLM tool call failed",
-                            &[("model", model), ("tool", &name), ("error", &e.to_string())],
-                        );
-                        let error_json = json!({ "error": e.to_string() });
-                        messages.push(ChatMessage::assistant(content));
-                        messages.push(ChatMessage::tool(serde_json::to_string(&error_json)?));
-                        continue;
-                    }
-                };
-
-                if result.is_null() {
-                    tracing::error!("Tool '{}' returned null", &name);
-                    anyhow::bail!("Tool '{}' returned null for query: '{}'", name, query);
+            // Call tool
+            let result = match mcp_client
+                .call_tool(name.clone(), args.clone(), self.environment.request_timeout)
+                .await
+            {
+                Ok(r) => r,
+                Err(e) => {
+                    tracing::error!("Tool '{}' failed: {}", &name, e);
+                    final_response = format!("[ERROR] Tool '{}' failed: {}", name, e);
+                    return Ok((tool_calls, final_response));
                 }
+            };
 
-                let result_str = serde_json::to_string_pretty(&result)?;
-
-                tool_calls.push(ToolCall {
-                    name: name.clone(),
-                    args: args_str,
-                    result: result_str.clone(),
-                });
-
-                // Add tool call and result to history
-                messages.push(ChatMessage::assistant(content));
-                messages.push(ChatMessage::tool(result_str));
-
-                continue;
+            if result.is_null() {
+                tracing::error!("Tool '{}' returned null", &name);
+                final_response = format!("[ERROR] Tool '{}' returned null", name);
+                return Ok((tool_calls, final_response));
             }
 
-            final_response = response.message.content;
+            let result_str = serde_json::to_string_pretty(&result)?;
+
+            tool_calls.push(ToolCall {
+                name: name.clone(),
+                args: args_str,
+                result: result_str.clone(),
+            });
+
+            messages.push(ChatMessage::assistant(content));
+            messages.push(ChatMessage::tool(result_str));
+        } else {
+            tracing::error!(
+                "Model '{}' did not call a tool on first turn. Response: {}",
+                model,
+                content
+            );
+            final_response = format!("[ERROR] Model did not call a tool: {}", content);
+            return Ok((tool_calls, final_response));
+        }
+
+        // === TURN 2: Model MUST provide final text response (no tools) ===
+        let response = self
+            .ollama_client
+            .chat_with_history(&session_id, model, &messages, &[])
+            .await?;
+        let content = response.message.content.trim();
+
+        self.environment.log(
+            "LLM turn 2 response",
+            &[("model", model), ("raw_content", content)],
+        );
+
+        // Check if model tried to call another tool instead of responding
+        let json_str = self.extract_json(content);
+        if let Some((tool_name, _)) = self.parse_tool_call(&json_str).await {
+            tracing::error!(
+                "Model '{}' tried to call another tool '{}' instead of providing final response",
+                model,
+                tool_name
+            );
+            final_response = format!(
+                "[ERROR] Model called second tool '{}' instead of final response: {}",
+                tool_name, content
+            );
+        } else {
+            final_response = content.to_string();
             messages.push(ChatMessage::assistant(final_response.clone()));
-            break;
         }
 
         self.environment.log(

@@ -5,7 +5,6 @@ use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct ReadmeInfo {
     /// Path to README file
     pub path: String,

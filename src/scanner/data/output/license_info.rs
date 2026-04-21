@@ -5,7 +5,6 @@ use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct LicenseInfo {
     /// SPDX identifier (e.g., "MIT", "Apache-2.0")
     pub spdx_id: String,

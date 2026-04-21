@@ -6,7 +6,6 @@ use serde::Serialize;
 
 /// Container for class-related AST data
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct AstDataClass {
     /// Full class signature (e.g., "class UserService extends BaseService")
     pub signature: String,

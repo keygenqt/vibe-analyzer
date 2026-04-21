@@ -7,7 +7,6 @@ use serde::Serialize;
 
 /// Container for multiple source analyses (batch JSON export)
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-#[serde(rename_all = "PascalCase")]
 pub struct SourcesAnalysis {
     /// ISO 8601 timestamp of the batch export
     pub indexed_at: String,

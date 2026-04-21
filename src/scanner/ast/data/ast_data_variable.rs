@@ -6,7 +6,6 @@ use serde::Serialize;
 
 /// Container for variable-related AST data
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
-#[serde(rename_all = "PascalCase")]
 pub struct AstDataVariable {
     /// Full variable signature (e.g., "let config: AppConfig" or "const MAX_SIZE: usize = 1024")
     pub signature: String,

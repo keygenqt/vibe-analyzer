@@ -7,7 +7,7 @@ use serde::Serialize;
 use std::path::Path;
 
 /// Complete test report.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct McpReport {
     pub test_name: String,
     pub model: String,
@@ -17,7 +17,7 @@ pub struct McpReport {
 }
 
 /// Single query report.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct QueryReport {
     pub query: String,
     pub tool_calls: Vec<ToolCall>,
@@ -27,7 +27,7 @@ pub struct QueryReport {
 }
 
 /// Tool call details.
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ToolCall {
     pub name: String,
     pub args: String,
@@ -35,7 +35,7 @@ pub struct ToolCall {
 }
 
 /// Report summary.
-#[derive(Debug, Serialize, Deserialize, Default)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ReportSummary {
     pub total_queries: usize,
     pub successful_tool_calls: usize,
@@ -72,46 +72,11 @@ impl McpReport {
     /// Saves report to JSON file (overwrites if exists).
     pub fn save(&self, output_dir: &Path) -> Result<()> {
         std::fs::create_dir_all(output_dir)?;
-
-        let filename = format!("report_{}_{}.json", self.test_name, self.model);
+        let filename = format!("report_{}_{}.json", self.model, self.test_name);
         let path = output_dir.join(filename);
-
         let json = serde_json::to_string_pretty(self)?;
         std::fs::write(&path, json)?;
-
-        tracing::info!("Report saved to {}", path.display());
+        tracing::trace!("Report saved to {}", path.display());
         Ok(())
-    }
-
-    /// Prints a formatted summary.
-    pub fn print_summary(&self) {
-        let separator1 = "━".repeat(79);
-        let separator2 = "─".repeat(79);
-        println!();
-        println!("{}", separator1);
-        println!("MCP Test Report: {}", self.test_name);
-        println!("{}", separator1);
-        println!("Model: {}", self.model);
-        println!("Timestamp: {}", self.timestamp);
-        for (i, q) in self.queries.iter().enumerate() {
-            println!("{}", separator2);
-            println!("[{}] {}", i + 1, q.query);
-            println!("{}", separator2);
-            println!("{}", q.response);
-        }
-        println!("{}", separator1);
-        println!("Summary:");
-        println!("  Total queries: {}", self.summary.total_queries);
-        println!(
-            "  Successful tool calls: {}",
-            self.summary.successful_tool_calls
-        );
-        println!("  Total duration: {} ms", self.summary.total_duration_ms);
-        println!(
-            "  Avg response time: {} ms",
-            self.summary.avg_response_time_ms
-        );
-        println!("{}", separator1);
-        println!();
     }
 }

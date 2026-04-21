@@ -63,7 +63,7 @@ impl LanguageParser for SwiftParser {
         data.interfaces = protocols;
         data.variables = variables;
 
-        Ok(data)
+        Ok(data.with_tags())
     }
 }
 

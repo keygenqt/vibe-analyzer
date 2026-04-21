@@ -8,37 +8,27 @@ use serde_json::json;
 
 /// Normalize target project parameter.
 /// Handles: trim, empty check, hallucinated paths, case-insensitive search.
-/// If target is None and only one project exists, returns it.
+/// If target is None or empty, returns the first project.
 pub fn target_normalize(
     config: &crate::configs::app::AppConfig,
     target: Option<&str>,
 ) -> Result<String, ErrorData> {
-    let target = match target {
-        Some(t) => t,
-        None => {
+    // If no target specified or empty, return first project
+    let target_str = match target {
+        Some(t) if !t.trim().is_empty() => t,
+        _ => {
             let sources = config.get_sources();
-            if sources.len() == 1 {
-                return Ok(sources[0].to_string_lossy().to_string());
-            } else {
+            if sources.is_empty() {
                 return Err(ErrorData::invalid_params(
-                    format!(
-                        "No target specified and {} projects available. Use list_projects to choose.",
-                        sources.len()
-                    ),
-                    Some(json!({ "hint": "call list_projects", "available": sources.len() })),
+                    "No projects configured",
+                    Some(json!({ "hint": "Add a source first" })),
                 ));
             }
+            return Ok(sources[0].to_string_lossy().to_string());
         }
     };
 
-    let target = target.trim();
-
-    if target.is_empty() {
-        return Err(ErrorData::invalid_params(
-            "Target is empty. Use list_projects to see available projects.",
-            Some(json!({ "hint": "call list_projects" })),
-        ));
-    }
+    let target = target_str.trim();
 
     // If model hallucinated a path like "/path/to/knowledge", extract the last part
     let target = if target.starts_with('/') || target.starts_with("./") || target.starts_with("../")
