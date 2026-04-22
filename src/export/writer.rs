@@ -1,14 +1,14 @@
 //! Core export functionality with pluggable format writers and registry.
 //! Provides centralized export coordination and format selection.
 
-use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
+use crate::analyzer::data::output::analyzer_project_output::AnalyzerProjectOutput;
 use crate::export::formats::json::JsonWriter;
 use crate::export::formats::json5::Json5Writer;
 use crate::export::formats::toon::ToonWriter;
 use crate::export::formats::xml::XmlWriter;
 use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
-use crate::scanner::data::output::source_analysis::SourceAnalysis;
+use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
 use crate::utils::path;
 use anyhow::Result;
 use once_cell::sync::Lazy;
@@ -20,9 +20,12 @@ use std::path::PathBuf;
 /// Each format must provide serialization logic for source analyses.
 pub trait ExportWriter: Send + Sync {
     /// Exports source analyses to the specified file path.
-    fn export_scanner(&self, sources: &[SourceAnalysis], output_path: &Path) -> Result<()>;
-    fn export_analyzer(&self, sources: &[EnrichedSourceAnalysis], output_path: &Path)
-    -> Result<()>;
+    fn export_scanner(
+        &self,
+        sources: &[ScanProjectAnalysisOutput],
+        output_path: &Path,
+    ) -> Result<()>;
+    fn export_analyzer(&self, sources: &[AnalyzerProjectOutput], output_path: &Path) -> Result<()>;
 }
 
 /// Registry of all available export writers, indexed by format type.
@@ -44,7 +47,10 @@ fn get_writer(format: ExportFormat) -> Option<&'static dyn ExportWriter> {
 
 /// Exports source analyses using the specified options.
 /// Returns the absolute path to the created export file.
-pub fn export_ast(sources: Vec<SourceAnalysis>, options: &ExportOptions) -> Result<PathBuf> {
+pub fn export_ast(
+    sources: Vec<ScanProjectAnalysisOutput>,
+    options: &ExportOptions,
+) -> Result<PathBuf> {
     // Look up the writer for the requested format
     let writer =
         get_writer(options.format).ok_or_else(|| anyhow::anyhow!("Exporter is not registered."))?;
@@ -65,7 +71,7 @@ pub fn export_ast(sources: Vec<SourceAnalysis>, options: &ExportOptions) -> Resu
 /// Exports enriched source analyses using the specified options.
 /// Returns the absolute path to the created export file.
 pub fn export_enriched(
-    sources: Vec<EnrichedSourceAnalysis>,
+    sources: Vec<AnalyzerProjectOutput>,
     options: &ExportOptions,
 ) -> Result<PathBuf> {
     // Look up the writer for the requested format

@@ -9,7 +9,7 @@ use clap::Subcommand;
 use colored::Colorize;
 
 use crate::analyzer::analyzer;
-use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
+use crate::analyzer::data::output::analyzer_project_output::AnalyzerProjectOutput;
 use crate::analyzer::ollama_cluster;
 use crate::configs::app::AppConfig;
 use crate::configs::app::IndexType;
@@ -18,22 +18,22 @@ use crate::export;
 use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::requests::source_file::SourceFile;
-use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;
-use crate::opensearch::data::requests::source_meta::SourceMeta;
-use crate::opensearch::data::responses::search_file_hash::SearchFileHashSource;
+use crate::opensearch::data::requests::opensearch_file_content_request::OpensearchFileContentRequest;
+use crate::opensearch::data::requests::opensearch_file_stats_request::OpensearchFileStatsRequest;
+use crate::opensearch::data::requests::opensearch_meta_request::OpensearchProjectMetaRequest;
+use crate::opensearch::data::responses::opensearch_list_hashes_response::OpensearchListHashesResponse;
 use crate::opensearch::indexer::IndexFilesReport;
 use crate::opensearch::indexer::IndexMetaReport;
 use crate::opensearch::indexer::IndexReport;
 use crate::opensearch::indexer::Indexer;
-use crate::opensearch::search::SearchClient;
+use crate::opensearch::search::search_client::SearchClient;
 use crate::print_error;
 use crate::print_info;
 use crate::print_newline;
 use crate::print_progress;
 use crate::print_success;
 use crate::print_warning;
-use crate::scanner::data::output::source_analysis::SourceAnalysis;
+use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
 use crate::scanner::scanner;
 
 /// Scan actions for different analysis types.
@@ -174,8 +174,8 @@ pub async fn run(action: ScanAction) {
 pub async fn scan_ast(
     config: &AppConfig,
     target: Option<String>,
-    hashes: Option<SearchFileHashSource>,
-) -> Result<Vec<SourceAnalysis>> {
+    hashes: Option<OpensearchListHashesResponse>,
+) -> Result<Vec<ScanProjectAnalysisOutput>> {
     // Resolve sources to scan (custom path or from config)
     let sources = match target {
         Some(tg) => vec![config.get_source(&tg)?],
@@ -218,8 +218,8 @@ pub async fn scan_ast(
 pub async fn scan_enriches(
     config: &AppConfig,
     target: Option<String>,
-    hashes: Option<SearchFileHashSource>,
-) -> Result<Vec<EnrichedSourceAnalysis>> {
+    hashes: Option<OpensearchListHashesResponse>,
+) -> Result<Vec<AnalyzerProjectOutput>> {
     let cluster = ollama_cluster::OllamaCluster::new(&config.ollama);
     // Validate Ollama configuration
     if cluster.is_empty() {
@@ -329,7 +329,7 @@ pub async fn index_enriches(
 
     // Get hashes from OpenSearch for incremental indexing
     let search_client = SearchClient::new(client);
-    let hashes: Option<SearchFileHashSource> = if force {
+    let hashes: Option<OpensearchListHashesResponse> = if force {
         None
     } else {
         let targets: Vec<String> = match target.as_deref() {
@@ -340,7 +340,7 @@ pub async fn index_enriches(
                 .map(|s| s.to_string_lossy().to_string())
                 .collect(),
         };
-        let mut all_hashes = SearchFileHashSource {
+        let mut all_hashes = OpensearchListHashesResponse {
             hashes: HashMap::new(),
         };
         for tg in targets {
@@ -375,7 +375,7 @@ pub async fn index_enriches(
 
     // Index metadata for all sources
     print_info!("Starting data indexing to OpenSearch...");
-    let meta_items = SourceMeta::from_enriched(&sources);
+    let meta_items = OpensearchProjectMetaRequest::from_enriched(&sources);
     let report_meta = indexer.index_meta(&meta_items, force).await?;
 
     // Index files and analysis for each source
@@ -385,8 +385,8 @@ pub async fn index_enriches(
     for source in &sources {
         let root = PathBuf::from(&source.root);
 
-        let file_items = SourceFile::from_enriched(source)?;
-        let analysis_items = SourceFileAnalysis::from_enriched(source);
+        let file_items = OpensearchFileContentRequest::from_enriched(source)?;
+        let analysis_items = OpensearchFileStatsRequest::from_enriched(source);
 
         let report_files = indexer
             .index_files(&root, &file_items, &analysis_items, force)

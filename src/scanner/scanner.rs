@@ -5,12 +5,12 @@ use anyhow::Result;
 use chrono::Local;
 use std::path::Path;
 
-use crate::opensearch::data::responses::search_file_hash::SearchFileHashSource;
+use crate::opensearch::data::responses::opensearch_list_hashes_response::OpensearchListHashesResponse;
 use crate::scanner::ast::parser::parse_ast;
-use crate::scanner::data::input::file_stats::FileStats;
-use crate::scanner::data::output::file_analysis::FileAnalysis;
-use crate::scanner::data::output::source_analysis::SourceAnalysis;
-use crate::scanner::data::output::source_stats::SourceStats;
+use crate::scanner::data::input::scan_file_stats_input::ScanFileStatsInput;
+use crate::scanner::data::output::scan_file_analysis_output::ScanFileAnalysisOutput;
+use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
+use crate::scanner::data::output::scan_project_stats_output::ScanProjectStatsOutput;
 use crate::scanner::detectors;
 use crate::utils::constants;
 use crate::utils::hash;
@@ -19,10 +19,10 @@ use crate::utils::path;
 /// Scans a source and returns complete analysis results
 pub async fn scan_source(
     source_path: &Path,
-    hashes: &Option<SearchFileHashSource>,
+    hashes: &Option<OpensearchListHashesResponse>,
     on_progress: fn(usize, usize, usize),
     on_warning: fn(String),
-) -> Result<SourceAnalysis> {
+) -> Result<ScanProjectAnalysisOutput> {
     let canonical_path = dunce::canonicalize(source_path)?;
     let source_display = if canonical_path.is_file() {
         canonical_path
@@ -35,9 +35,9 @@ pub async fn scan_source(
 
     // Get full stats about source
     let files_full = path::source_files(&canonical_path)?;
-    let mut source_stats = SourceStats::default();
+    let mut source_stats = ScanProjectStatsOutput::default();
     for file_info in files_full.iter() {
-        source_stats.add_stats(&FileStats::new(&file_info)?);
+        source_stats.add_stats(&ScanFileStatsInput::new(&file_info)?);
     }
 
     // Files with filter unchanged
@@ -58,7 +58,7 @@ pub async fn scan_source(
     let readme = detectors::readme::detect_readme(&files);
     let license = detectors::license::detect_license(&files).await;
 
-    let mut analysis = SourceAnalysis {
+    let mut analysis = ScanProjectAnalysisOutput {
         root: source_display.to_string_lossy().to_string(),
         indexed_at: Local::now().to_rfc3339(),
         readme,
@@ -70,7 +70,7 @@ pub async fn scan_source(
     for (i, file_info) in files.iter().enumerate() {
         let percent = (i + 1) as f64 / total as f64 * 100.0;
         on_progress(percent as usize, i + 1, total);
-        let stats = FileStats::new(&file_info)?;
+        let stats = ScanFileStatsInput::new(&file_info)?;
 
         let ast = if let Some(ext) = &stats.extension {
             if stats.is_text && file_info.size < constants::MAX_AST_FILE_SIZE {
@@ -101,7 +101,7 @@ pub async fn scan_source(
         } else {
             None
         };
-        analysis.files.push(FileAnalysis {
+        analysis.files.push(ScanFileAnalysisOutput {
             path: file_info.relative_path.to_string_lossy().to_string(),
             extension: stats.extension,
             size_bytes: file_info.size,

@@ -1,15 +1,15 @@
 //! README file detection for source documentation.
 //! Scans for README files and prioritizes Markdown over plain text.
 
-use crate::scanner::data::input::file_info::FileInfo;
-use crate::scanner::data::output::readme_info::ReadmeInfo;
+use crate::scanner::data::input::scan_file_info_input::ScanFileInfoInput;
+use crate::scanner::data::output::scan_readme_output::ScanReadmeOutput;
 
 /// README file detector
 pub struct ReadmeDetector;
 
 impl ReadmeDetector {
     /// Finds the best README file (priority: .md > .txt > no extension)
-    pub fn find_readme(files: &[FileInfo]) -> Option<ReadmeInfo> {
+    pub fn find_readme(files: &[ScanFileInfoInput]) -> Option<ScanReadmeOutput> {
         let readme_patterns = ["readme", "README", "Readme"];
 
         let mut candidates: Vec<_> = files
@@ -32,7 +32,7 @@ impl ReadmeDetector {
         candidates.first().and_then(|file| {
             std::fs::read_to_string(&file.path)
                 .ok()
-                .map(|content| ReadmeInfo {
+                .map(|content| ScanReadmeOutput {
                     path: file.relative_path.to_string_lossy().to_string(),
                     content: content.chars().collect(),
                     size_bytes: file.size,
@@ -42,6 +42,6 @@ impl ReadmeDetector {
 }
 
 /// Convenience function for README detection
-pub fn detect_readme(files: &[FileInfo]) -> Option<ReadmeInfo> {
+pub fn detect_readme(files: &[ScanFileInfoInput]) -> Option<ScanReadmeOutput> {
     ReadmeDetector::find_readme(files)
 }

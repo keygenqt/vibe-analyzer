@@ -1,12 +1,12 @@
 //! Core analyzer that orchestrates scanning and LLM enrichment.
 //! Coordinates file discovery, batching, and Ollama API calls.
 
-use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
-use crate::analyzer::data::requests::ollama_files_request::OllamaFilesRequest;
-use crate::analyzer::data::requests::ollama_summary_request::OllamaSummaryRequest;
+use crate::analyzer::data::output::analyzer_project_output::AnalyzerProjectOutput;
+use crate::analyzer::data::requests::analyzer_files_request::AnalyzerFilesRequest;
+use crate::analyzer::data::requests::analyzer_summary_request::AnalyzerSummaryRequest;
 use crate::analyzer::ollama_cluster::OllamaCluster;
-use crate::scanner::data::output::file_analysis::FileAnalysis;
-use crate::scanner::data::output::source_analysis::SourceAnalysis;
+use crate::scanner::data::output::scan_file_analysis_output::ScanFileAnalysisOutput;
+use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
 use anyhow::Result;
 use chrono::Local;
 use futures::StreamExt;
@@ -27,21 +27,21 @@ struct WorkerStats {
 /// Analyzes a source with LLM-powered enrichment using file-level distribution.
 /// Fast workers naturally process more files, maximizing cluster utilization.
 pub async fn analyze_source(
-    source: &SourceAnalysis,
+    source: &ScanProjectAnalysisOutput,
     cluster: &OllamaCluster,
     on_progress: fn(usize, usize, usize),
     on_done: fn(String),
-) -> Result<EnrichedSourceAnalysis> {
+) -> Result<AnalyzerProjectOutput> {
     let total = source.files.len();
 
     // Get enriched analysis source
     let summary = cluster
         .next()
-        .get_summary_enriched_analysis(&OllamaSummaryRequest::new(&source))
+        .get_summary_enriched_analysis(&AnalyzerSummaryRequest::new(&source))
         .await?;
 
     // Create source data
-    let mut analysis = EnrichedSourceAnalysis {
+    let mut analysis = AnalyzerProjectOutput {
         root: source.root.clone(),
         indexed_at: Local::now().to_rfc3339(),
         readme: source.readme.clone(),
@@ -53,7 +53,7 @@ pub async fn analyze_source(
 
     // Setup parallel workers with shared receiver
     let num_workers = cluster.len();
-    let (file_tx, file_rx) = mpsc::channel::<Arc<FileAnalysis>>(num_workers * 2);
+    let (file_tx, file_rx) = mpsc::channel::<Arc<ScanFileAnalysisOutput>>(num_workers * 2);
     let shared_rx = Arc::new(Mutex::new(file_rx));
     let mut handles = Vec::with_capacity(num_workers);
 
@@ -76,7 +76,7 @@ pub async fn analyze_source(
         });
 
         let handle = tokio::spawn(async move {
-            let mut batch = OllamaFilesRequest::new();
+            let mut batch = AnalyzerFilesRequest::new();
             let mut results = Vec::new();
 
             loop {

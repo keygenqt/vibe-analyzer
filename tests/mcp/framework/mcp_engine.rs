@@ -200,7 +200,7 @@ impl McpEngine {
                 return Ok((tool_calls, final_response));
             }
 
-            let result_str = serde_json::to_string_pretty(&result)?;
+            let result_str = serde_json::to_string(&result)?;
 
             tool_calls.push(ToolCall {
                 name: name.clone(),

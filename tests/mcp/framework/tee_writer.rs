@@ -1,9 +1,11 @@
 //! Tee writer that duplicates output to file and stdout.
 //! Used for logging child process output to both terminal and log file.
 
-use std::io::{Stdout, Write};
+use std::io::Stdout;
+use std::io::Write;
 use std::process::Stdio;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use std::sync::Mutex;
 use std::thread;
 use tracing::Level;
 

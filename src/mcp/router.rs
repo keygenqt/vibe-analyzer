@@ -13,15 +13,12 @@ use rmcp::tool_router;
 use std::sync::Arc;
 
 use crate::mcp::server::AppState;
-use crate::mcp::tools::data::requests::find::FindParams;
-use crate::mcp::tools::data::requests::find::OptionalFindParams;
-use crate::mcp::tools::data::requests::get_stats::GetStatsParams;
-use crate::mcp::tools::data::requests::get_tree::GetTreeParams;
-use crate::mcp::tools::tool_find::ToolFind;
-use crate::mcp::tools::tool_get_stats::ToolGetStats;
-use crate::mcp::tools::tool_get_tree::ToolGetTree;
-use crate::mcp::tools::tool_index_projects::ToolIndexProjects;
-use crate::mcp::tools::tool_list_projects::ToolListProjects;
+use crate::mcp::tools::data::params::mcp_stats_params::McpStatsParams;
+use crate::mcp::tools::data::params::mcp_structure_params::McpStructureParams;
+use crate::mcp::tools::list_projects_tool::ListProjectsTool;
+use crate::mcp::tools::stats_tool::StatsTool;
+use crate::mcp::tools::structure_tool::StructureTool;
+use crate::mcp::tools::sync_index_tool::SyncIndexTool;
 use crate::utils::app;
 
 /// Provides server metadata and capabilities for MCP clients.
@@ -35,23 +32,16 @@ impl ServerHandler for RouterTools {
         )
         .with_server_info(
             Implementation::new(app::app_name(), app::app_version())
-                .with_title("Vibe Analyzer Knowledge Base")
-                .with_description(
-                    r#"
-Vibe Analyzer is a semantic code analysis and knowledge base tool.
-Provides access to indexed codebases and documentation.
-Supports multiple programming languages and Markdown.
-"#,
-                ),
+                .with_title("Vibe Analyzer")
+                .with_description("Code & knowledge base."),
         )
         .with_protocol_version(self.state.protocol_version.clone())
         .with_instructions(
             r#"
 RULES:
-1. Use tools, provide data concisely.
-2. Each tool is self-contained - ONE call is enough.
-3. Do NOT call extra tools to verify.
-4. ONLY use listed tools. For search use find_code.
+1. Use tools, answer concisely.
+2. ONE tool call is enough.
+3. ONLY listed tools.
 "#,
         )
     }
@@ -74,313 +64,269 @@ impl RouterTools {
 #[tool_router]
 impl RouterTools {
     // -------------------------------------------------------------------------------
-    // -- Index projects -------------------------------------------------------------
+    // -- Admin ----------------------------------------------------------------------
+    // -------------------------------------------------------------------------------
 
     #[tool(
-        name = "index_projects",
+        name = "sync_index",
         description = r#"
-Updates the knowledge base index.
+Refreshes all project data.
 
 RULES:
-1. ONLY call when user explicitly says: "update index", "refresh", "reindex", "rescan", "обнови индекс".
-2. This is an admin tool, not for regular queries.
-3. Accepts NO parameters.
-
-Call exactly like this:
-{"name": "index_projects", "arguments": {}}
+1. Call when user says: "sync", "reindex", "update", "refresh", "обнови"
+2. Admin tool, not for regular queries
+3. Runs in background, no need to call other tools after this
 "#
     )]
-    async fn index_projects(&self) -> Result<CallToolResult, ErrorData> {
-        ToolIndexProjects::new(self.state.clone()).execute().await
-    }
-
-    #[tool(
-        name = "reindex",
-        description = "Rebuilds the entire find index from scratch."
-    )]
-    async fn reindex(&self) -> Result<CallToolResult, ErrorData> {
-        self.index_projects().await
+    async fn sync_index(&self) -> Result<CallToolResult, ErrorData> {
+        SyncIndexTool::new(self.state.clone()).execute().await
     }
 
     // -------------------------------------------------------------------------------
-    // -- Get list projects ----------------------------------------------------------
+    // -- Stats ----------------------------------------------------------------------
+    // -------------------------------------------------------------------------------
 
     #[tool(
         name = "list_projects",
         description = r#"
-Shows NAMES and SUMMARIES of all projects.
-Use when asked: "what projects exist", "list projects", "show all projects", "какие проекты есть".
+Shows all projects with names and summaries.
 
 RULES:
-1. Shows all projects with names and summaries.
-2. ONE call returns everything.
-3. After calling, just answer with the data received.
-
-Call exactly like this:
-{"name": "list_projects", "arguments": {}}
+1. Call when user asks: "what projects", "list projects", "какие проекты есть"
+2. ONE call returns everything
 "#
     )]
     async fn list_projects(&self) -> Result<CallToolResult, ErrorData> {
-        ToolListProjects::new(self.state.clone()).execute().await
-    }
-
-    // -------------------------------------------------------------------------------
-    // -- Get tree project -----------------------------------------------------------
-
-    #[tool(
-        name = "get_tree",
-        description = r#"
-Shows files and folders inside a project.
-
-RULES:
-1. Parameter 'target' (required) - project name.
-2. Parameter 'level' (optional) - depth 1-10, default 3.
-3. ONE call returns the complete tree.
-
-Example: {"name": "get_tree", "arguments": {"target": "NAME"}}
-Example: {"name": "get_tree", "arguments": {"target": "NAME", "level": 2}}
-"#
-    )]
-    async fn get_tree(
-        &self,
-        Parameters(params): Parameters<GetTreeParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolGetTree::new(self.state.clone()).execute(params).await
+        ListProjectsTool::new(self.state.clone()).execute().await
     }
 
     #[tool(
-        name = "show_tree",
-        description = "Displays folder and file structure as a tree."
-    )]
-    async fn show_tree(
-        &self,
-        Parameters(params): Parameters<GetTreeParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        self.get_tree(Parameters(params)).await
-    }
-
-    // -------------------------------------------------------------------------------
-    // -- Get stats ------------------------------------------------------------------
-
-    #[tool(
-        name = "get_stats",
+        name = "stats",
         description = r#"
 Shows project statistics: files, lines of code, languages breakdown.
 
 RULES:
-1. Parameter 'target' (optional) - project name. If omitted, shows all projects.
-2. ONE call returns all statistics.
-3. After calling, just answer with the data received.
-
-Example: {"name": "get_stats", "arguments": {}}
-Example: {"name": "get_stats", "arguments": {"target": "NAME"}}
+1. Call when user asks for project statistics
+2. Call when user wants file counts or code size
 "#
     )]
-    async fn get_stats(
+    async fn stats(
         &self,
-        Parameters(params): Parameters<GetStatsParams>,
+        Parameters(params): Parameters<McpStatsParams>,
     ) -> Result<CallToolResult, ErrorData> {
-        ToolGetStats::new(self.state.clone()).execute(params).await
+        StatsTool::new(self.state.clone()).execute(params).await
     }
 
     #[tool(
-        name = "show_stats",
-        description = "Displays project statistics and metrics."
+        name = "structure",
+        description = r#"
+Shows files and folders inside a project.
+
+RULES:
+1. Call when user asks about project structure, files, folders
+"#
     )]
-    async fn show_stats(
+    async fn structure(
         &self,
-        Parameters(params): Parameters<GetStatsParams>,
+        Parameters(params): Parameters<McpStructureParams>,
     ) -> Result<CallToolResult, ErrorData> {
-        self.get_stats(Parameters(params)).await
+        StructureTool::new(self.state.clone()).execute(params).await
     }
 
     // -------------------------------------------------------------------------------
-    // -- Find ---------------------------------------------------------------------
+    // -- Search ---------------------------------------------------------------------
+    // -------------------------------------------------------------------------------
 
-    #[tool(
-        name = "find",
-        description = r#"
-GENERAL find across all projects.
+    // -------------------------------------------------------------------------------
+    // -- Index projects -------------------------------------------------------------
 
-RULES:
-1. Parameter 'query' (required) - find term.
-2. Parameter 'include_content' (optional) - include full file content, default false.
-3. Parameter 'limit' (optional) - max results, default 1.
-4. ONE call search everything.
+    //     // -------------------------------------------------------------------------------
+    //     // -- Find ---------------------------------------------------------------------
 
-Example: {"name": "find", "arguments": {"query": "QUERY"}}
-Example: {"name": "find", "arguments": {"query": "QUERY", "include_content": true, "limit": 1}}
-"#
-    )]
-    async fn find(
-        &self,
-        Parameters(params): Parameters<FindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options(true))
-            .await
-    }
+    //     #[tool(
+    //         name = "find",
+    //         description = r#"
+    // GENERAL find across all projects.
 
-    #[tool(
-        name = "find_knowledge",
-        description = "Finds documentation, guides, and knowledge base."
-    )]
-    async fn find_knowledge(
-        &self,
-        Parameters(params): Parameters<FindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        self.find(Parameters(params)).await
-    }
+    // RULES:
+    // 1. Parameter 'query' (required) - find term.
+    // 2. Parameter 'include_content' (optional) - include full file content, default false.
+    // 3. Parameter 'limit' (optional) - max results, default 1.
+    // 4. ONE call search everything.
 
-    #[tool(
-        name = "find_guide",
-        description = "Displays guides, tutorials, and documentation."
-    )]
-    async fn find_guide(
-        &self,
-        Parameters(params): Parameters<FindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        self.find(Parameters(params)).await
-    }
+    // Example: {"name": "find", "arguments": {"query": "QUERY"}}
+    // Example: {"name": "find", "arguments": {"query": "QUERY", "include_content": true, "limit": 1}}
+    // "#
+    //     )]
+    //     async fn find(
+    //         &self,
+    //         Parameters(params): Parameters<FindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options(true))
+    //             .await
+    //     }
 
-    #[tool(
-        name = "find_code",
-        description = "Finds functions, classes, and structs in code."
-    )]
-    async fn find_code(
-        &self,
-        Parameters(params): Parameters<FindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options(false))
-            .await
-    }
+    //     #[tool(
+    //         name = "find_knowledge",
+    //         description = "Finds documentation, guides, and knowledge base."
+    //     )]
+    //     async fn find_knowledge(
+    //         &self,
+    //         Parameters(params): Parameters<FindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         self.find(Parameters(params)).await
+    //     }
 
-    #[tool(
-        name = "imports",
-        description = "Shows import statements and dependencies in code."
-    )]
-    async fn imports(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options("import use require from include"))
-            .await
-    }
+    //     #[tool(
+    //         name = "find_guide",
+    //         description = "Displays guides, tutorials, and documentation."
+    //     )]
+    //     async fn find_guide(
+    //         &self,
+    //         Parameters(params): Parameters<FindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         self.find(Parameters(params)).await
+    //     }
 
-    #[tool(
-        name = "functions",
-        description = "Finds function definitions and signatures."
-    )]
-    async fn functions(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options("fn def func function method"))
-            .await
-    }
+    //     #[tool(
+    //         name = "find_code",
+    //         description = "Finds functions, classes, and structs in code."
+    //     )]
+    //     async fn find_code(
+    //         &self,
+    //         Parameters(params): Parameters<FindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options(false))
+    //             .await
+    //     }
 
-    #[tool(
-        name = "classes",
-        description = "Finds class definitions and structures."
-    )]
-    async fn classes(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options("class struct interface trait enum"))
-            .await
-    }
+    //     #[tool(
+    //         name = "imports",
+    //         description = "Shows import statements and dependencies in code."
+    //     )]
+    //     async fn imports(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options("import use require from include"))
+    //             .await
+    //     }
 
-    #[tool(
-        name = "errors",
-        description = "Finds error types and error handling code."
-    )]
-    async fn errors(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options("error Error Result Err Exception panic"))
-            .await
-    }
+    //     #[tool(
+    //         name = "functions",
+    //         description = "Finds function definitions and signatures."
+    //     )]
+    //     async fn functions(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options("fn def func function method"))
+    //             .await
+    //     }
 
-    #[tool(
-        name = "docs",
-        description = "Finds documentation, README files, and guides."
-    )]
-    async fn docs(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options("README documentation guide tutorial how-to"))
-            .await
-    }
+    //     #[tool(
+    //         name = "classes",
+    //         description = "Finds class definitions and structures."
+    //     )]
+    //     async fn classes(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options("class struct interface trait enum"))
+    //             .await
+    //     }
 
-    #[tool(
-        name = "config",
-        description = "Finds configuration files and settings."
-    )]
-    async fn config(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options("config toml yaml json settings env"))
-            .await
-    }
+    //     #[tool(
+    //         name = "errors",
+    //         description = "Finds error types and error handling code."
+    //     )]
+    //     async fn errors(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options("error Error Result Err Exception panic"))
+    //             .await
+    //     }
 
-    #[tool(
-        name = "commit",
-        description = "Shows commit message format and conventions."
-    )]
-    async fn commit(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(
-                params.into_find_options("commit convention message git standard rule guideline"),
-            )
-            .await
-    }
+    //     #[tool(
+    //         name = "docs",
+    //         description = "Finds documentation, README files, and guides."
+    //     )]
+    //     async fn docs(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options("README documentation guide tutorial how-to"))
+    //             .await
+    //     }
 
-    #[tool(
-        name = "dependencies",
-        description = "Finds project dependencies and package files."
-    )]
-    async fn dependencies(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(
-                params.into_find_options("Cargo.toml package.json requirements.txt go.mod pom.xml"),
-            )
-            .await
-    }
+    //     #[tool(
+    //         name = "config",
+    //         description = "Finds configuration files and settings."
+    //     )]
+    //     async fn config(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options("config toml yaml json settings env"))
+    //             .await
+    //     }
 
-    #[tool(name = "tests", description = "Finds test files and test functions.")]
-    async fn tests(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options("test spec should it assert #[test] @Test def test_"))
-            .await
-    }
+    //     #[tool(
+    //         name = "commit",
+    //         description = "Shows commit message format and conventions."
+    //     )]
+    //     async fn commit(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(
+    //                 params.into_find_options("commit convention message git standard rule guideline"),
+    //             )
+    //             .await
+    //     }
 
-    #[tool(name = "types", description = "Finds type definitions and aliases.")]
-    async fn types(
-        &self,
-        Parameters(params): Parameters<OptionalFindParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        ToolFind::new(self.state.clone())
-            .execute(params.into_find_options("type typedef interface trait enum struct"))
-            .await
-    }
+    //     #[tool(
+    //         name = "dependencies",
+    //         description = "Finds project dependencies and package files."
+    //     )]
+    //     async fn dependencies(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(
+    //                 params.into_find_options("Cargo.toml package.json requirements.txt go.mod pom.xml"),
+    //             )
+    //             .await
+    //     }
+
+    //     #[tool(name = "tests", description = "Finds test files and test functions.")]
+    //     async fn tests(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options("test spec should it assert #[test] @Test def test_"))
+    //             .await
+    //     }
+
+    //     #[tool(name = "types", description = "Finds type definitions and aliases.")]
+    //     async fn types(
+    //         &self,
+    //         Parameters(params): Parameters<OptionalFindParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         ToolFind::new(self.state.clone())
+    //             .execute(params.into_find_options("type typedef interface trait enum struct"))
+    //             .await
+    //     }
 }

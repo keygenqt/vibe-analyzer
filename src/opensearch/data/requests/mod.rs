@@ -1,6 +1,6 @@
 //! Document models for OpenSearch indexing.
 //! Contains SourceFile, SourceFileAnalysis, and SourceMeta for bulk operations.
 
-pub mod source_file;
-pub mod source_file_analysis;
-pub mod source_meta;
+pub mod opensearch_file_content_request;
+pub mod opensearch_file_stats_request;
+pub mod opensearch_meta_request;

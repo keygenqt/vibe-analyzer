@@ -17,18 +17,18 @@ const RUNS: usize = 1;
 /// Ollama models to test against.
 const MODELS: &[&str] = &[
     "qwen2.5-coder:3b-instruct",
-    "qwen2.5-coder:7b-instruct",
+    // "qwen2.5-coder:7b-instruct",
     // "qwen2.5-coder:14b-instruct",
 ];
 
 /// MCP tool scenarios to execute.
 const SCENARIOS: &[&str] = &[
-    // "tool_get_stats",
-    // "tool_get_tree",
-    // "tool_index_projects",
-    // "tool_list_projects",
-    "tool_search_code",
-    "tool_search_knowledge",
+    "list_projects",
+    "stats",
+    "structure",
+    "sync_index",
+    // "tool_find_code",
+    // "tool_find_knowledge",
 ];
 
 #[tokio::test]

@@ -7,7 +7,7 @@ use crate::configs::app::AppConfig;
 use crate::configs::app::IndexType;
 use crate::exit_error;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::search::SearchClient;
+use crate::opensearch::search::search_client::SearchClient;
 use crate::print_info;
 use crate::print_warning;
 
@@ -66,7 +66,7 @@ pub async fn run(action: StatsAction) {
                 Ok(value) => value,
                 Err(e) => exit_error!("{}", e),
             };
-            let tree = match search_client.get_tree(&index, level).await {
+            let tree = match search_client.structure(&index, level).await {
                 Ok(value) => value,
                 Err(e) => exit_error!("{}", e),
             };
@@ -97,7 +97,7 @@ pub async fn run(action: StatsAction) {
                 print_warning!("No indexes found to create stats");
                 return;
             }
-            let stats = match search_client.get_stats(&indexes).await {
+            let stats = match search_client.stats(&indexes).await {
                 Ok(s) => s,
                 Err(e) => exit_error!("{}", e),
             };

@@ -1,0 +1,10 @@
+{
+  "tool": "stats",
+  "queries": [
+    "Покажи статистику проекта 'knowledge'",
+    "Статистика по 'samples'",
+    "Сколько файлов в 'knowledge'",
+    "Покажи общую статистику по всем проектам",
+    "Stats for project 'knowledge'"
+  ]
+}

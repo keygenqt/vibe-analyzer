@@ -1,8 +1,7 @@
-//! Response models from OpenSearch queries.
-//! Contains search results for AST, file hashes, metadata, and statistics.
+//! @todo
+//! @todo.
 
-pub mod search_ast;
-pub mod search_file_hash;
-pub mod search_meta;
-pub mod search_stats;
-pub mod search_tree;
+pub mod opensearch_list_hashes_response;
+pub mod opensearch_project_meta_response;
+pub mod opensearch_stats_response;
+pub mod opensearch_structure_response;

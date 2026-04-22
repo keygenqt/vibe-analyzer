@@ -22,7 +22,7 @@ use crate::configs::app::AppConfig;
 use crate::mcp::log;
 use crate::mcp::router::RouterTools;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::search::SearchClient;
+use crate::opensearch::search::search_client::SearchClient;
 use crate::utils::app;
 
 /// Application state shared across request handlers.

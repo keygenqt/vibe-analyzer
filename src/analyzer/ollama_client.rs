@@ -3,9 +3,9 @@
 
 use std::time::Duration;
 
-use crate::analyzer::data::output::enriched_file_analysis::EnrichedFileAnalysis;
-use crate::analyzer::data::requests::ollama_files_request::OllamaFilesRequest;
-use crate::analyzer::data::requests::ollama_summary_request::OllamaSummaryRequest;
+use crate::analyzer::data::output::analyzer_file_output::AnalyzerFileOutput;
+use crate::analyzer::data::requests::analyzer_files_request::AnalyzerFilesRequest;
+use crate::analyzer::data::requests::analyzer_summary_request::AnalyzerSummaryRequest;
 use crate::analyzer::data::responses::ollama_enrichment_response::OllamaEnrichmentResponse;
 use crate::analyzer::data::responses::ollama_generate_response::OllamaGenerateResponse;
 use crate::analyzer::data::responses::ollama_tags_response::OllamaTagsResponse;
@@ -43,23 +43,24 @@ impl OllamaClient {
         }
     }
 
-    /// Checks if the model is currently loaded in memory.
-    pub async fn is_model_loaded(&self) -> Result<bool> {
-        let url = format!("{}/api/ps", self.config.host);
-        let Ok(response) = self.client.get(&url).send().await else {
-            return Ok(false);
-        };
-        let json: serde_json::Value = response.json().await?;
-        Ok(json
-            .pointer("/models")
-            .and_then(|m| m.as_array())
-            .map(|models| {
-                models
-                    .iter()
-                    .any(|m| m.get("name").and_then(|n| n.as_str()) == Some(&self.config.model))
-            })
-            .unwrap_or(false))
-    }
+    // /// @todo
+    // /// Checks if the model is currently loaded in memory.
+    // pub async fn is_model_loaded(&self) -> Result<bool> {
+    //     let url = format!("{}/api/ps", self.config.host);
+    //     let Ok(response) = self.client.get(&url).send().await else {
+    //         return Ok(false);
+    //     };
+    //     let json: serde_json::Value = response.json().await?;
+    //     Ok(json
+    //         .pointer("/models")
+    //         .and_then(|m| m.as_array())
+    //         .map(|models| {
+    //             models
+    //                 .iter()
+    //                 .any(|m| m.get("name").and_then(|n| n.as_str()) == Some(&self.config.model))
+    //         })
+    //         .unwrap_or(false))
+    // }
 
     /// Checks if the configured model is already installed.
     pub async fn is_model_installed(&self) -> Result<bool> {
@@ -110,7 +111,7 @@ impl OllamaClient {
     /// Generates source summary using LLM.
     pub async fn get_summary_enriched_analysis(
         &self,
-        data: &OllamaSummaryRequest,
+        data: &AnalyzerSummaryRequest,
     ) -> Result<String> {
         let prompt = if let Some(readme) = data.readme.as_ref() {
             // Limit README to first 3000 characters to keep prompt focused and avoid token waste
@@ -144,8 +145,8 @@ Return only the summary text.
     /// Enriches a batch of files with LLM-generated descriptions and search tags.
     pub async fn get_file_enriched_analysis(
         &self,
-        data: &OllamaFilesRequest,
-    ) -> Result<Vec<EnrichedFileAnalysis>> {
+        data: &AnalyzerFilesRequest,
+    ) -> Result<Vec<AnalyzerFileOutput>> {
         const MAX_RETRIES: usize = 5;
         let template_files: Vec<String> = data
             .files
@@ -199,7 +200,7 @@ JSON TO COPY AND FILL:
                         if let Some(original) =
                             data.files.iter().find(|f| f.path == file_response.path)
                         {
-                            enriched.push(EnrichedFileAnalysis {
+                            enriched.push(AnalyzerFileOutput {
                                 description: Some(file_response.description.clone()),
                                 tags: Some(file_response.tags.clone()),
                                 path: original.path.clone(),
@@ -384,41 +385,42 @@ JSON TO COPY AND FILL:
         json_str
     }
 
-    pub async fn get_search_keywords(&self, query: &str) -> Vec<String> {
-        if query.len() < 3 {
-            return vec![query.to_string()];
-        }
+    //     /// @todo
+    //     pub async fn get_search_keywords(&self, query: &str) -> Vec<String> {
+    //         if query.len() < 3 {
+    //             return vec![query.to_string()];
+    //         }
 
-        let prompt = format!(
-            r#"Generate 3-5 KEYWORDS (not phrases) for this query in Russian, English, and Chinese.
-Return ONLY a JSON array of strings. Use single words or short compound terms.
+    //         let prompt = format!(
+    //             r#"Generate 3-5 KEYWORDS (not phrases) for this query in Russian, English, and Chinese.
+    // Return ONLY a JSON array of strings. Use single words or short compound terms.
 
-Query: "{}"
+    // Query: "{}"
 
-Example response format:
-["keyword", "ключ", "关键", "word", "слово", "词"]
+    // Example response format:
+    // ["keyword", "ключ", "关键", "word", "слово", "词"]
 
-Rules:
-- Return 3-5 keywords total, NOT sentences
-- Include original query if it's a single word
-- Add 1-2 synonyms in each language
-- Keep technical terms as-is (e.g., "Rust", "Git", "API")
-- Maximum 5 keywords total
-- NO phrases longer than 2 words"#,
-            query
-        );
+    // Rules:
+    // - Return 3-5 keywords total, NOT sentences
+    // - Include original query if it's a single word
+    // - Add 1-2 synonyms in each language
+    // - Keep technical terms as-is (e.g., "Rust", "Git", "API")
+    // - Maximum 5 keywords total
+    // - NO phrases longer than 2 words"#,
+    //             query
+    //         );
 
-        let response = match self.generate_completion(&prompt, Some(30)).await {
-            Ok(value) => value,
-            Err(_) => return vec![query.to_string()],
-        };
+    //         let response = match self.generate_completion(&prompt, Some(30)).await {
+    //             Ok(value) => value,
+    //             Err(_) => return vec![query.to_string()],
+    //         };
 
-        let json_str = self.clean_llm_json(&response);
+    //         let json_str = self.clean_llm_json(&response);
 
-        // Limit to 5 keywords max
-        match serde_json::from_str::<Vec<String>>(&json_str) {
-            Ok(keywords) => keywords.into_iter().take(5).collect(),
-            Err(_) => vec![query.to_string()],
-        }
-    }
+    //         // Limit to 5 keywords max
+    //         match serde_json::from_str::<Vec<String>>(&json_str) {
+    //             Ok(keywords) => keywords.into_iter().take(5).collect(),
+    //             Err(_) => vec![query.to_string()],
+    //         }
+    //     }
 }

@@ -5,7 +5,7 @@ use std::path::PathBuf;
 
 use crate::configs::app::AppConfig;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::requests::source_file::SourceFile;
+use crate::opensearch::data::requests::opensearch_file_content_request::OpensearchFileContentRequest;
 use anyhow::Result;
 use serde_json::json;
 
@@ -52,7 +52,7 @@ impl FilesIndex {
     }
 
     /// Bulk indexes multiple files.
-    pub async fn bulk_index(&self, docs: &[&SourceFile]) -> Result<()> {
+    pub async fn bulk_index(&self, docs: &[&OpensearchFileContentRequest]) -> Result<()> {
         self.client.bulk_index(&self.name, docs).await
     }
 }

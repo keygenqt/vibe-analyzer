@@ -7,10 +7,10 @@ use serde_json;
 use std::fs;
 use std::path::Path;
 
-use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
-use crate::analyzer::data::output::enriched_sources_analysis::EnrichedSourcesAnalysis;
-use crate::scanner::data::output::source_analysis::SourceAnalysis;
-use crate::scanner::data::output::sources_analysis::SourcesAnalysis;
+use crate::analyzer::data::output::analyzer_project_output::AnalyzerProjectOutput;
+use crate::analyzer::data::output::analyzer_projects_output::AnalyzerProjectsOutput;
+use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
+use crate::scanner::data::output::scan_projects_analysis_output::ScanProjectsAnalysisOutput;
 
 use super::super::writer::ExportWriter;
 
@@ -19,9 +19,13 @@ pub struct JsonWriter;
 
 impl ExportWriter for JsonWriter {
     /// Exports source analyses to a compact JSON file (minified).
-    fn export_scanner(&self, sources: &[SourceAnalysis], output_path: &Path) -> Result<()> {
+    fn export_scanner(
+        &self,
+        sources: &[ScanProjectAnalysisOutput],
+        output_path: &Path,
+    ) -> Result<()> {
         // Wrap sources with timestamp metadata
-        let multi_analysis = SourcesAnalysis {
+        let multi_analysis = ScanProjectsAnalysisOutput {
             indexed_at: Local::now().to_rfc3339(),
             sources: sources.to_vec(),
         };
@@ -36,13 +40,9 @@ impl ExportWriter for JsonWriter {
     }
 
     /// Exports enriched source analyses to a compact JSON file.
-    fn export_analyzer(
-        &self,
-        sources: &[EnrichedSourceAnalysis],
-        output_path: &Path,
-    ) -> Result<()> {
+    fn export_analyzer(&self, sources: &[AnalyzerProjectOutput], output_path: &Path) -> Result<()> {
         // Wrap sources with timestamp metadata
-        let multi_analysis = EnrichedSourcesAnalysis {
+        let multi_analysis = AnalyzerProjectsOutput {
             indexed_at: Local::now().to_rfc3339(),
             sources: sources.to_vec(),
         };

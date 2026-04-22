@@ -10,7 +10,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::export::options::ExportFormat;
-use crate::scanner::data::input::file_info::FileInfo;
+use crate::scanner::data::input::scan_file_info_input::ScanFileInfoInput;
 use crate::utils::app;
 use crate::utils::constants::CONFIG_DIR_NAME;
 use crate::utils::matcher;
@@ -98,7 +98,7 @@ pub fn convert_relative(path: &str) -> Option<PathBuf> {
 }
 
 /// Returns list of files in a source (supports both single file and directory)
-pub fn source_files(source_path: &Path) -> Result<Vec<FileInfo>> {
+pub fn source_files(source_path: &Path) -> Result<Vec<ScanFileInfoInput>> {
     let source_path_abs = dunce::canonicalize(source_path)?;
 
     // Handle single file case
@@ -110,7 +110,7 @@ pub fn source_files(source_path: &Path) -> Result<Vec<FileInfo>> {
             .to_string_lossy()
             .to_string();
 
-        return Ok(vec![FileInfo {
+        return Ok(vec![ScanFileInfoInput {
             path: source_path_abs,
             relative_path: PathBuf::from(file_name),
             size,
@@ -148,7 +148,7 @@ pub fn source_files(source_path: &Path) -> Result<Vec<FileInfo>> {
         let relative_path = path.strip_prefix(&source_path_abs)?.to_path_buf();
         let size = path.metadata()?.len();
 
-        files.push(FileInfo {
+        files.push(ScanFileInfoInput {
             path: path.to_path_buf(),
             relative_path,
             size,

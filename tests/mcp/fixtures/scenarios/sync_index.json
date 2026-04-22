@@ -1,0 +1,10 @@
+{
+  "tool": "sync_index",
+  "queries": [
+    "Обнови индекс",
+    "Переиндексируй проекты",
+    "Refresh knowledge base",
+    "Sync index",
+    "Reindex everything"
+  ]
+}

@@ -7,8 +7,8 @@ use std::fs::File;
 use tokio::sync::OnceCell;
 
 use crate::configs::app::AppConfig;
-use crate::scanner::data::input::file_info::FileInfo;
-use crate::scanner::data::output::license_info::LicenseInfo;
+use crate::scanner::data::input::scan_file_info_input::ScanFileInfoInput;
+use crate::scanner::data::output::scan_license_output::ScanLicenseOutput;
 use crate::utils::path::get_config_dir;
 
 /// Global license store initialized once asynchronously
@@ -57,7 +57,7 @@ pub struct LicenseDetector;
 
 impl LicenseDetector {
     /// Searches for license file and detects license type
-    pub async fn find_license(files: &[FileInfo]) -> Option<LicenseInfo> {
+    pub async fn find_license(files: &[ScanFileInfoInput]) -> Option<ScanLicenseOutput> {
         let license_patterns = [
             "license", "LICENSE", "License", "copying", "COPYING", "Copying", "licence", "LICENCE",
             "Licence",
@@ -71,7 +71,7 @@ impl LicenseDetector {
                     if let Some((spdx_id, name, confidence)) =
                         Self::detect_from_content(&content).await
                     {
-                        return Some(LicenseInfo {
+                        return Some(ScanLicenseOutput {
                             spdx_id,
                             name,
                             confidence,
@@ -103,6 +103,6 @@ impl LicenseDetector {
 }
 
 /// Convenience function for license detection
-pub async fn detect_license(files: &[FileInfo]) -> Option<LicenseInfo> {
+pub async fn detect_license(files: &[ScanFileInfoInput]) -> Option<ScanLicenseOutput> {
     LicenseDetector::find_license(files).await
 }

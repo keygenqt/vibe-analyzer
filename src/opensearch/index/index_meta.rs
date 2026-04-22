@@ -3,7 +3,7 @@
 
 use crate::configs::app::AppConfig;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::requests::source_meta::SourceMeta;
+use crate::opensearch::data::requests::opensearch_meta_request::OpensearchProjectMetaRequest;
 use anyhow::Result;
 use serde_json::json;
 
@@ -110,7 +110,7 @@ impl MetaIndex {
     }
 
     /// Bulk indexes multiple metadata documents.
-    pub async fn bulk_index(&self, docs: &[&SourceMeta]) -> Result<()> {
+    pub async fn bulk_index(&self, docs: &[&OpensearchProjectMetaRequest]) -> Result<()> {
         self.client.bulk_index(&self.name, docs).await
     }
 }

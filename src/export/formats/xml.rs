@@ -8,10 +8,10 @@ use std::path::Path;
 use xml::reader::ParserConfig;
 use xml::writer::EmitterConfig;
 
-use crate::analyzer::data::output::enriched_source_analysis::EnrichedSourceAnalysis;
-use crate::analyzer::data::output::enriched_sources_analysis::EnrichedSourcesAnalysis;
-use crate::scanner::data::output::source_analysis::SourceAnalysis;
-use crate::scanner::data::output::sources_analysis::SourcesAnalysis;
+use crate::analyzer::data::output::analyzer_project_output::AnalyzerProjectOutput;
+use crate::analyzer::data::output::analyzer_projects_output::AnalyzerProjectsOutput;
+use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
+use crate::scanner::data::output::scan_projects_analysis_output::ScanProjectsAnalysisOutput;
 
 use super::super::writer::ExportWriter;
 
@@ -45,8 +45,12 @@ impl XmlWriter {
 
 impl ExportWriter for XmlWriter {
     /// Exports source analyses to a pretty-printed XML file.
-    fn export_scanner(&self, sources: &[SourceAnalysis], output_path: &Path) -> Result<()> {
-        let multi_analysis = SourcesAnalysis {
+    fn export_scanner(
+        &self,
+        sources: &[ScanProjectAnalysisOutput],
+        output_path: &Path,
+    ) -> Result<()> {
+        let multi_analysis = ScanProjectsAnalysisOutput {
             indexed_at: Local::now().to_rfc3339(),
             sources: sources.to_vec(),
         };
@@ -62,12 +66,8 @@ impl ExportWriter for XmlWriter {
     }
 
     /// Exports enriched source analyses to a pretty-printed XML file.
-    fn export_analyzer(
-        &self,
-        sources: &[EnrichedSourceAnalysis],
-        output_path: &Path,
-    ) -> Result<()> {
-        let multi_analysis = EnrichedSourcesAnalysis {
+    fn export_analyzer(&self, sources: &[AnalyzerProjectOutput], output_path: &Path) -> Result<()> {
+        let multi_analysis = AnalyzerProjectsOutput {
             indexed_at: Local::now().to_rfc3339(),
             sources: sources.to_vec(),
         };

@@ -4,13 +4,13 @@
 use crate::configs::app::AppConfig;
 use crate::configs::app::IndexType;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::requests::source_file::SourceFile;
-use crate::opensearch::data::requests::source_file_analysis::SourceFileAnalysis;
-use crate::opensearch::data::requests::source_meta::SourceMeta;
+use crate::opensearch::data::requests::opensearch_file_content_request::OpensearchFileContentRequest;
+use crate::opensearch::data::requests::opensearch_file_stats_request::OpensearchFileStatsRequest;
+use crate::opensearch::data::requests::opensearch_meta_request::OpensearchProjectMetaRequest;
 use crate::opensearch::index::index_files::FilesIndex;
 use crate::opensearch::index::index_files_analysis::FilesAnalysisIndex;
 use crate::opensearch::index::index_meta::MetaIndex;
-use crate::opensearch::search::SearchClient;
+use crate::opensearch::search::search_client::SearchClient;
 use crate::utils;
 use anyhow::Result;
 use serde_json::json;
@@ -52,8 +52,8 @@ impl Indexer {
     pub async fn index_files(
         &self,
         root: &PathBuf,
-        files: &[SourceFile],
-        analyses: &[SourceFileAnalysis],
+        files: &[OpensearchFileContentRequest],
+        analyses: &[OpensearchFileStatsRequest],
         force: bool,
     ) -> Result<IndexFilesReport> {
         let files_index = FilesIndex::new(self.client.clone(), &root);
@@ -81,13 +81,13 @@ impl Indexer {
         let mut report = IndexFilesReport::default();
 
         if !files.is_empty() {
-            let docs: Vec<&SourceFile> = files.iter().collect();
+            let docs: Vec<&OpensearchFileContentRequest> = files.iter().collect();
             files_index.bulk_index(&docs).await?;
             report.files_indexed = files.len();
         }
 
         if !analyses.is_empty() {
-            let docs: Vec<&SourceFileAnalysis> = analyses.iter().collect();
+            let docs: Vec<&OpensearchFileStatsRequest> = analyses.iter().collect();
             analysis_index.bulk_index(&docs).await?;
             report.analysis_indexed = analyses.len();
         }
@@ -96,7 +96,11 @@ impl Indexer {
     }
 
     /// Indexes project metadata.
-    pub async fn index_meta(&self, meta: &[SourceMeta], force: bool) -> Result<IndexMetaReport> {
+    pub async fn index_meta(
+        &self,
+        meta: &[OpensearchProjectMetaRequest],
+        force: bool,
+    ) -> Result<IndexMetaReport> {
         let meta_index = MetaIndex::new(self.client.clone());
 
         // Force reindex: delete and recreate meta index
@@ -115,7 +119,7 @@ impl Indexer {
         let mut report = IndexMetaReport::default();
 
         if !meta.is_empty() {
-            let docs: Vec<&SourceMeta> = meta.iter().collect();
+            let docs: Vec<&OpensearchProjectMetaRequest> = meta.iter().collect();
             meta_index.bulk_index(&docs).await?;
             report.indexed = meta.len();
         }
