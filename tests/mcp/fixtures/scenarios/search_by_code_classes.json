@@ -1,0 +1,10 @@
+{
+  "tool": "search_by_code_classes",
+  "queries": [
+    "Найди класс User в проекте 'samples'",
+    "Какие классы есть в 'knowledge'",
+    "Покажи все trait в 'samples'",
+    "Find interfaces in 'knowledge'",
+    "Дай список файлов где есть struct Config"
+  ]
+}

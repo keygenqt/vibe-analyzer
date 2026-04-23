@@ -1,0 +1,10 @@
+{
+  "tool": "search_by_docs",
+  "queries": [
+    "Найди документацию по установке",
+    "Покажи все guides в 'knowledge'",
+    "Какие ссылки есть в документации",
+    "Find API reference",
+    "Дай список файлов где есть code blocks с bash"
+  ]
+}

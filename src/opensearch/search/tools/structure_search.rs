@@ -9,19 +9,20 @@ impl SearchClient {
     /// Generate directory tree structure from file paths.
     pub async fn structure(
         &self,
-        index: &str,
+        indexes: &[String],
         level: usize,
     ) -> Result<OpensearchStructureResponse> {
-        if !self.client.index_exists(index).await? {
-            return Ok(OpensearchStructureResponse {
-                tree: String::new(),
-                directories: 0,
-                files: 0,
-            });
+        let mut all_hashes = Vec::new();
+
+        for index in indexes {
+            if !self.client.index_exists(index).await? {
+                continue;
+            }
+            let hashes = self.get_hashes(index).await?;
+            all_hashes.extend(hashes);
         }
 
-        let hashes = self.get_hashes(index).await?;
-        if hashes.is_empty() {
+        if all_hashes.is_empty() {
             return Ok(OpensearchStructureResponse {
                 tree: String::new(),
                 directories: 0,
@@ -30,7 +31,7 @@ impl SearchClient {
         }
 
         // Find common root prefix of all paths
-        let common_root = hashes
+        let common_root = all_hashes
             .iter()
             .map(|h| h.path.as_str())
             .reduce(|a, b| {
@@ -50,11 +51,13 @@ impl SearchClient {
         } else {
             common_root
         };
+
         // Collect all paths
-        let paths: Vec<String> = hashes.iter().map(|h| h.path.clone()).collect();
+        let paths: Vec<String> = all_hashes.iter().map(|h| h.path.clone()).collect();
+
         // Build tree
         let (tree, dirs, files) = crate::utils::tree::build_tree(root, &paths, level);
-        // Result
+
         Ok(OpensearchStructureResponse {
             tree,
             directories: dirs,

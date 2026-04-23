@@ -39,7 +39,6 @@ impl McpClient {
         Ok(response.tools)
     }
 
-    /// Calls a tool with the given name and arguments.
     pub async fn call_tool(&self, name: String, args: Value, timeout: Duration) -> Result<Value> {
         let params = if let Some(obj) = args.as_object() {
             CallToolRequestParams::new(name.clone()).with_arguments(obj.clone())
@@ -49,20 +48,30 @@ impl McpClient {
 
         let result = tokio::time::timeout(timeout, self.client.call_tool(params))
             .await
-            .map_err(|_| anyhow::anyhow!("Tool '{}' call timed out after {:?}", name, timeout))?
-            .map_err(|e| anyhow::anyhow!("Tool '{}' call failed: {}", name, e))?;
+            .map_err(|_| anyhow::anyhow!("Tool '{}' call timed out after {:?}", name, timeout))?;
 
-        let content = result
-            .content
-            .into_iter()
-            .next()
-            .and_then(|c| c.as_text().map(|t| t.text.clone()))
-            .map(|text| {
-                // Try to parse as JSON, fallback to plain string
-                serde_json::from_str::<Value>(&text).unwrap_or_else(|_| Value::String(text))
-            })
-            .unwrap_or(Value::Null);
+        match result {
+            Ok(r) => {
+                let content = r
+                    .content
+                    .into_iter()
+                    .next()
+                    .and_then(|c| c.as_text().map(|t| t.text.clone()))
+                    .map(|text| {
+                        serde_json::from_str::<Value>(&text).unwrap_or_else(|_| Value::String(text))
+                    })
+                    .unwrap_or(Value::Null);
+                Ok(content)
+            }
+            Err(e) => {
+                let is_not_found = matches!(&e, rmcp::service::ServiceError::McpError(mcp_err) if mcp_err.code == rmcp::model::ErrorCode::METHOD_NOT_FOUND);
 
-        Ok(content)
+                if is_not_found {
+                    Err(anyhow::anyhow!("TOOL_NOT_FOUND:{}", name))
+                } else {
+                    Err(anyhow::anyhow!("Tool '{}' call failed: {}", name, e))
+                }
+            }
+        }
     }
 }

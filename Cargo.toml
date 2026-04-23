@@ -58,6 +58,7 @@ rmcp = { version = "1.4.0", features = [
 ] }
 rmcp-macros = "1.4.0"
 schemars = "1.2.1"
+async-trait = "0.1.89"
 
 # Tree-sitter grammars
 tree-sitter = "0.25.1"

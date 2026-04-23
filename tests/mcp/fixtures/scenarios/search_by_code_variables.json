@@ -1,0 +1,10 @@
+{
+  "tool": "search_by_code_variables",
+  "queries": [
+    "Найди константу MAX_SIZE в проекте 'samples'",
+    "Какие переменные есть в 'knowledge'",
+    "Покажи все enum в 'samples'",
+    "Find global variables in 'knowledge'",
+    "Дай список файлов где есть static COUNTER"
+  ]
+}

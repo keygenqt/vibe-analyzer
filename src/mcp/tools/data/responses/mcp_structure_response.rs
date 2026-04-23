@@ -7,8 +7,8 @@ use serde::Serialize;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "Structure")]
 pub struct McpStructureResponse {
-    /// Project path.
-    pub target: String,
+    /// Target project (omitted = all).
+    pub target: Option<String>,
     /// Directory tree as text.
     pub tree: String,
     /// Total files.
@@ -20,10 +20,13 @@ pub struct McpStructureResponse {
 impl McpStructureResponse {
     /// Returns a formatted tool result with JSON data.
     pub fn format(&self) -> String {
-        let json = serde_json::to_string(self).unwrap_or_default();
+        let target = self.target.as_deref().unwrap_or("all projects");
         format!(
-            "[TOOL RESULT - Directory tree for '{}']\n{}\n\nUse this data to respond to the user.",
-            self.target, json
+            "[{} file(s), {} dir(s) in {}]\n\nUse this data to respond to the user.\n{}",
+            self.total_files,
+            self.total_dirs,
+            target,
+            serde_json::to_string(self).unwrap_or_default()
         )
     }
 }

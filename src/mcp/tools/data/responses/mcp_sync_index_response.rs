@@ -42,14 +42,13 @@ impl McpSyncIndexResponse {
 
     /// Returns a formatted tool result with JSON data.
     pub fn format(&self) -> String {
-        let json = serde_json::to_string(self).unwrap_or_default();
-        let status = match self.result {
-            McpSyncIndexResult::Started => "started",
-            McpSyncIndexResult::AlreadyRunning => "already_running",
-        };
         format!(
-            "[TOOL RESULT - Indexing status: {}]\n{}\n\nUse this data to respond to the user.",
-            status, json
+            "[indexing {}]\n\nUse this data to respond to the user.\n{}",
+            match self.result {
+                McpSyncIndexResult::Started => "started",
+                McpSyncIndexResult::AlreadyRunning => "already running",
+            },
+            serde_json::to_string(self).unwrap_or_default()
         )
     }
 }

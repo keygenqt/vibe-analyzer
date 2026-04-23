@@ -28,10 +28,10 @@ pub struct McpProjectInfoResponse {
 impl McpListProjectsResponse {
     /// Returns a formatted tool result with JSON data.
     pub fn format(&self) -> String {
-        let json = serde_json::to_string(self).unwrap_or_default();
         format!(
-            "[TOOL RESULT - Project list ({} projects)]\n{}\n\nUse this data to respond to the user.",
-            self.total, json
+            "[{} project(s).]\n\nUse this data to respond to the user.\n{}",
+            self.projects.len(),
+            serde_json::to_string(self).unwrap_or_default()
         )
     }
 }

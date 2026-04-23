@@ -48,11 +48,12 @@ pub struct McpStatTotalResponse {
 impl McpStatsResponse {
     /// Returns a formatted tool result with JSON data.
     pub fn format(&self) -> String {
-        let json = serde_json::to_string(self).unwrap_or_default();
         format!(
-            "[TOOL RESULT - Statistics for {}]\n{}\n\nUse this data to respond to the user.",
-            self.target.as_deref().unwrap_or("all projects"),
-            json
+            "[{} language(s), {} file(s), {} line(s)]\n\nUse this data to respond to the user.\n{}",
+            self.languages.len(),
+            self.total.files,
+            self.total.lines,
+            serde_json::to_string(self).unwrap_or_default()
         )
     }
 }

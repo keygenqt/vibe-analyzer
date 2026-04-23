@@ -19,6 +19,7 @@ use tower_http::cors::CorsLayer;
 use tower_http::normalize_path::NormalizePathLayer;
 
 use crate::configs::app::AppConfig;
+use crate::mcp::handler::AliasHandler;
 use crate::mcp::log;
 use crate::mcp::router::RouterTools;
 use crate::opensearch::client::OpenSearchClient;
@@ -75,7 +76,7 @@ pub async fn run_server(
         move || {
             let internal_use = state_mcp.clone();
             let state = Arc::new(internal_use);
-            Ok(RouterTools::new(state))
+            Ok(AliasHandler(RouterTools::new(state)))
         },
         LocalSessionManager::default().into(),
         config,

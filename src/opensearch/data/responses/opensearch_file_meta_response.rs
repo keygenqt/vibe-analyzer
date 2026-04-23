@@ -1,5 +1,5 @@
-//! AST search response model.
-//! Contains file path and matching AST elements.
+//! @todo
+//! @todo
 
 use serde::Deserialize;
 use serde::Serialize;
@@ -14,10 +14,10 @@ use crate::scanner::ast::data::ast_data_links::AstLink;
 use crate::scanner::ast::data::ast_data_struct::AstDataStruct;
 use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
 
-/// Response from AST search query containing matched file and filtered AST data.
+/// @todo
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(rename = "SearchAst")]
-pub struct SearchAst {
+#[serde(rename = "FileMeta")]
+pub struct OpensearchMetaResponse {
     /// Source root path.
     pub root: String,
     /// Relative file path where matches were found.

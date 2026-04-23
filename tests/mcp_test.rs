@@ -12,23 +12,26 @@ use crate::mcp::framework::mcp_engine::McpEngine;
 use crate::mcp::framework::mcp_environment::McpEnvironment;
 
 /// Number of test runs.
-const RUNS: usize = 1;
+const RUNS: usize = 5;
 
 /// Ollama models to test against.
 const MODELS: &[&str] = &[
     "qwen2.5-coder:3b-instruct",
-    // "qwen2.5-coder:7b-instruct",
-    // "qwen2.5-coder:14b-instruct",
+    "qwen2.5-coder:7b-instruct",
+    "qwen2.5-coder:14b-instruct",
 ];
 
 /// MCP tool scenarios to execute.
 const SCENARIOS: &[&str] = &[
     "list_projects",
+    "search_by_code_classes",
+    "search_by_code_functions",
+    "search_by_code_imports",
+    "search_by_code_variables",
+    "search_by_docs",
     "stats",
     "structure",
     "sync_index",
-    // "tool_find_code",
-    // "tool_find_knowledge",
 ];
 
 #[tokio::test]

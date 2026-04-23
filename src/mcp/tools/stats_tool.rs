@@ -13,7 +13,7 @@ use crate::mcp::tools::data::params::mcp_stats_params::McpStatsParams;
 use crate::mcp::tools::data::responses::mcp_stats_response::McpStatLanguageResponse;
 use crate::mcp::tools::data::responses::mcp_stats_response::McpStatTotalResponse;
 use crate::mcp::tools::data::responses::mcp_stats_response::McpStatsResponse;
-use crate::utils::mcp_normalize::target_normalize;
+use crate::utils::mcp_normalize::get_targets_normalize;
 
 /// Tool for retrieving project statistics.
 #[derive(Clone)]
@@ -29,27 +29,9 @@ impl StatsTool {
 
     /// Executes the statistics query.
     pub async fn execute(&self, params: McpStatsParams) -> Result<CallToolResult, ErrorData> {
-        // Normalize target if provided
-        let target = match &params.target {
-            Some(t) => Some(target_normalize(&self.state.config, Some(t.as_str()))?),
-            None => None,
-        };
-
-        // Get indexes
-        let indexes = match &target {
-            Some(t) => vec![
-                self.state
-                    .config
-                    .get_index(t, IndexType::Analysis)
-                    .map_err(|e| {
-                        ErrorData::invalid_params(
-                            e.to_string(),
-                            Some(json!({ "detail": e.to_string() })),
-                        )
-                    })?,
-            ],
-            None => self.state.config.get_indexes(IndexType::Analysis),
-        };
+        // Normalize target and get list indexes
+        let indexes =
+            get_targets_normalize(&self.state.config, &params.target, IndexType::Analysis)?;
 
         // Get stats from OpenSearch
         let results = self

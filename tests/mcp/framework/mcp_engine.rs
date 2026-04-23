@@ -127,17 +127,6 @@ impl McpEngine {
         let mut tool_calls = Vec::new();
         let final_response;
 
-        // Build list of available tool names for validation
-        let available_tools: Vec<String> = tool_values
-            .iter()
-            .filter_map(|v| {
-                v.get("function")
-                    .and_then(|f| f.get("name"))
-                    .and_then(|n| n.as_str())
-                    .map(|s| s.to_string())
-            })
-            .collect();
-
         self.environment.log(
             "LLM dialog start",
             &[
@@ -162,18 +151,6 @@ impl McpEngine {
         let json_str = self.extract_json(content);
 
         if let Some((name, args)) = self.parse_tool_call(&json_str).await {
-            // Validate tool exists
-            if !available_tools.contains(&name) {
-                tracing::error!(
-                    "Model '{}' called non-existent tool '{}'. Available: {:?}",
-                    model,
-                    name,
-                    available_tools
-                );
-                final_response = format!("[ERROR] Model called non-existent tool: {}", name);
-                return Ok((tool_calls, final_response));
-            }
-
             let args_str = format!("{}", args);
 
             self.environment.log(
@@ -181,13 +158,20 @@ impl McpEngine {
                 &[("model", model), ("tool", &name), ("args", &args_str)],
             );
 
-            // Call tool
+            // Call tool — server validates and resolves aliases
             let result = match mcp_client
                 .call_tool(name.clone(), args.clone(), self.environment.request_timeout)
                 .await
             {
                 Ok(r) => r,
                 Err(e) => {
+                    let error_str = e.to_string();
+                    if error_str.starts_with("TOOL_NOT_FOUND:") {
+                        tracing::error!("Model '{}' called non-existent tool '{}'.", model, name);
+                        final_response =
+                            format!("[ERROR] Model called non-existent tool: {}", name);
+                        return Ok((tool_calls, final_response));
+                    }
                     tracing::error!("Tool '{}' failed: {}", &name, e);
                     final_response = format!("[ERROR] Tool '{}' failed: {}", name, e);
                     return Ok((tool_calls, final_response));

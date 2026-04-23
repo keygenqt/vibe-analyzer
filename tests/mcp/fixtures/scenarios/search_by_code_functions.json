@@ -1,0 +1,10 @@
+{
+  "tool": "search_by_code_functions",
+  "queries": [
+    "Найди функции add в проекте 'samples'",
+    "Какие методы есть в 'knowledge'",
+    "Покажи все функции main в 'samples'",
+    "Find calculate functions in 'knowledge'",
+    "Дай список файлов где есть метод multiply"
+  ]
+}

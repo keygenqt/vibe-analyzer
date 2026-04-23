@@ -6,26 +6,40 @@ use std::path::Path;
 use rmcp::ErrorData;
 use serde_json::json;
 
+use crate::configs::app::IndexType;
+
+/// Normalize target parameter and return list of indexes to search.
+/// If target is None, returns all indexes of given type.
+pub fn get_targets_normalize(
+    config: &crate::configs::app::AppConfig,
+    target: &Option<String>,
+    index_type: IndexType,
+) -> Result<Vec<String>, ErrorData> {
+    let target = target_normalize(config, target.as_deref())?;
+    match target {
+        Some(t) => {
+            let index = config.get_index(&t, index_type).map_err(|e| {
+                ErrorData::invalid_params(e.to_string(), Some(json!({ "detail": e.to_string() })))
+            })?;
+            Ok(vec![index])
+        }
+        None => Ok(config.get_indexes(index_type)),
+    }
+}
+
 /// Normalize target project parameter.
 /// Handles: trim, empty check, hallucinated paths, case-insensitive search.
-/// If target is None or empty, returns the first project.
-pub fn target_normalize(
+/// Returns:
+/// - `Some(path)` for specific project
+/// - `None` for all projects (when target is empty, "null", or missing)
+fn target_normalize(
     config: &crate::configs::app::AppConfig,
     target: Option<&str>,
-) -> Result<String, ErrorData> {
-    // If no target specified or empty, return first project
+) -> Result<Option<String>, ErrorData> {
+    // None, empty, or "null" → search all projects
     let target_str = match target {
-        Some(t) if !t.trim().is_empty() => t,
-        _ => {
-            let sources = config.get_sources();
-            if sources.is_empty() {
-                return Err(ErrorData::invalid_params(
-                    "No projects configured",
-                    Some(json!({ "hint": "Add a source first" })),
-                ));
-            }
-            return Ok(sources[0].to_string_lossy().to_string());
-        }
+        Some(t) if !t.trim().is_empty() && t != "null" => t,
+        _ => return Ok(None),
     };
 
     let target = target_str.trim();
@@ -43,7 +57,7 @@ pub fn target_normalize(
 
     // Try exact match first
     match config.get_source(target) {
-        Ok(path) => Ok(path.to_string_lossy().to_string()),
+        Ok(path) => Ok(Some(path.to_string_lossy().to_string())),
         Err(_) => {
             // Try case-insensitive match
             let target_lower = target.to_lowercase();
@@ -61,7 +75,7 @@ pub fn target_normalize(
                 .collect();
 
             if matches.len() == 1 {
-                Ok(matches[0].to_string_lossy().to_string())
+                Ok(Some(matches[0].to_string_lossy().to_string()))
             } else if matches.len() > 1 {
                 Err(ErrorData::invalid_params(
                     format!("Multiple projects match '{}'. Use full path.", target),
