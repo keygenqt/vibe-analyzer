@@ -1,5 +1,5 @@
 {
-  "tool": "sync_index",
+  "tool": "admin_sync",
   "queries": [
     "Обнови индекс",
     "Переиндексируй проекты",

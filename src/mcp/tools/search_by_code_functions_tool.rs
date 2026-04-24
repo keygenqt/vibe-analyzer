@@ -7,11 +7,13 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
+use crate::configs::app::IndexType;
 use crate::mcp::server::AppState;
 use crate::mcp::tools::data::params::mcp_search_by_code_functions_params::McpSearchByCodeFunctionsParams;
-use crate::mcp::tools::data::responses::mcp_search_by_code_functions_response::McpSearchByCodeFunctionsMetaResponse;
 use crate::mcp::tools::data::responses::mcp_search_by_code_functions_response::McpSearchByCodeFunctionsResponse;
-use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::utils::mcp_normalize::get_targets_normalize;
+use crate::utils::mcp_normalize::number_normalize;
+use crate::utils::mcp_normalize::query_normalize;
 
 /// Tool for searching functions and methods.
 #[derive(Clone)]
@@ -30,42 +32,28 @@ impl SearchByCodeFunctionsTool {
         &self,
         params: McpSearchByCodeFunctionsParams,
     ) -> Result<CallToolResult, ErrorData> {
-        let response = McpSearchByCodeFunctionsResponse {
-            query: params.query,
-            results: vec![
-                McpSearchByCodeFunctionsMetaResponse {
-                    project: "/path/to/project".to_string(),
-                    path: "src/lib.rs".to_string(),
-                    language: "rust".to_string(),
-                    header_comments: vec![
-                        "//! Simple math library with error handling".to_string(),
-                    ],
-                    functions: vec![
-                        AstDataFunction {
-                            signature: "pub fn add(a: i32, b: i32) -> i32".to_string(),
-                            comments: vec!["Calculates sum of two numbers".to_string()],
-                        },
-                        AstDataFunction {
-                            signature: "pub fn multiply(a: i32, b: i32) -> i32".to_string(),
-                            comments: vec!["Calculates product of two numbers".to_string()],
-                        },
-                    ],
-                },
-                McpSearchByCodeFunctionsMetaResponse {
-                    project: "/path/to/project".to_string(),
-                    path: "src/main.rs".to_string(),
-                    language: "rust".to_string(),
-                    header_comments: vec![],
-                    functions: vec![AstDataFunction {
-                        signature: "fn main()".to_string(),
-                        comments: vec![],
-                    }],
-                },
-            ],
-        };
+        let config = &self.state.config;
+        let indexes = get_targets_normalize(config, &params.target, IndexType::Analysis)
+            .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
+        let query = query_normalize(&params.query);
+        let limit = number_normalize(
+            params.limit,
+            McpSearchByCodeFunctionsParams::default_limit(),
+        );
+
+        let results = self
+            .state
+            .search_client
+            .search_by_code_functions(&indexes, query, limit)
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
         Ok(CallToolResult::success(vec![Content::text(
-            response.format(),
+            McpSearchByCodeFunctionsResponse {
+                query: params.query,
+                results: results.into_iter().map(|r| r.into()).collect(),
+            }
+            .format(),
         )]))
     }
 }

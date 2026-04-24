@@ -1,4 +1,4 @@
-//! sync_index tool handler.
+//! admin_sync tool handler.
 //! Triggers incremental indexing for all knowledge sources.
 
 use std::sync::Arc;
@@ -11,18 +11,18 @@ use rmcp::model::Content;
 
 use crate::cli::scan::index_enriches;
 use crate::mcp::server::AppState;
-use crate::mcp::tools::data::responses::mcp_sync_index_response::McpSyncIndexResponse;
+use crate::mcp::tools::data::responses::mcp_admin_sync_response::McpAdminSyncResponse;
 
 static INDEXING: AtomicBool = AtomicBool::new(false);
 
 /// Tool for triggering source indexing.
 #[derive(Clone)]
-pub struct SyncIndexTool {
+pub struct AdminSyncTool {
     state: Arc<AppState>,
 }
 
-impl SyncIndexTool {
-    /// Creates a new SyncIndexTool instance.
+impl AdminSyncTool {
+    /// Creates a new AdminSyncTool instance.
     pub fn new(state: Arc<AppState>) -> Self {
         Self { state }
     }
@@ -31,31 +31,16 @@ impl SyncIndexTool {
     pub async fn execute(&self) -> Result<CallToolResult, ErrorData> {
         if INDEXING.swap(true, Ordering::SeqCst) {
             return Ok(CallToolResult::success(vec![Content::text(
-                McpSyncIndexResponse::already_running().format(),
+                McpAdminSyncResponse::already_running().format(),
             )]));
         }
-
         let config = self.state.config.clone();
-
         tokio::spawn(async move {
-            match index_enriches(&config, None, false).await {
-                Ok(report) => {
-                    tracing::info!(
-                        "Indexing completed. Sources: {}, Files: {}, Analysis: {}",
-                        report.meta.indexed,
-                        report.files.files_indexed,
-                        report.files.analysis_indexed
-                    );
-                }
-                Err(e) => {
-                    tracing::error!("Indexing failed: {}", e);
-                }
-            }
+            let _ = index_enriches(&config, None, false).await;
             INDEXING.store(false, Ordering::SeqCst);
         });
-
         Ok(CallToolResult::success(vec![Content::text(
-            McpSyncIndexResponse::started().format(),
+            McpAdminSyncResponse::started().format(),
         )]))
     }
 }

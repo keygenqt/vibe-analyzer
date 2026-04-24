@@ -1,5 +1,3 @@
-// src/utils/json5.rs
-
 //! JSON5 formatting utilities with comment injection support.
 //! Provides types and functions for adding documentation comments to JSON5 configuration files.
 

@@ -219,7 +219,7 @@ impl McpEngine {
         // Check if model tried to call another tool instead of responding
         let json_str = self.extract_json(content);
         if let Some((tool_name, _)) = self.parse_tool_call(&json_str).await {
-            tracing::error!(
+            tracing::warn!(
                 "Model '{}' tried to call another tool '{}' instead of providing final response",
                 model,
                 tool_name

@@ -31,3 +31,6 @@ pub const DEFAULT_IGNORE_FILES: &[&str] = &[
 
 /// Maximum file size for AST parsing (10 MB)
 pub const MAX_AST_FILE_SIZE: u64 = 10 * 1024 * 1024;
+
+/// Maximum limit for search results in MCP tools.
+pub const MCP_MAX_SEARCH_LIMIT: i32 = 10;

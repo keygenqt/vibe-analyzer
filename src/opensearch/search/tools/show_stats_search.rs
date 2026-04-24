@@ -15,7 +15,7 @@ use crate::scanner::data::output::scan_project_stats_output::ScanProjectStatsOut
 
 impl SearchClient {
     /// Get statistics for multiple sources.
-    pub async fn stats(&self, indexes: &[String]) -> Result<OpensearchStatsResponse> {
+    pub async fn show_stats_search(&self, indexes: &[String]) -> Result<OpensearchStatsResponse> {
         let mut lang_map: HashMap<String, OpensearchStatsLanguageResponse> = HashMap::new();
         let mut other_stat = OpensearchStatsLanguageResponse {
             language: "Other".to_string(),

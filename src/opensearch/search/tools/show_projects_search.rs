@@ -10,7 +10,7 @@ use crate::opensearch::search::search_client::SearchClient;
 
 impl SearchClient {
     /// Returns metadata for all indexed projects.
-    pub async fn list_projects(&self) -> Result<Vec<OpensearchProjectMetaResponse>> {
+    pub async fn show_projects_search(&self) -> Result<Vec<OpensearchProjectMetaResponse>> {
         let index = AppConfig::meta_index();
         let query = json!({
             "size": 999,

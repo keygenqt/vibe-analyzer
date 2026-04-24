@@ -1,9 +1,10 @@
 //! Response structure for the search_by_code_functions tool.
 
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
+use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
 use crate::scanner::ast::data::ast_data_function::AstDataFunction;
+use crate::scanner::ast::parser::get_language_name;
 
 /// Response from search_by_code_functions tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -31,6 +32,20 @@ pub struct McpSearchByCodeFunctionsMetaResponse {
     /// Matching function declarations.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub functions: Vec<AstDataFunction>,
+}
+
+impl From<OpensearchFileMetaResponse> for McpSearchByCodeFunctionsMetaResponse {
+    fn from(r: OpensearchFileMetaResponse) -> Self {
+        let ext = r.extension.as_deref().unwrap_or_default();
+        let ast = r.ast.unwrap_or_default();
+        Self {
+            project: r.root,
+            path: r.path,
+            language: get_language_name(ext).unwrap_or("Unknown").to_string(),
+            header_comments: ast.header_comments,
+            functions: ast.functions,
+        }
+    }
 }
 
 impl McpSearchByCodeFunctionsResponse {

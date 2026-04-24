@@ -66,7 +66,7 @@ pub async fn run(action: StatsAction) {
                 Ok(value) => value,
                 Err(e) => exit_error!("{}", e),
             };
-            let tree = match search_client.structure(&vec![index], level).await {
+            let tree = match search_client.show_structure(&vec![index], level).await {
                 Ok(value) => value,
                 Err(e) => exit_error!("{}", e),
             };
@@ -97,7 +97,7 @@ pub async fn run(action: StatsAction) {
                 print_warning!("No indexes found to create stats");
                 return;
             }
-            let stats = match search_client.stats(&indexes).await {
+            let stats = match search_client.show_stats_search(&indexes).await {
                 Ok(s) => s,
                 Err(e) => exit_error!("{}", e),
             };

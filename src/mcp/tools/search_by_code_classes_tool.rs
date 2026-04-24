@@ -7,12 +7,13 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
+use crate::configs::app::IndexType;
 use crate::mcp::server::AppState;
 use crate::mcp::tools::data::params::mcp_search_by_code_classes_params::McpSearchByCodeClassesParams;
-use crate::mcp::tools::data::responses::mcp_search_by_code_classes_response::McpSearchByCodeClassesMetaResponse;
 use crate::mcp::tools::data::responses::mcp_search_by_code_classes_response::McpSearchByCodeClassesResponse;
-use crate::scanner::ast::data::ast_data_class::AstDataClass;
-use crate::scanner::ast::data::ast_data_interface::AstDataInterface;
+use crate::utils::mcp_normalize::get_targets_normalize;
+use crate::utils::mcp_normalize::number_normalize;
+use crate::utils::mcp_normalize::query_normalize;
 
 /// Tool for searching classes, structs, and interfaces.
 #[derive(Clone)]
@@ -31,38 +32,25 @@ impl SearchByCodeClassesTool {
         &self,
         params: McpSearchByCodeClassesParams,
     ) -> Result<CallToolResult, ErrorData> {
-        let response = McpSearchByCodeClassesResponse {
-            query: params.query,
-            results: vec![
-                McpSearchByCodeClassesMetaResponse {
-                    project: "/path/to/project".to_string(),
-                    path: "src/models.rs".to_string(),
-                    language: "rust".to_string(),
-                    header_comments: vec!["//! Data models for the application".to_string()],
-                    classes: vec![AstDataClass {
-                        signature: "pub struct User".to_string(),
-                        comments: vec!["User data model".to_string()],
-                    }],
-                    structs: vec![],
-                    interfaces: vec![],
-                },
-                McpSearchByCodeClassesMetaResponse {
-                    project: "/path/to/project".to_string(),
-                    path: "src/services.rs".to_string(),
-                    language: "rust".to_string(),
-                    header_comments: vec![],
-                    classes: vec![],
-                    structs: vec![],
-                    interfaces: vec![AstDataInterface {
-                        signature: "pub trait Repository".to_string(),
-                        comments: vec!["Data access trait".to_string()],
-                    }],
-                },
-            ],
-        };
+        let config = &self.state.config;
+        let indexes = get_targets_normalize(config, &params.target, IndexType::Analysis)
+            .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
+        let query = query_normalize(&params.query);
+        let limit = number_normalize(params.limit, McpSearchByCodeClassesParams::default_limit());
+
+        let results = self
+            .state
+            .search_client
+            .search_by_code_classes(&indexes, query, limit)
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
         Ok(CallToolResult::success(vec![Content::text(
-            response.format(),
+            McpSearchByCodeClassesResponse {
+                query: params.query,
+                results: results.into_iter().map(|r| r.into()).collect(),
+            }
+            .format(),
         )]))
     }
 }

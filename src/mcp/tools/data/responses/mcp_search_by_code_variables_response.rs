@@ -3,8 +3,10 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
 use crate::scanner::ast::data::ast_data_enum::AstDataEnum;
 use crate::scanner::ast::data::ast_data_variable::AstDataVariable;
+use crate::scanner::ast::parser::get_language_name;
 
 /// Response from search_by_code_variables tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -35,6 +37,21 @@ pub struct McpSearchByCodeVariablesMetaResponse {
     /// Matching enum declarations.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub enums: Vec<AstDataEnum>,
+}
+
+impl From<OpensearchFileMetaResponse> for McpSearchByCodeVariablesMetaResponse {
+    fn from(r: OpensearchFileMetaResponse) -> Self {
+        let ext = r.extension.as_deref().unwrap_or_default();
+        let ast = r.ast.unwrap_or_default();
+        Self {
+            project: r.root,
+            path: r.path,
+            language: get_language_name(ext).unwrap_or("Unknown").to_string(),
+            header_comments: ast.header_comments,
+            variables: ast.variables,
+            enums: ast.enums,
+        }
+    }
 }
 
 impl McpSearchByCodeVariablesResponse {

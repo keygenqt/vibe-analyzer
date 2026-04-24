@@ -1,0 +1,10 @@
+{
+  "tool": "get_file_ast",
+  "queries": [
+    "Покажи AST файла 'src/lib.rs'",
+    "Дай структуру файла 'main.py'",
+    "Какие функции в файле 'src/main.rs'",
+    "Show AST of file 'lib.rs'",
+    "Выведи структуру файла 'models.py'"
+  ]
+}

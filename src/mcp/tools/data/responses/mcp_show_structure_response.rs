@@ -1,12 +1,11 @@
-//! Response data for the structure tool.
+//! Response structure for the show_structure tool.
 
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-/// Response from structure tool.
+/// Response from show_structure tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "Structure")]
-pub struct McpStructureResponse {
+pub struct McpShowStructureResponse {
     /// Target project (omitted = all).
     pub target: Option<String>,
     /// Directory tree as text.
@@ -17,7 +16,7 @@ pub struct McpStructureResponse {
     pub total_dirs: usize,
 }
 
-impl McpStructureResponse {
+impl McpShowStructureResponse {
     /// Returns a formatted tool result with JSON data.
     pub fn format(&self) -> String {
         let target = self.target.as_deref().unwrap_or("all projects");

@@ -1,0 +1,10 @@
+{
+  "tool": "get_file_content",
+  "queries": [
+    "Покажи содержимое файла 'src/main.rs'",
+    "Дай полный код файла 'src/lib.rs'",
+    "Show file content of 'main.py'",
+    "Выведи файл 'models.py'",
+    "Открой файл 'utils.py'"
+  ]
+}

@@ -3,10 +3,81 @@
 
 use std::path::Path;
 
-use rmcp::ErrorData;
-use serde_json::json;
+use anyhow::Result;
 
-use crate::configs::app::IndexType;
+use crate::{
+    configs::app::{AppConfig, IndexType},
+    utils::constants::MCP_MAX_SEARCH_LIMIT,
+};
+
+/// Normalizes a file path.
+pub fn path_normalize(config: &AppConfig, path: &str) -> Result<(Option<String>, String)> {
+    let path = path.trim();
+
+    // Path cannot be empty, wildcard, or null string
+    if path.is_empty() || path == "*" || path == "null" {
+        anyhow::bail!("Invalid path: {}", path);
+    }
+
+    // Check if path starts with a known project root
+    let sources = config.get_sources();
+    for source in &sources {
+        let root = source.to_string_lossy().to_string();
+        if path.starts_with(&root) {
+            let relative = path.strip_prefix(&root).unwrap();
+            return Ok((Some(root), relative.to_string()));
+        }
+    }
+
+    // Hallucinated absolute path — extract filename and search across all projects
+    if path.starts_with('/') {
+        if let Some(filename) = std::path::Path::new(path)
+            .file_name()
+            .and_then(|f| f.to_str())
+        {
+            return Ok((None, filename.to_string()));
+        }
+        anyhow::bail!("Cannot extract filename from path: {}", path);
+    }
+
+    Ok((None, path.to_string()))
+}
+
+/// Normalize search query.
+/// - Replaces wildcards (*, ?) with spaces
+/// - Collapses multiple spaces
+/// - Trims whitespace
+/// - Returns None if query matches all (empty or only wildcards)
+pub fn query_normalize(query: &str) -> Option<String> {
+    let cleaned = query
+        .replace('*', " ")
+        .replace('?', " ")
+        .chars()
+        .map(|c| if c.is_whitespace() { ' ' } else { c })
+        .collect::<String>()
+        .split_whitespace()
+        .collect::<Vec<&str>>()
+        .join(" ");
+    if cleaned.is_empty() {
+        None
+    } else {
+        Some(cleaned)
+    }
+}
+
+/// Normalize limit parameter to safe range.
+/// - None → default
+/// - Some(v) where v <= 1 → default
+/// - Some(v) where v > 10 → 10
+pub fn number_normalize(value: Option<i32>, default: Option<i32>) -> usize {
+    let default = default.unwrap_or(10) as usize;
+    match value {
+        None => default,
+        Some(v) if v <= 1 => default,
+        Some(v) if v > MCP_MAX_SEARCH_LIMIT => MCP_MAX_SEARCH_LIMIT as usize,
+        Some(v) => v as usize,
+    }
+}
 
 /// Normalize target parameter and return list of indexes to search.
 /// If target is None, returns all indexes of given type.
@@ -14,13 +85,11 @@ pub fn get_targets_normalize(
     config: &crate::configs::app::AppConfig,
     target: &Option<String>,
     index_type: IndexType,
-) -> Result<Vec<String>, ErrorData> {
+) -> Result<Vec<String>> {
     let target = target_normalize(config, target.as_deref())?;
     match target {
         Some(t) => {
-            let index = config.get_index(&t, index_type).map_err(|e| {
-                ErrorData::invalid_params(e.to_string(), Some(json!({ "detail": e.to_string() })))
-            })?;
+            let index = config.get_index(&t, index_type)?;
             Ok(vec![index])
         }
         None => Ok(config.get_indexes(index_type)),
@@ -28,15 +97,10 @@ pub fn get_targets_normalize(
 }
 
 /// Normalize target project parameter.
-/// Handles: trim, empty check, hallucinated paths, case-insensitive search.
-/// Returns:
-/// - `Some(path)` for specific project
-/// - `None` for all projects (when target is empty, "null", or missing)
 fn target_normalize(
     config: &crate::configs::app::AppConfig,
     target: Option<&str>,
-) -> Result<Option<String>, ErrorData> {
-    // None, empty, or "null" → search all projects
+) -> Result<Option<String>> {
     let target_str = match target {
         Some(t) if !t.trim().is_empty() && t != "null" => t,
         _ => return Ok(None),
@@ -44,7 +108,6 @@ fn target_normalize(
 
     let target = target_str.trim();
 
-    // If model hallucinated a path like "/path/to/knowledge", extract the last part
     let target = if target.starts_with('/') || target.starts_with("./") || target.starts_with("../")
     {
         Path::new(target)
@@ -55,11 +118,9 @@ fn target_normalize(
         target
     };
 
-    // Try exact match first
     match config.get_source(target) {
         Ok(path) => Ok(Some(path.to_string_lossy().to_string())),
         Err(_) => {
-            // Try case-insensitive match
             let target_lower = target.to_lowercase();
             let sources = config.get_sources();
 
@@ -77,34 +138,20 @@ fn target_normalize(
             if matches.len() == 1 {
                 Ok(Some(matches[0].to_string_lossy().to_string()))
             } else if matches.len() > 1 {
-                Err(ErrorData::invalid_params(
-                    format!("Multiple projects match '{}'. Use full path.", target),
-                    Some(
-                        json!({ "matches": matches.iter().map(|p| p.to_string_lossy()).collect::<Vec<_>>() }),
-                    ),
-                ))
+                anyhow::bail!(
+                    "Multiple projects match '{}'. Use full path.\nMatches: {:?}",
+                    target,
+                    matches
+                        .iter()
+                        .map(|p| p.to_string_lossy())
+                        .collect::<Vec<_>>()
+                )
             } else {
-                Err(ErrorData::invalid_params(
-                    format!(
-                        "Project '{}' not found. Use list_projects to see available projects.",
-                        target
-                    ),
-                    Some(json!({ "hint": "call list_projects" })),
-                ))
+                anyhow::bail!(
+                    "Project '{}' not found. Use list_projects to see available projects.",
+                    target
+                )
             }
         }
-    }
-}
-
-/// Normalize numeric parameter to safe range.
-/// - value <= min → default
-/// - value > max → max
-pub fn number_normalize(value: i32, min: i32, max: i32, default: i32) -> usize {
-    if value <= min {
-        default as usize
-    } else if value > max {
-        max as usize
-    } else {
-        value as usize
     }
 }

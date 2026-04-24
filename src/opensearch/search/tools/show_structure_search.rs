@@ -7,7 +7,7 @@ use anyhow::Result;
 
 impl SearchClient {
     /// Generate directory tree structure from file paths.
-    pub async fn structure(
+    pub async fn show_structure(
         &self,
         indexes: &[String],
         level: usize,

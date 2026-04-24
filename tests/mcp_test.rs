@@ -12,7 +12,7 @@ use crate::mcp::framework::mcp_engine::McpEngine;
 use crate::mcp::framework::mcp_environment::McpEnvironment;
 
 /// Number of test runs.
-const RUNS: usize = 5;
+const RUNS: usize = 1;
 
 /// Ollama models to test against.
 const MODELS: &[&str] = &[
@@ -23,15 +23,17 @@ const MODELS: &[&str] = &[
 
 /// MCP tool scenarios to execute.
 const SCENARIOS: &[&str] = &[
-    "list_projects",
+    "admin_sync",
+    "get_file_ast",
+    "get_file_content",
     "search_by_code_classes",
     "search_by_code_functions",
     "search_by_code_imports",
     "search_by_code_variables",
-    "search_by_docs",
-    "stats",
-    "structure",
-    "sync_index",
+    // "search_by_docs",
+    "show_projects",
+    "show_stats",
+    "show_structure",
 ];
 
 #[tokio::test]

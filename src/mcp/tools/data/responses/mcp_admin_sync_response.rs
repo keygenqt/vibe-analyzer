@@ -1,33 +1,32 @@
-//! Response structure for the index_projects tool.
+//! Response structure for the admin_sync tool.
 
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-/// Response from sync_index tool.
+/// Response from admin_sync tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename = "SyncIndex")]
-pub struct McpSyncIndexResponse {
+#[serde(rename = "AdminSync")]
+pub struct McpAdminSyncResponse {
     /// Request result.
-    pub result: McpSyncIndexResult,
+    pub result: McpAdminSyncResult,
     /// User message.
     pub message: String,
 }
 
 /// Index request outcome.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename = "SyncIndexResult")]
-pub enum McpSyncIndexResult {
+#[serde(rename = "AdminSyncResult")]
+pub enum McpAdminSyncResult {
     /// Started.
     Started,
     /// Already running.
     AlreadyRunning,
 }
 
-impl McpSyncIndexResponse {
+impl McpAdminSyncResponse {
     /// Indexing started successfully.
     pub fn started() -> Self {
         Self {
-            result: McpSyncIndexResult::Started,
+            result: McpAdminSyncResult::Started,
             message: "Indexing started. Projects are updating now.".to_string(),
         }
     }
@@ -35,7 +34,7 @@ impl McpSyncIndexResponse {
     /// Indexing is already in progress.
     pub fn already_running() -> Self {
         Self {
-            result: McpSyncIndexResult::AlreadyRunning,
+            result: McpAdminSyncResult::AlreadyRunning,
             message: "Indexing is already running. Please wait.".to_string(),
         }
     }
@@ -45,8 +44,8 @@ impl McpSyncIndexResponse {
         format!(
             "[indexing {}]\n\nUse this data to respond to the user.\n{}",
             match self.result {
-                McpSyncIndexResult::Started => "started",
-                McpSyncIndexResult::AlreadyRunning => "already running",
+                McpAdminSyncResult::Started => "started",
+                McpAdminSyncResult::AlreadyRunning => "already running",
             },
             serde_json::to_string(self).unwrap_or_default()
         )

@@ -1,11 +1,11 @@
-//! @todo
-//! @todo
+//! Request parameters for the search_by_code_imports tool.
+//! Defines the structure for code import search requests
 
 use schemars::JsonSchema;
 use serde::Deserialize;
 use serde::Serialize;
 
-/// @todo
+/// Parameters for the search_by_code_imports tool.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "SearchByCodeImports")]
 pub struct McpSearchByCodeImportsParams {

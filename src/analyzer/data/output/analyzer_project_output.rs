@@ -1,5 +1,6 @@
 //! Enriched source analysis structure.
 //! Extends scanner SourceAnalysis with LLM-generated summaries and enriched files.
+
 use crate::analyzer::data::output::analyzer_file_output::AnalyzerFileOutput;
 use crate::scanner::data::output::scan_license_output::ScanLicenseOutput;
 use crate::scanner::data::output::scan_project_stats_output::ScanProjectStatsOutput;

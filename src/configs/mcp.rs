@@ -1,5 +1,3 @@
-// src/configs/mcp.rs
-
 //! MCP server configuration for AI assistant integration.
 //! Defines server binding parameters and optional authentication.
 

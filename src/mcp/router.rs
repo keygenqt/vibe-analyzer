@@ -13,22 +13,26 @@ use rmcp::tool_router;
 use std::sync::Arc;
 
 use crate::mcp::server::AppState;
+use crate::mcp::tools::admin_sync_tool::AdminSyncTool;
+use crate::mcp::tools::data::params::mcp_get_file_ast_params::McpGetFileAstParams;
+use crate::mcp::tools::data::params::mcp_get_file_content_params::McpGetFileContentParams;
 use crate::mcp::tools::data::params::mcp_search_by_code_classes_params::McpSearchByCodeClassesParams;
 use crate::mcp::tools::data::params::mcp_search_by_code_functions_params::McpSearchByCodeFunctionsParams;
 use crate::mcp::tools::data::params::mcp_search_by_code_imports_params::McpSearchByCodeImportsParams;
 use crate::mcp::tools::data::params::mcp_search_by_code_variables_params::McpSearchByCodeVariablesParams;
 use crate::mcp::tools::data::params::mcp_search_by_docs_params::McpSearchByDocsParams;
-use crate::mcp::tools::data::params::mcp_stats_params::McpStatsParams;
-use crate::mcp::tools::data::params::mcp_structure_params::McpStructureParams;
-use crate::mcp::tools::list_projects_tool::ListProjectsTool;
+use crate::mcp::tools::data::params::mcp_show_stats_params::McpShowStatsParams;
+use crate::mcp::tools::data::params::mcp_show_structure_params::McpShowStructureParams;
+use crate::mcp::tools::get_file_ast_tool::GetFileAstTool;
+use crate::mcp::tools::get_file_content_tool::GetFileContentTool;
 use crate::mcp::tools::search_by_code_classes_tool::SearchByCodeClassesTool;
 use crate::mcp::tools::search_by_code_functions_tool::SearchByCodeFunctionsTool;
 use crate::mcp::tools::search_by_code_imports_tool::SearchByCodeImportsTool;
 use crate::mcp::tools::search_by_code_variables_tool::SearchByCodeVariablesTool;
 use crate::mcp::tools::search_by_docs_tool::SearchByDocsTool;
-use crate::mcp::tools::stats_tool::StatsTool;
-use crate::mcp::tools::structure_tool::StructureTool;
-use crate::mcp::tools::sync_index_tool::SyncIndexTool;
+use crate::mcp::tools::show_projects_tool::ShowProjectsTool;
+use crate::mcp::tools::show_stats_tool::ShowStatsTool;
+use crate::mcp::tools::show_structure_tool::ShowStructureTool;
 use crate::utils::app;
 
 /// Provides server metadata and capabilities for MCP clients.
@@ -78,7 +82,7 @@ impl RouterTools {
     // -------------------------------------------------------------------------------
 
     #[tool(
-        name = "sync_index",
+        name = "admin_sync",
         description = r#"
 Refreshes all project data.
 
@@ -88,8 +92,50 @@ RULES:
 3. Runs in background, no need to call other tools after this
 "#
     )]
-    async fn sync_index(&self) -> Result<CallToolResult, ErrorData> {
-        SyncIndexTool::new(self.state.clone()).execute().await
+    async fn admin_sync(&self) -> Result<CallToolResult, ErrorData> {
+        AdminSyncTool::new(self.state.clone()).execute().await
+    }
+
+    // -------------------------------------------------------------------------------
+    // -- Get ------------------------------------------------------------------------
+    // -------------------------------------------------------------------------------
+
+    #[tool(
+        name = "get_file_content",
+        description = r#"
+Returns full file content.
+
+RULES:
+1. Call when user asks to see file content, open file, show file
+2. path is required
+"#
+    )]
+    async fn get_file_content(
+        &self,
+        Parameters(params): Parameters<McpGetFileContentParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        GetFileContentTool::new(self.state.clone())
+            .execute(params)
+            .await
+    }
+
+    #[tool(
+        name = "get_file_ast",
+        description = r#"
+Returns full AST for a file.
+
+RULES:
+1. Call when user asks for file structure, functions in file, AST
+2. path is required
+"#
+    )]
+    async fn get_file_ast(
+        &self,
+        Parameters(params): Parameters<McpGetFileAstParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        GetFileAstTool::new(self.state.clone())
+            .execute(params)
+            .await
     }
 
     // -------------------------------------------------------------------------------
@@ -97,7 +143,7 @@ RULES:
     // -------------------------------------------------------------------------------
 
     #[tool(
-        name = "list_projects",
+        name = "show_projects",
         description = r#"
 Shows all projects with names and summaries.
 
@@ -106,12 +152,12 @@ RULES:
 2. ONE call returns everything
 "#
     )]
-    async fn list_projects(&self) -> Result<CallToolResult, ErrorData> {
-        ListProjectsTool::new(self.state.clone()).execute().await
+    async fn show_projects(&self) -> Result<CallToolResult, ErrorData> {
+        ShowProjectsTool::new(self.state.clone()).execute().await
     }
 
     #[tool(
-        name = "stats",
+        name = "show_stats",
         description = r#"
 Shows project statistics: files, lines of code, languages breakdown.
 
@@ -120,15 +166,15 @@ RULES:
 2. Call when user wants file counts or code size
 "#
     )]
-    async fn stats(
+    async fn show_stats(
         &self,
-        Parameters(params): Parameters<McpStatsParams>,
+        Parameters(params): Parameters<McpShowStatsParams>,
     ) -> Result<CallToolResult, ErrorData> {
-        StatsTool::new(self.state.clone()).execute(params).await
+        ShowStatsTool::new(self.state.clone()).execute(params).await
     }
 
     #[tool(
-        name = "structure",
+        name = "show_structure",
         description = r#"
 Shows files and folders inside a project.
 
@@ -136,11 +182,13 @@ RULES:
 1. Call when user asks about project structure, files, folders
 "#
     )]
-    async fn structure(
+    async fn show_structure(
         &self,
-        Parameters(params): Parameters<McpStructureParams>,
+        Parameters(params): Parameters<McpShowStructureParams>,
     ) -> Result<CallToolResult, ErrorData> {
-        StructureTool::new(self.state.clone()).execute(params).await
+        ShowStructureTool::new(self.state.clone())
+            .execute(params)
+            .await
     }
 
     // -------------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 {
-  "tool": "stats",
+  "tool": "show_stats",
   "queries": [
     "Покажи статистику проекта 'knowledge'",
     "Статистика по 'samples'",

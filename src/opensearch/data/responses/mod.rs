@@ -1,5 +1,5 @@
-//! @todo
-//! @todo.
+//! Response models for OpenSearch search results.
+//! Each module defines the structure returned from OpenSearch queries.
 
 pub mod opensearch_file_meta_response;
 pub mod opensearch_list_hashes_response;

@@ -1,10 +1,10 @@
 {
   "tool": "search_by_code_imports",
   "queries": [
-    "Найди импорты serde в проекте 'samples'",
-    "Какие библиотеки есть в 'knowledge'",
-    "Покажи все импорты tokio в 'samples'",
-    "Find imports of HashMap in 'knowledge'",
-    "Дай список файлов где есть импорты serde::Serialize"
+    "Найди импорты thiserror в проекте 'samples'",
+    "Какие библиотеки используются в 'samples'",
+    "Покажи все импорты typing в 'samples'",
+    "Find imports of dataclasses in 'samples'",
+    "Дай список файлов где есть импорты utils"
   ]
 }

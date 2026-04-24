@@ -1,7 +1,11 @@
 //! Response structure for the search_by_code_imports tool.
 
-use serde::Deserialize;
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse,
+    scanner::ast::parser::get_language_name,
+};
 
 /// Response from search_by_code_imports tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -29,6 +33,20 @@ pub struct McpSearchByCodeImportsMetaResponse {
     /// Matching import statements.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub imports: Vec<String>,
+}
+
+impl From<OpensearchFileMetaResponse> for McpSearchByCodeImportsMetaResponse {
+    fn from(r: OpensearchFileMetaResponse) -> Self {
+        let ext = r.extension.as_deref().unwrap_or_default();
+        let ast = r.ast.unwrap_or_default();
+        Self {
+            project: r.root,
+            path: r.path,
+            language: get_language_name(ext).unwrap_or("Unknown").to_string(),
+            header_comments: ast.header_comments,
+            imports: ast.imports,
+        }
+    }
 }
 
 impl McpSearchByCodeImportsResponse {

@@ -8,7 +8,7 @@ use serde::Serialize;
 /// Parameters for the stats tool.
 #[derive(Debug, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "Stats")]
-pub struct McpStatsParams {
+pub struct McpShowStatsParams {
     /// Target project (optional) - project name.
     #[serde(default)]
     pub target: Option<String>,
