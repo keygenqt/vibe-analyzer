@@ -16,24 +16,24 @@ const RUNS: usize = 1;
 
 /// Ollama models to test against.
 const MODELS: &[&str] = &[
-    // "qwen2.5-coder:3b-instruct",
+    "qwen2.5-coder:3b-instruct",
     // "qwen2.5-coder:7b-instruct",
-    "qwen2.5-coder:14b-instruct",
+    // "qwen2.5-coder:14b-instruct",
 ];
 
 /// MCP tool scenarios to execute.
 const SCENARIOS: &[&str] = &[
-    // "admin_sync",
-    // "get_file_ast",
-    // "get_file_content",
-    // "search_by_code_classes",
-    // "search_by_code_functions",
-    // "search_by_code_imports",
-    // "search_by_code_variables",
-    "search_by_docs",
-    // "show_projects",
-    // "show_stats",
-    // "show_structure",
+    "admin_sync",
+    "get_file_ast",
+    "get_file_content",
+    "search_by_code_classes",
+    "search_by_code_functions",
+    "search_by_code_imports",
+    "search_by_code_variables",
+    "search_documentation",
+    "show_projects",
+    "show_stats",
+    "show_tree",
 ];
 
 #[tokio::test]

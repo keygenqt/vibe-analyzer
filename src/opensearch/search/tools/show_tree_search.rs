@@ -1,13 +1,13 @@
 //! Search functionality for OpenSearch indices.
 //! Provides meta, ast, file, and get queries.
 
-use crate::opensearch::data::responses::opensearch_structure_response::OpensearchStructureResponse;
+use crate::opensearch::data::responses::show_tree_response::OpensearchStructureResponse;
 use crate::opensearch::search::search_client::SearchClient;
 use anyhow::Result;
 
 impl SearchClient {
     /// Generate directory tree structure from file paths.
-    pub async fn show_structure(
+    pub async fn show_tree(
         &self,
         indexes: &[String],
         level: usize,

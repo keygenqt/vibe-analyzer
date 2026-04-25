@@ -20,19 +20,19 @@ use crate::mcp::tools::data::params::mcp_search_by_code_classes_params::McpSearc
 use crate::mcp::tools::data::params::mcp_search_by_code_functions_params::McpSearchByCodeFunctionsParams;
 use crate::mcp::tools::data::params::mcp_search_by_code_imports_params::McpSearchByCodeImportsParams;
 use crate::mcp::tools::data::params::mcp_search_by_code_variables_params::McpSearchByCodeVariablesParams;
-use crate::mcp::tools::data::params::mcp_search_by_docs_params::McpSearchByDocsParams;
+use crate::mcp::tools::data::params::mcp_search_documentation_params::McpSearchDocumentationParams;
 use crate::mcp::tools::data::params::mcp_show_stats_params::McpShowStatsParams;
-use crate::mcp::tools::data::params::mcp_show_structure_params::McpShowStructureParams;
+use crate::mcp::tools::data::params::mcp_show_tree_params::McpShowTreeParams;
 use crate::mcp::tools::get_file_ast_tool::GetFileAstTool;
 use crate::mcp::tools::get_file_content_tool::GetFileContentTool;
 use crate::mcp::tools::search_by_code_classes_tool::SearchByCodeClassesTool;
 use crate::mcp::tools::search_by_code_functions_tool::SearchByCodeFunctionsTool;
 use crate::mcp::tools::search_by_code_imports_tool::SearchByCodeImportsTool;
 use crate::mcp::tools::search_by_code_variables_tool::SearchByCodeVariablesTool;
-use crate::mcp::tools::search_by_docs_tool::SearchByDocsTool;
+use crate::mcp::tools::search_documentation_tool::SearchDocumentationTool;
 use crate::mcp::tools::show_projects_tool::ShowProjectsTool;
 use crate::mcp::tools::show_stats_tool::ShowStatsTool;
-use crate::mcp::tools::show_structure_tool::ShowStructureTool;
+use crate::mcp::tools::show_tree_tool::ShowTreeTool;
 use crate::utils::app;
 
 /// Provides server metadata and capabilities for MCP clients.
@@ -181,11 +181,9 @@ RULES:
     )]
     async fn show_tree(
         &self,
-        Parameters(params): Parameters<McpShowStructureParams>,
+        Parameters(params): Parameters<McpShowTreeParams>,
     ) -> Result<CallToolResult, ErrorData> {
-        ShowStructureTool::new(self.state.clone())
-            .execute(params)
-            .await
+        ShowTreeTool::new(self.state.clone()).execute(params).await
     }
 
     // -------------------------------------------------------------------------------
@@ -285,9 +283,9 @@ RULES:
     )]
     async fn search_documentation(
         &self,
-        Parameters(params): Parameters<McpSearchByDocsParams>,
+        Parameters(params): Parameters<McpSearchDocumentationParams>,
     ) -> Result<CallToolResult, ErrorData> {
-        SearchByDocsTool::new(self.state.clone())
+        SearchDocumentationTool::new(self.state.clone())
             .execute(params)
             .await
     }
@@ -304,7 +302,7 @@ RULES:
     )]
     async fn search_knowledge(
         &self,
-        Parameters(params): Parameters<McpSearchByDocsParams>,
+        Parameters(params): Parameters<McpSearchDocumentationParams>,
     ) -> Result<CallToolResult, ErrorData> {
         self.search_documentation(Parameters(params)).await
     }

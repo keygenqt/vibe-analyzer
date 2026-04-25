@@ -7,6 +7,6 @@ pub mod mcp_search_by_code_classes_params;
 pub mod mcp_search_by_code_functions_params;
 pub mod mcp_search_by_code_imports_params;
 pub mod mcp_search_by_code_variables_params;
-pub mod mcp_search_by_docs_params;
+pub mod mcp_search_documentation_params;
 pub mod mcp_show_stats_params;
-pub mod mcp_show_structure_params;
+pub mod mcp_show_tree_params;

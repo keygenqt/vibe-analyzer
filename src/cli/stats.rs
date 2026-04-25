@@ -66,7 +66,7 @@ pub async fn run(action: StatsAction) {
                 Ok(value) => value,
                 Err(e) => exit_error!("{}", e),
             };
-            let tree = match search_client.show_structure(&vec![index], level).await {
+            let tree = match search_client.show_tree(&vec![index], level).await {
                 Ok(value) => value,
                 Err(e) => exit_error!("{}", e),
             };

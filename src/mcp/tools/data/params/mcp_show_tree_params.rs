@@ -8,16 +8,16 @@ use serde::Serialize;
 /// Parameters for the structure tool.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "Structure")]
-pub struct McpShowStructureParams {
+pub struct McpShowTreeParams {
     /// Target project (optional) - project name.
     #[serde(default)]
     pub target: Option<String>,
     /// Maximum depth (default: 3, max: 10).
-    #[serde(default = "McpShowStructureParams::default_level")]
+    #[serde(default = "McpShowTreeParams::default_level")]
     pub level: Option<i32>,
 }
 
-impl McpShowStructureParams {
+impl McpShowTreeParams {
     /// Default tree depth.
     pub const fn default_level() -> Option<i32> {
         Some(3)

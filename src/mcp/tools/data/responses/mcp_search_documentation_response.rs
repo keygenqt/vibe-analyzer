@@ -1,4 +1,4 @@
-//! Response structure for the search_by_docs tool.
+//! Response structure for the search_documentation tool.
 
 use std::collections::HashMap;
 
@@ -9,20 +9,20 @@ use crate::opensearch::data::responses::opensearch_file_meta_response::Opensearc
 use crate::scanner::ast::data::ast_data_heading::AstHeading;
 use crate::scanner::ast::data::ast_data_links::AstLink;
 
-/// Response from search_by_docs tool.
+/// Response from search_documentation tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename = "SearchByDocs")]
-pub struct McpSearchByDocsResponse {
+#[serde(rename = "SearchDocumentation")]
+pub struct McpSearchDocumentationResponse {
     /// Search query that was used.
     pub query: String,
     /// Found files with matching documentation.
-    pub results: Vec<McpSearchByDocsMetaResponse>,
+    pub results: Vec<McpSearchDocumentationMetaResponse>,
 }
 
 /// File metadata with matching documentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename = "FileMeta")]
-pub struct McpSearchByDocsMetaResponse {
+pub struct McpSearchDocumentationMetaResponse {
     /// Project root path.
     pub project: String,
     /// Relative file path.
@@ -41,7 +41,7 @@ pub struct McpSearchByDocsMetaResponse {
     pub code_blocks: Vec<String>,
 }
 
-impl From<OpensearchFileMetaResponse> for McpSearchByDocsMetaResponse {
+impl From<OpensearchFileMetaResponse> for McpSearchDocumentationMetaResponse {
     fn from(r: OpensearchFileMetaResponse) -> Self {
         let ast = r.ast.unwrap_or_default();
         Self {
@@ -55,7 +55,7 @@ impl From<OpensearchFileMetaResponse> for McpSearchByDocsMetaResponse {
     }
 }
 
-impl McpSearchByDocsResponse {
+impl McpSearchDocumentationResponse {
     /// Returns a formatted tool result with JSON data.
     pub fn format(&self) -> String {
         format!(

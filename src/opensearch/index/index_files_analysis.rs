@@ -159,6 +159,7 @@ impl FilesAnalysisIndex {
                                     "title": {
                                         "type": "text",
                                         "fields": {
+                                            "keyword": { "type": "keyword" },
                                             "russian": { "type": "text", "analyzer": "russian_analyzer" },
                                             "english": { "type": "text", "analyzer": "english_analyzer" },
                                             "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
@@ -167,6 +168,7 @@ impl FilesAnalysisIndex {
                                     "preview": {
                                         "type": "text",
                                         "fields": {
+                                            "keyword": { "type": "keyword" },
                                             "russian": { "type": "text", "analyzer": "russian_analyzer" },
                                             "english": { "type": "text", "analyzer": "english_analyzer" },
                                             "chinese": { "type": "text", "analyzer": "chinese_analyzer" }

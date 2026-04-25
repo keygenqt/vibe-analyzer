@@ -8,15 +8,15 @@ use serde::Serialize;
 /// Parameters for the search_documentation tool.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
 #[serde(rename = "SearchDocumentation")]
-pub struct McpSearchByDocsParams {
+pub struct McpSearchDocumentationParams {
     /// Search query (required).
     pub query: String,
     /// Maximum number of results (default: 3).
-    #[serde(default = "McpSearchByDocsParams::default_limit")]
+    #[serde(default = "McpSearchDocumentationParams::default_limit")]
     pub limit: Option<i32>,
 }
 
-impl McpSearchByDocsParams {
+impl McpSearchDocumentationParams {
     /// Default result limit.
     pub const fn default_limit() -> Option<i32> {
         Some(3)
