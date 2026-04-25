@@ -107,7 +107,6 @@ Returns full file content.
 
 RULES:
 1. Call when user asks to see file content, open file, show file
-2. path is required
 "#
     )]
     async fn get_file_content(
@@ -126,7 +125,6 @@ Returns full AST for a file.
 
 RULES:
 1. Call when user asks for file structure, functions in file, AST
-2. path is required
 "#
     )]
     async fn get_file_ast(
@@ -162,8 +160,7 @@ RULES:
 Shows project statistics: files, lines of code, languages breakdown.
 
 RULES:
-1. Call when user asks for project statistics
-2. Call when user wants file counts or code size
+1. Call when user asks for project statistics, file counts, or code size
 "#
     )]
     async fn show_stats(
@@ -174,15 +171,15 @@ RULES:
     }
 
     #[tool(
-        name = "show_structure",
+        name = "show_tree",
         description = r#"
 Shows files and folders inside a project.
 
 RULES:
-1. Call when user asks about project structure, files, folders
+1. Call when user asks about project tree, files, folders
 "#
     )]
-    async fn show_structure(
+    async fn show_tree(
         &self,
         Parameters(params): Parameters<McpShowStructureParams>,
     ) -> Result<CallToolResult, ErrorData> {
@@ -277,21 +274,38 @@ RULES:
     // -------------------------------------------------------------------------------
 
     #[tool(
-        name = "search_by_docs",
+        name = "search_documentation",
         description = r#"
-Finds documentation by headings, links, and content.
+Searches all markdown documentation and files across projects.
 
 RULES:
-1. Call when user asks about docs, documentation, guides, instructions
-2. Returns file paths and matching headings, links, code blocks
+1. Default tool for non-code questions (who, what, how, rules, processes)
+2. Returns headings, links, code blocks, frontmatter
 "#
     )]
-    async fn search_by_docs(
+    async fn search_documentation(
         &self,
         Parameters(params): Parameters<McpSearchByDocsParams>,
     ) -> Result<CallToolResult, ErrorData> {
         SearchByDocsTool::new(self.state.clone())
             .execute(params)
             .await
+    }
+
+    #[tool(
+        name = "search_knowledge",
+        description = r#"
+Searches the knowledge base for documentation, guides, rules, and lore.
+
+RULES:
+1. Use for questions about project knowledge, characters, coding standards, processes
+2. Returns matching files with headings, links, and code blocks
+"#
+    )]
+    async fn search_knowledge(
+        &self,
+        Parameters(params): Parameters<McpSearchByDocsParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        self.search_documentation(Parameters(params)).await
     }
 }

@@ -1,6 +1,7 @@
 //! Response structure for the get_file_ast tool.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
 use crate::scanner::ast::data::ast_data::AstData;

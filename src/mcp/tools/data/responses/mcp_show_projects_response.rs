@@ -2,7 +2,8 @@
 
 use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::opensearch::data::responses::opensearch_project_meta_response::OpensearchProjectMetaResponse;
 

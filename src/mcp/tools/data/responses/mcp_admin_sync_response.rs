@@ -1,6 +1,7 @@
 //! Response structure for the admin_sync tool.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Response from admin_sync tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]

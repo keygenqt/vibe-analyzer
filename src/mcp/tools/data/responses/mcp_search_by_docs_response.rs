@@ -2,8 +2,10 @@
 
 use std::collections::HashMap;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
+use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
 use crate::scanner::ast::data::ast_data_heading::AstHeading;
 use crate::scanner::ast::data::ast_data_links::AstLink;
 
@@ -37,6 +39,20 @@ pub struct McpSearchByDocsMetaResponse {
     /// Code block languages found.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub code_blocks: Vec<String>,
+}
+
+impl From<OpensearchFileMetaResponse> for McpSearchByDocsMetaResponse {
+    fn from(r: OpensearchFileMetaResponse) -> Self {
+        let ast = r.ast.unwrap_or_default();
+        Self {
+            project: r.root,
+            path: r.path,
+            frontmatter: ast.frontmatter,
+            headings: ast.headings,
+            links: ast.links,
+            code_blocks: ast.code_blocks,
+        }
+    }
 }
 
 impl McpSearchByDocsResponse {

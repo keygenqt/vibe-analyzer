@@ -1,10 +1,10 @@
 {
-  "tool": "show_structure",
+  "tool": "show_tree",
   "queries": [
-    "Покажи структуру проекта 'samples'",
+    "Покажи дерево проекта 'samples'",
     "Выведи файлы и папки в 'knowledge'",
-    "Какая структура у 'samples'",
-    "Show folder structure of 'knowledge'",
+    "Show tree of 'samples'",
+    "Show folders of 'knowledge'",
     "Дай дерево проекта 'samples'"
   ]
 }

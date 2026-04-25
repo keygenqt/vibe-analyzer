@@ -5,10 +5,9 @@ use std::path::Path;
 
 use anyhow::Result;
 
-use crate::{
-    configs::app::{AppConfig, IndexType},
-    utils::constants::MCP_MAX_SEARCH_LIMIT,
-};
+use crate::configs::app::AppConfig;
+use crate::configs::app::IndexType;
+use crate::utils::constants::MCP_MAX_SEARCH_LIMIT;
 
 /// Normalizes a file path.
 pub fn path_normalize(config: &AppConfig, path: &str) -> Result<(Option<String>, String)> {

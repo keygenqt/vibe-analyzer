@@ -1,16 +1,17 @@
-//! Request parameters for the search_by_docs tool.
+//! Request parameters for the search_documentation tool.
 //! Defines the structure for documentation search requests.
 
 use schemars::JsonSchema;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-/// Parameters for the search_by_docs tool.
+/// Parameters for the search_documentation tool.
 #[derive(Debug, Clone, Serialize, Deserialize, JsonSchema)]
-#[serde(rename = "SearchByDocs")]
+#[serde(rename = "SearchDocumentation")]
 pub struct McpSearchByDocsParams {
-    /// Search query.
+    /// Search query (required).
     pub query: String,
-    /// Maximum number of results.
+    /// Maximum number of results (default: 3).
     #[serde(default = "McpSearchByDocsParams::default_limit")]
     pub limit: Option<i32>,
 }

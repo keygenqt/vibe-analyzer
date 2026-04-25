@@ -1,6 +1,7 @@
 //! Response structure for the show_structure tool.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Response from show_structure tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]

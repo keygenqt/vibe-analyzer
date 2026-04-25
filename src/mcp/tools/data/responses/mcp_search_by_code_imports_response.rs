@@ -1,11 +1,10 @@
 //! Response structure for the search_by_code_imports tool.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::{
-    opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse,
-    scanner::ast::parser::get_language_name,
-};
+use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
+use crate::scanner::ast::parser::get_language_name;
 
 /// Response from search_by_code_imports tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,6 +1,7 @@
 //! Response structure for the get_file_content tool.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Response from get_file_content tool.
 #[derive(Debug, Clone, Serialize, Deserialize)]

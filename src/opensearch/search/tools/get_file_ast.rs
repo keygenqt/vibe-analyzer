@@ -3,10 +3,8 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::{
-    data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse,
-    search::search_client::SearchClient,
-};
+use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
+use crate::opensearch::search::search_client::SearchClient;
 
 impl SearchClient {
     /// Get file AST by root and path from analysis indexes.

@@ -5,6 +5,6 @@
     "Дай структуру файла 'main.py'",
     "Какие функции в файле 'src/main.rs'",
     "Show AST of file 'lib.rs'",
-    "Выведи структуру файла 'models.py'"
+    "Find abstract syntax tree of file 'models.py'"
   ]
 }

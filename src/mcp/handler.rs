@@ -10,7 +10,9 @@ use rmcp::model::CallToolRequestParams;
 use rmcp::model::CallToolResult;
 use rmcp::model::ServerInfo;
 use rmcp::model::Tool;
-use rmcp::service::{MaybeSendFuture, RequestContext, RoleServer};
+use rmcp::service::MaybeSendFuture;
+use rmcp::service::RequestContext;
+use rmcp::service::RoleServer;
 
 /// Resolves hallucinated tool names to real ones.
 fn resolve_tool_alias(name: &str) -> &str {
@@ -151,27 +153,49 @@ fn resolve_tool_alias(name: &str) -> &str {
         "code_stats" => "show_stats",
         "file_count" => "show_stats",
 
-        // === search_by_docs ===
-        "search_docs" => "search_by_docs",
-        "find_docs" => "search_by_docs",
-        "search_documentation" => "search_by_docs",
-        "search_by_documentation" => "search_by_docs",
-        "search_knowledge" => "search_by_docs",
-        "find_knowledge" => "search_by_docs",
+        // === show_tree ===
+        "show_structure" => "show_tree",
+        "structure" => "show_tree",
+        "tree" => "show_tree",
+        "get_tree" => "show_tree",
+        "view_structure" => "show_tree",
+        "directory_tree" => "show_tree",
+        "folder_structure" => "show_tree",
+        "file_tree" => "show_tree",
+        "list_files" => "show_tree",
+        "browse" => "show_tree",
+        "ls" => "show_tree",
+        "dir" => "show_tree",
 
-        // === show_structure ===
-        "structure" => "show_structure",
-        "tree" => "show_structure",
-        "show_tree" => "show_structure",
-        "get_tree" => "show_structure",
-        "view_structure" => "show_structure",
-        "directory_tree" => "show_structure",
-        "folder_structure" => "show_structure",
-        "file_tree" => "show_structure",
-        "list_files" => "show_structure",
-        "browse" => "show_structure",
-        "ls" => "show_structure",
-        "dir" => "show_structure",
+        // === search_documentation ===
+        "search_by_docs" => "search_documentation",
+        "show_docs" => "search_documentation",
+        "search_docs" => "search_documentation",
+        "find_docs" => "search_documentation",
+        "search_by_documentation" => "search_documentation",
+        "search_documentation" => "search_documentation",
+        "show_documentation" => "search_documentation",
+        "find_documentation" => "search_documentation",
+        "get_documentation" => "search_documentation",
+        "show_rules" => "search_documentation",
+        "show_processes" => "search_documentation",
+        "show_guides" => "search_documentation",
+        "show_lore" => "search_documentation",
+        "show_legends" => "search_documentation",
+        "show_info" => "search_documentation",
+        "get_info" => "search_documentation",
+        "find_info" => "search_documentation",
+        "search_info" => "search_documentation",
+        "search_lore" => "search_documentation",
+        "search_legends" => "search_documentation",
+        "search_processes" => "search_documentation",
+
+        // === search_knowledge ===
+        "search_knowledge" => "search_knowledge",
+        "find_knowledge" => "search_knowledge",
+        "get_knowledge" => "search_knowledge",
+        "show_knowledge" => "search_knowledge",
+        "knowledge_search" => "search_knowledge",
 
         _ => name,
     }

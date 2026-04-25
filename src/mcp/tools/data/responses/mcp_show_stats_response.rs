@@ -1,6 +1,7 @@
 //! Response structure for the show_stats tool.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 use crate::opensearch::data::responses::opensearch_stats_response::OpensearchStatsLanguageResponse;
 
