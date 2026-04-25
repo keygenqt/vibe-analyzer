@@ -21,7 +21,7 @@ Vibe Analyzer returns structured results via tools, keeping context as clean as 
 - 📝 Semantic and morphological search across code and knowledge base
 - ⚡ Incremental indexing
 - 📦 Self-contained tools (single call — complete response)
-- 🗂️ Multilingual support (EN, RU, ZH)
+- 🗂️ Multilingual support (EN, RU, CN)
 - 🦀 Built in Rust — fast and memory-efficient
 
 ## Anti-Hallucination Protection
