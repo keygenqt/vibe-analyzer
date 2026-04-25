@@ -5,13 +5,13 @@ Agentic RAG engine for code and knowledge bases. AST extraction, LLM enrichment,
 
 ## Why Agentic RAG
 
-Unlike traditional RAG where documents are injected into context automatically,
-Vibe Analyzer gives the model agency over search:
+Any RAG adds found documents to the prompt — larger context = more VRAM.
+Vibe Analyzer returns structured results via tools, keeping context lean:
 
-- 🎯 Model decides which tool to call (code, docs, or file)
-- 📊 Structured results — no context bloat
-- 🧠 Model chooses target, limit, and language per query
-- 🔗 Single tool call = complete answer
+- 📉 Minimal context — model receives only what the tool returns
+- 🧠 No embeddings — keyword and AST search via OpenSearch
+- 🔗 Single tool call = complete answer, no document stuffing
+- ♾️ Context stays small regardless of project size
 
 ## Features
 
