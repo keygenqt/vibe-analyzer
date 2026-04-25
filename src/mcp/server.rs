@@ -24,6 +24,7 @@ use crate::mcp::log;
 use crate::mcp::router::RouterTools;
 use crate::opensearch::client::OpenSearchClient;
 use crate::opensearch::search::search_client::SearchClient;
+use crate::print_info;
 use crate::utils::app;
 
 /// Application state shared across request handlers.
@@ -108,7 +109,7 @@ pub async fn run_server(
         .service(router);
     let service = ServiceExt::<Request>::into_make_service(app);
 
-    tracing::info!(
+    print_info!(
         "MCP server listening on http://{} (protocol {})",
         listener.local_addr()?,
         protocol_version.as_str()
