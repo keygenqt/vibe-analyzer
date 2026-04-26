@@ -3,7 +3,6 @@
 
 use crate::analyzer::data::output::analyzer_project_output::AnalyzerProjectOutput;
 use crate::analyzer::data::requests::analyzer_files_request::AnalyzerFilesRequest;
-use crate::analyzer::data::requests::analyzer_summary_request::AnalyzerSummaryRequest;
 use crate::analyzer::ollama_cluster::OllamaCluster;
 use crate::scanner::data::output::scan_file_analysis_output::ScanFileAnalysisOutput;
 use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
@@ -37,7 +36,7 @@ pub async fn analyze_source(
     // Get enriched analysis source
     let summary = cluster
         .next()
-        .get_summary_enriched_analysis(&AnalyzerSummaryRequest::new(&source))
+        .get_summary_enriched_analysis(&source.readme)
         .await?;
 
     // Create source data

@@ -10,7 +10,6 @@ pub mod output {
 pub mod requests {
     pub mod analyzer_file_request;
     pub mod analyzer_files_request;
-    pub mod analyzer_summary_request;
 }
 
 pub mod responses {

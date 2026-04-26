@@ -121,6 +121,16 @@ pub fn source_files(source_path: &Path) -> Result<Vec<ScanFileInfoInput>> {
     let gitignore_path = source_path_abs.join(".gitignore");
     let has_gitignore = gitignore_path.exists();
 
+    // Check for .gitmodules presence
+    let source = source_path_abs.clone();
+    let submodule_paths: Vec<PathBuf> = std::fs::read_to_string(source.join(".gitmodules"))
+        .unwrap_or_default()
+        .lines()
+        .filter(|l| l.trim().starts_with("path = "))
+        .filter_map(|l| l.trim().strip_prefix("path = "))
+        .map(|p| source.join(p.trim()))
+        .collect();
+
     // Scan directory recursively
     let mut files = Vec::new();
     let walker = WalkBuilder::new(&source_path_abs)
@@ -130,6 +140,11 @@ pub fn source_files(source_path: &Path) -> Result<Vec<ScanFileInfoInput>> {
         .git_global(false)
         .git_exclude(false)
         .follow_links(false)
+        .filter_entry(move |entry| {
+            !submodule_paths
+                .iter()
+                .any(|sm| entry.path() == sm || entry.path().starts_with(sm))
+        })
         .build();
 
     for entry in walker {

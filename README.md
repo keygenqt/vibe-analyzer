@@ -13,6 +13,10 @@ Vibe Analyzer returns structured results via tools, keeping context as clean as 
 - 🔗 Single tool call = complete answer, no document stuffing
 - ♾️ Context stays small regardless of project size
 
+## Preview
+
+![preview](data/preview/preview-webui.png)
+
 ## Features
 
 - 🌳 AST parsing for 13 languages
@@ -134,3 +138,14 @@ vibe-analyzer serve start                           # Start MCP server
 - OpenSearch
 - Ollama (for LLM enrichment)
 - libssl-dev
+
+## Build
+
+```shell
+# 1. Clone
+git clone --recursive https://gitcode.com/keygenqt_vz/vibe-analyzer.git
+# 2. Go to dir
+cd vibe-analyzer
+# 3. Build
+cargo build --release
+```

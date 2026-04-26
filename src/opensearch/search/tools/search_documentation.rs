@@ -1,7 +1,8 @@
 //! Documentation search functionality for OpenSearch indices.
 
 use anyhow::Result;
-use serde_json::{Value, json};
+use serde_json::Value;
+use serde_json::json;
 
 use crate::opensearch::data::requests::opensearch_file_stats_request::OpensearchFileStatsRequest;
 use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;

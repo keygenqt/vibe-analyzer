@@ -19,8 +19,9 @@ pub struct AnalyzerProjectOutput {
     /// README file content (if found)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub readme: Option<ScanReadmeOutput>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     /// LLM-generated source summary
-    pub summary: String,
+    pub summary: Option<String>,
     /// Detected license information (if found)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub license: Option<ScanLicenseOutput>,

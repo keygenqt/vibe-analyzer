@@ -1,0 +1,3 @@
+[submodule "submodule/tree-sitter-arkts"]
+	path = submodule/tree-sitter-arkts
+	url = https://github.com/Million-mo/tree-sitter-arkts.git

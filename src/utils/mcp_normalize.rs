@@ -147,7 +147,7 @@ fn target_normalize(
                 )
             } else {
                 anyhow::bail!(
-                    "Project '{}' not found. Use list_projects to see available projects.",
+                    "Project '{}' not found. Use show_projects to see available projects.",
                     target
                 )
             }

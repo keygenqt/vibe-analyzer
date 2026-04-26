@@ -5,11 +5,11 @@ use std::time::Duration;
 
 use crate::analyzer::data::output::analyzer_file_output::AnalyzerFileOutput;
 use crate::analyzer::data::requests::analyzer_files_request::AnalyzerFilesRequest;
-use crate::analyzer::data::requests::analyzer_summary_request::AnalyzerSummaryRequest;
 use crate::analyzer::data::responses::ollama_enrichment_response::OllamaEnrichmentResponse;
 use crate::analyzer::data::responses::ollama_generate_response::OllamaGenerateResponse;
 use crate::analyzer::data::responses::ollama_tags_response::OllamaTagsResponse;
 use crate::configs::ollama::OllamaConfig;
+use crate::scanner::data::output::scan_readme_output::ScanReadmeOutput;
 use anyhow::Result;
 use reqwest::Client;
 
@@ -92,35 +92,26 @@ impl OllamaClient {
     /// Generates source summary using LLM.
     pub async fn get_summary_enriched_analysis(
         &self,
-        data: &AnalyzerSummaryRequest,
-    ) -> Result<String> {
-        let prompt = if let Some(readme) = data.readme.as_ref() {
-            // Limit README to first 3000 characters to keep prompt focused and avoid token waste
-            let preview = &readme.content[..readme.content.len().min(3000)];
-            format!(
-                r#"The JSON below contains a README file and project metadata.
-Extract or write a concise 2-3 sentence summary of what this project does.
+        readme: &Option<ScanReadmeOutput>,
+    ) -> Result<Option<String>> {
+        if readme.is_none() {
+            return Ok(None);
+        }
+        let content = readme.clone().unwrap().content;
+        let prompt = format!(
+            r#"Extract or write a concise 2-3 sentence summary of what this project does.
 Focus on the project's purpose and main functionality.
 Return only the summary text.
-
 ---
 {}"#,
-                preview
-            )
-        } else {
-            format!(
-                r#"Analyze this codebase metadata and write a concise 2-3 sentence summary.
-Describe what the project likely does based on the root name and directory structure.
-Return only the summary text.
-
----
-{}"#,
-                serde_json::to_string(data)?
-            )
-        };
-
-        let response = self.generate_completion(&prompt, None).await?;
-        Ok(response.trim().to_string())
+            &content[..content.len().min(3000)]
+        );
+        Ok(Some(
+            self.generate_completion(&prompt, None)
+                .await?
+                .trim()
+                .to_string(),
+        ))
     }
 
     /// Enriches a batch of files with LLM-generated descriptions and search tags.

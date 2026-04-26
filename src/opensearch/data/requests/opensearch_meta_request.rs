@@ -16,7 +16,8 @@ pub struct OpensearchProjectMetaRequest {
     /// Absolute path to source root
     pub root: String,
     /// LLM-generated project summary
-    pub summary: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub summary: Option<String>,
     /// Detected README information (if found)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub readme: Option<ScanReadmeOutput>,

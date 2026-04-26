@@ -40,6 +40,9 @@ pub async fn scan_source(
         source_stats.add_stats(&ScanFileStatsInput::new(&file_info)?);
     }
 
+    // Find readme
+    let readme = detectors::readme::detect_readme(&files_full);
+
     // Files with filter unchanged
     let mut files = files_full.clone();
     if let Some(hash_source) = hashes {
@@ -55,7 +58,6 @@ pub async fn scan_source(
     }
 
     let total = files.len();
-    let readme = detectors::readme::detect_readme(&files);
     let license = detectors::license::detect_license(&files).await;
 
     let mut analysis = ScanProjectAnalysisOutput {
