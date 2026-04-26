@@ -13,6 +13,10 @@ Vibe Analyzer returns structured results via tools, keeping context as clean as 
 - 🔗 Single tool call = complete answer, no document stuffing
 - ♾️ Context stays small regardless of project size
 
+## Preview
+
+![preview](https://raw.gitcode.com/keygenqt_vz/vibe-analyzer/files/main/data/preview/preview-webui.png)
+
 ## Features
 
 - 🌳 AST parsing for 13 languages
