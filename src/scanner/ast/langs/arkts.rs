@@ -28,7 +28,7 @@ impl LanguageParser for ArkTsParser {
     /// Parses ArkTs source code and extracts AST data.
     fn parse(&self, content: &str) -> Result<AstData> {
         let mut parser = Parser::new();
-        parser.set_language(&tree_sitter_arkts::LANGUAGE.into())?;
+        parser.set_language(&tree_sitter_arkts_ng::LANGUAGE.into())?;
 
         let tree = match parser.parse(content, None) {
             Some(tree) => tree,
