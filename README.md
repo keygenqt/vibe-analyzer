@@ -143,7 +143,7 @@ vibe-analyzer serve start                           # Start MCP server
 
 ```shell
 # 1. Clone
-git clone --recursive https://gitcode.com/keygenqt_vz/vibe-analyzer.git
+git clone https://gitcode.com/keygenqt_vz/vibe-analyzer.git
 # 2. Go to dir
 cd vibe-analyzer
 # 3. Build
