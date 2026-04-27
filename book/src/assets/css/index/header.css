@@ -1,0 +1,75 @@
+.Header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(10, 10, 15, 0.8);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  transition: all 0.3s ease;
+}
+
+.Header .Content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.Header .block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.Header .title {
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text-primary);
+  text-decoration: none;
+  letter-spacing: -0.5px;
+  position: relative;
+}
+
+.Header .title::before {
+  content: '';
+  display: inline-block;
+  width: 26px;
+  height: 26px;
+  background: url('../../images/favicon.png') no-repeat center;
+  background-size: contain;
+  vertical-align: middle;
+}
+
+.Header .Btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text-primary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.Header .Btn:hover {
+  background: rgba(192, 132, 252, 0.1);
+  border-color: var(--accent);
+}
+
+@media (max-width: 450px) {
+  .Header .title {
+    font-size: 16px;
+  }
+
+  .Header .Btn {
+    padding: 5px 10px;
+  }
+}

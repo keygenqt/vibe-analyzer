@@ -1,0 +1,23 @@
+.Footer {
+  border-top: 1px solid var(--border);
+  background: var(--bg-secondary);
+  padding: 0;
+}
+
+.Footer .Content {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.Footer .block {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 64px;
+}
+
+.Footer .title {
+  font-size: 13px;
+  color: var(--text-secondary);
+}

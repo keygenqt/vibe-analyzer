@@ -1,0 +1,227 @@
+.Body {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 120px 24px 80px;
+}
+
+.Body .Content {
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.Body .block1 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  align-items: center;
+}
+
+/* Left column */
+.Body .block:first-child {
+  animation: fadeInUp 0.8s ease-out;
+}
+
+.Body .title {
+  font-family: var(--font-mono);
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -2px;
+  margin-bottom: 24px;
+  background: var(--gradient-1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.Body .subtitle {
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+  letter-spacing: -0.3px;
+}
+
+.Body .text {
+  font-size: 16px;
+  line-height: 1.7;
+  color: var(--text-secondary);
+  margin-bottom: 36px;
+  max-width: 480px;
+}
+
+.Body .BtnBlack {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 32px;
+  background: var(--gradient-1);
+  border: none;
+  border-radius: 14px;
+  color: #fff;
+  text-decoration: none;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.Body .BtnBlack::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s;
+}
+
+.Body .BtnBlack:hover::before {
+  left: 100%;
+}
+
+.Body .BtnBlack::after {
+  content: '\2192';
+  font-size: 18px;
+  transition: transform 0.3s;
+}
+
+.Body .BtnBlack:hover::after {
+  transform: translateX(4px);
+}
+
+/* Right column — terminal preview */
+.Body .block:last-child {
+  animation: fadeInUp 1s ease-out 0.2s both;
+}
+
+.preview {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--text-secondary);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+}
+
+.preview::before {
+  content: '●●●';
+  position: absolute;
+  top: 24px;
+  left: 20px;
+  font-size: 10px;
+  letter-spacing: 4px;
+  color: #555;
+}
+
+.preview::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: var(--gradient-2);
+  opacity: 0.5;
+}
+
+/* Syntax highlighting in preview */
+.preview .comment {
+  color: #969896;
+}
+
+.preview .command {
+  color: #c5c8c6;
+}
+
+.preview .app,
+.preview .path {
+  color: #de935f;
+}
+
+.preview .tool {
+  color: var(--accent);
+}
+
+/* Floating badges */
+.Body .block:last-child {
+  position: relative;
+}
+
+.Body .block:last-child::before {
+  content: '🦀 Rust';
+  position: absolute;
+  top: -14px;
+  right: 40px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  color: var(--text-secondary);
+  z-index: 2;
+  animation: float 5s ease-in-out infinite;
+}
+
+@media (max-width: 1024px) {
+  .Body .block1 {
+    grid-template-columns: 1fr;
+    gap: 60px;
+  }
+
+  .Body .title {
+    font-size: 48px;
+  }
+
+  .Body .text {
+    max-width: 100%;
+  }
+
+  .Body .block:last-child::before,
+  .Body .block:last-child::after {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .Body {
+    padding: 100px 16px 45px;
+  }
+
+  .Body .block1 {
+    gap: 45px;
+  }
+
+  .Body .title {
+    font-size: 36px;
+    letter-spacing: -1px;
+  }
+
+  .Body .subtitle {
+    font-size: 16px;
+  }
+
+  .preview {
+    padding: 20px;
+    font-size: 11px;
+  }
+}
+
+@media (max-width: 400px) {
+  .Body .subtitle {
+    font-size: 14px;
+  }
+  .Body .text {
+    font-size: 14px;
+  }
+}

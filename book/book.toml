@@ -1,0 +1,20 @@
+[book]
+authors = ["Vitaliy Zarubin"]
+language = "en"
+src = "src"
+title = "Vibe Analyzer"
+
+[build]
+build-dir = "public"
+create-missing = false
+
+[output.html.fold]
+enable = true
+
+[output.html]
+default-theme = "navy"
+preferred-dark-theme = "navy"
+additional-css = ["src/assets/css/book/styles.css"]
+smart-punctuation = true
+mathjax-support = true
+site-favicon = "favicon.ico"
