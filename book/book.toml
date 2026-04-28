@@ -3,6 +3,7 @@ authors = ["Vitaliy Zarubin"]
 language = "en"
 src = "src"
 title = "Vibe Analyzer"
+description = "Agentic RAG engine for code and knowledge bases"
 
 [build]
 build-dir = "public"
@@ -17,7 +18,12 @@ runnable = false
 [output.html]
 default-theme = "navy"
 preferred-dark-theme = "navy"
-additional-css = ["src/assets/css/book/styles.css"]
 smart-punctuation = true
 mathjax-support = true
-site-favicon = "favicon.ico"
+additional-css = [
+    "src/assets/css/index/styles.css",
+    "src/assets/css/index/animation.css",
+    "src/assets/css/index/header.css",
+    "src/assets/css/index/body.css",
+    "src/assets/css/index/footer.css",
+]
