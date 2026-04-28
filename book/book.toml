@@ -20,10 +20,4 @@ default-theme = "navy"
 preferred-dark-theme = "navy"
 smart-punctuation = true
 mathjax-support = true
-additional-css = [
-    "src/assets/css/index/styles.css",
-    "src/assets/css/index/animation.css",
-    "src/assets/css/index/header.css",
-    "src/assets/css/index/body.css",
-    "src/assets/css/index/footer.css",
-]
+additional-css = ["src/assets/css/book/styles.css"]
