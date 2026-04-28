@@ -9,22 +9,22 @@ Code sources
       │
       ▼
 ┌─────────────┐
-│   Scanner    │  AST parsing, structure extraction
+│   Scanner   │  AST parsing, structure extraction
 └─────────────┘
       │
       ▼
 ┌─────────────┐
-│   Analyzer   │  LLM enrichment, descriptions, tags
+│   Analyzer  │  LLM enrichment, descriptions, tags
 └─────────────┘
       │
       ▼
 ┌─────────────┐
-│   Indexer    │  Writing to OpenSearch
+│   Indexer   │  Writing to OpenSearch
 └─────────────┘
       │
       ▼
 ┌─────────────┐
-│  MCP Server  │  HTTP API for AI assistants
+│  MCP Server │  HTTP API for AI assistants
 └─────────────┘
 ```
 

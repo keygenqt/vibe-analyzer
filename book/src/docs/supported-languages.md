@@ -50,22 +50,21 @@ Vibe Analyzer supports AST parsing and LLM enrichment for 13 programming languag
 
 ## Element Support by Language
 
-| Language   | Functions           | Classes               | Structs            | Enums     | Interfaces    | Variables          | Imports     |
-| ---------- | ------------------- | --------------------- | ------------------ | --------- | ------------- | ------------------ | ----------- |
-| Rust       | ✅                  | —                     | ✅                 | ✅        | ✅ (trait)    | ✅ (const/static)  | ✅          |
-| Python     | ✅                  | ✅                    | —                  | —         | —             | ✅                 | ✅          |
-| JavaScript | ✅                  | ✅                    | —                  | —         | —             | ✅ (const/let/var) | ✅          |
-| TypeScript | ✅                  | ✅                    | ✅                 | ✅        | ✅            | ✅ (const/let/var) | ✅          |
-| Java       | ✅ (methods)        | ✅                    | —                  | ✅        | ✅            | ✅ (static)        | ✅          |
-| Go         | ✅ (func + methods) | —                     | ✅                 | ✅ (type) | —             | ✅ (const/var)     | ✅          |
-| C#         | ✅ (methods)        | ✅                    | ✅ (struct/record) | ✅        | —             | ✅                 | ✅          |
-| Kotlin     | ✅                  | ✅ (class/data class) | —                  | ✅        | ✅            | ✅ (val/var)       | ✅          |
-| Swift      | ✅                  | ✅                    | ✅                 | ✅        | ✅ (protocol) | ✅ (let/var)       | ✅          |
-| Dart       | ✅                  | ✅                    | —                  | ✅        | —             | ✅ (const/final)   | ✅          |
-| Bash       | ✅                  | —                     | —                  | —         | —             | ✅                 | ✅ (source) |
-| Batch      | ✅ (label)          | —                     | —                  | —         | —             | ✅ (set)           | ✅ (call)   |
-| ArkTS      | ✅                  | ✅                    | ✅                 | ✅        | ✅            | ✅                 | ✅          |
-| Markdown   | —                   | —                     | —                  | —         | —             | —                  | —           |
+| Language   | Functions | Classes | Structs | Enums | Interfaces | Variables | Imports |
+| ---------- | --------- | ------- | ------- | ----- | ---------- | --------- | ------- |
+| Rust       | ✅        | —       | ✅      | ✅    | ✅         | ✅        | ✅      |
+| Python     | ✅        | ✅      | —       | —     | —          | ✅        | ✅      |
+| JavaScript | ✅        | ✅      | —       | —     | —          | ✅        | ✅      |
+| TypeScript | ✅        | ✅      | ✅      | ✅    | ✅         | ✅        | ✅      |
+| Java       | ✅        | ✅      | —       | ✅    | ✅         | ✅        | ✅      |
+| Go         | ✅        | —       | ✅      | ✅    | —          | ✅        | ✅      |
+| C#         | ✅        | ✅      | ✅      | ✅    | —          | ✅        | ✅      |
+| Kotlin     | ✅        | ✅      | —       | ✅    | ✅         | ✅        | ✅      |
+| Swift      | ✅        | ✅      | ✅      | ✅    | ✅         | ✅        | ✅      |
+| Dart       | ✅        | ✅      | —       | ✅    | —          | ✅        | ✅      |
+| Bash       | ✅        | —       | —       | —     | —          | ✅        | ✅      |
+| Batch      | ✅        | —       | —       | —     | —          | ✅        | ✅      |
+| ArkTS      | ✅        | ✅      | ✅      | ✅    | ✅         | ✅        | ✅      |
 
 ## Multilingual Search Tags
 
