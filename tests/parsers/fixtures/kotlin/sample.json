@@ -1,8 +1,8 @@
 {
-  "Functions": [
+  "functions": [
     {
-      "Signature": "fun add(a: Int, b: Int): Int",
-      "Comments": [
+      "signature": "fun add(a: Int, b: Int): Int",
+      "comments": [
         "Adds two numbers",
         "@param a First number",
         "@param b Second number",
@@ -10,52 +10,73 @@
       ]
     },
     {
-      "Signature": "fun multiply(a: Int, b: Int): Int",
-      "Comments": ["Multiplies two numbers"]
+      "signature": "fun multiply(a: Int, b: Int): Int",
+      "comments": ["Multiplies two numbers"]
     },
     {
-      "Signature": "suspend fun fetchData(url: String): String",
-      "Comments": ["Async function example"]
+      "signature": "suspend fun fetchData(url: String): String",
+      "comments": ["Async function example"]
     }
   ],
-  "Classes": [
+  "classes": [
     {
-      "Signature": "data class User",
-      "Comments": ["User data class"]
+      "signature": "data class User",
+      "comments": ["User data class"]
     },
     {
-      "Signature": "class UserService",
-      "Comments": ["Service class"]
+      "signature": "class UserService",
+      "comments": ["Service class"]
     }
   ],
-  "Interfaces": [
+  "interfaces": [
     {
-      "Signature": "interface Repository",
-      "Comments": ["Repository interface"]
+      "signature": "interface Repository",
+      "comments": ["Repository interface"]
     }
   ],
-  "Enums": [
+  "enums": [
     {
-      "Signature": "enum class Color",
-      "Comments": ["Color enum"]
+      "signature": "enum class Color",
+      "comments": ["Color enum"]
     }
   ],
-  "Variables": [
+  "variables": [
     {
-      "Signature": "const val MAX_SIZE",
-      "Comments": ["Global constants"]
+      "signature": "const val MAX_SIZE",
+      "comments": ["Global constants"]
     },
     {
-      "Signature": "val DEFAULT_TIMEOUT"
+      "signature": "val DEFAULT_TIMEOUT"
     },
     {
-      "Signature": "lateinit var appName: String",
-      "Comments": ["Global variables"]
+      "signature": "lateinit var appName: String",
+      "comments": ["Global variables"]
     },
     {
-      "Signature": "var counter"
+      "signature": "var counter"
     }
   ],
-  "Imports": ["kotlinx.coroutines.*", "java.io.File", "kotlin.math.*"],
-  "HeaderComments": ["Module documentation for Kotlin testing"]
+  "imports": ["kotlinx.coroutines.*", "java.io.File", "kotlin.math.*"],
+  "header_comments": ["Module documentation for Kotlin testing"],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数",
+    "classes",
+    "классы",
+    "类",
+    "enums",
+    "перечисления",
+    "枚举",
+    "interfaces",
+    "интерфейсы",
+    "接口"
+  ]
 }

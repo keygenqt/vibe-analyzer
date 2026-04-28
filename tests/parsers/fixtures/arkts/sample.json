@@ -1,44 +1,68 @@
 {
-  "Functions": [
+  "functions": [
     {
-      "Signature": "async function fetchData(url: string): Promise<string>",
-      "Comments": ["Async function example"]
+      "signature": "async function fetchData(url: string): Promise<string>",
+      "comments": ["Async function example"]
     }
   ],
-  "Classes": [
+  "classes": [
     {
-      "Signature": "class UserService",
-      "Comments": ["Service class"]
+      "signature": "class UserService",
+      "comments": ["Service class"]
     }
   ],
-  "Structs": [
+  "structs": [
     {
-      "Signature": "struct Index",
-      "Comments": ["Entry point class"]
+      "signature": "struct Index",
+      "comments": ["Entry point class"]
     }
   ],
-  "Interfaces": [
+  "interfaces": [
     {
-      "Signature": "interface User",
-      "Comments": ["User data interface"]
+      "signature": "interface User",
+      "comments": ["User data interface"]
     }
   ],
-  "Enums": [
+  "enums": [
     {
-      "Signature": "enum Color",
-      "Comments": ["Color enum"]
+      "signature": "enum Color",
+      "comments": ["Color enum"]
     }
   ],
-  "Variables": [
+  "variables": [
     {
-      "Signature": "const MAX_SIZE: number",
-      "Comments": ["Global constant"]
+      "signature": "const MAX_SIZE: number",
+      "comments": ["Global constant"]
     },
     {
-      "Signature": "let appName: string",
-      "Comments": ["Global variable"]
+      "signature": "let appName: string",
+      "comments": ["Global variable"]
     }
   ],
-  "Imports": ["@kit.AbilityKit", "@kit.ArkUI"],
-  "HeaderComments": ["Module documentation for ArkTS testing"]
+  "imports": ["@kit.AbilityKit", "@kit.ArkUI"],
+  "header_comments": ["Module documentation for ArkTS testing"],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数",
+    "classes",
+    "классы",
+    "类",
+    "structs",
+    "структуры",
+    "结构体",
+    "enums",
+    "перечисления",
+    "枚举",
+    "interfaces",
+    "интерфейсы",
+    "接口"
+  ]
 }

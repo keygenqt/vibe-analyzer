@@ -1,43 +1,58 @@
 {
-  "Functions": [
+  "functions": [
     {
-      "Signature": "def add(a: int, b: int) -> int",
-      "Comments": ["Adds two numbers"]
+      "signature": "def add(a: int, b: int) -> int",
+      "comments": ["Adds two numbers"]
     },
     {
-      "Signature": "def multiply(a: int, b: int) -> int",
-      "Comments": ["Multiplies two numbers"]
+      "signature": "def multiply(a: int, b: int) -> int",
+      "comments": ["Multiplies two numbers"]
     },
     {
-      "Signature": "async def fetch_data(url: str) -> str",
-      "Comments": ["Async function example"]
+      "signature": "async def fetch_data(url: str) -> str",
+      "comments": ["Async function example"]
     }
   ],
-  "Classes": [
+  "classes": [
     {
-      "Signature": "class User",
-      "Comments": ["User class"]
+      "signature": "class User",
+      "comments": ["User class"]
     },
     {
-      "Signature": "class Config",
-      "Comments": ["Config class"]
+      "signature": "class Config",
+      "comments": ["Config class"]
     },
     {
-      "Signature": "class Color",
-      "Comments": ["Color enum (using class constants)"]
+      "signature": "class Color",
+      "comments": ["Color enum (using class constants)"]
     }
   ],
-  "Variables": [
+  "variables": [
     {
-      "Signature": "MAX_SIZE: int"
+      "signature": "MAX_SIZE: int"
     },
     {
-      "Signature": "DEFAULT_TIMEOUT: int"
+      "signature": "DEFAULT_TIMEOUT: int"
     },
     {
-      "Signature": "APP_NAME: str"
+      "signature": "APP_NAME: str"
     }
   ],
-  "Imports": ["os", "sys", "datetime", "typing"],
-  "HeaderComments": ["Module documentation for Python testing"]
+  "imports": ["os", "sys", "datetime", "typing"],
+  "header_comments": ["Module documentation for Python testing"],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数",
+    "classes",
+    "классы",
+    "类"
+  ]
 }

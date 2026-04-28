@@ -1,11 +1,11 @@
 {
-  "Frontmatter": {
+  "frontmatter": {
     "title": "Vibe Analyzer Documentation",
     "tags": "rust, ast, opensearch",
     "author": "keygenqt",
     "date": "2026-04-10"
   },
-  "Headings": [
+  "headings": [
     {
       "level": 1,
       "title": "Vibe Analyzer",
@@ -47,9 +47,21 @@
       "preview": "[x] Rust installed"
     }
   ],
-  "Links": [
+  "links": [
     { "text": "documentation", "url": "https://example.com/docs" },
     { "text": "Link to GitHub", "url": "https://github.com" }
   ],
-  "CodeBlocks": ["bash", "rust"]
+  "code_blocks": ["bash", "rust"],
+  "tags": [
+    "frontmatter",
+    "headings",
+    "заголовки",
+    "标题",
+    "links",
+    "ссылки",
+    "链接",
+    "code_blocks",
+    "блоки_кода",
+    "代码块"
+  ]
 }

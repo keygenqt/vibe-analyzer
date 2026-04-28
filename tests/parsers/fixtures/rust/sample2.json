@@ -1,36 +1,36 @@
 {
-  "Functions": [
+  "functions": [
     {
-      "Signature": "fn default() -> Self"
+      "signature": "fn default() -> Self"
     },
     {
-      "Signature": "pub fn load() -> Result<Self>",
-      "Comments": ["Load config from file, create default if not exists"]
+      "signature": "pub fn load() -> Result<Self>",
+      "comments": ["Load config from file, create default if not exists"]
     },
     {
-      "Signature": "pub fn save(&self) -> Result<()>",
-      "Comments": ["Save config to file"]
+      "signature": "pub fn save(&self) -> Result<()>",
+      "comments": ["Save config to file"]
     },
     {
-      "Signature": "pub fn add_project(&mut self, path: PathBuf)",
-      "Comments": ["Add project to config"]
+      "signature": "pub fn add_project(&mut self, path: PathBuf)",
+      "comments": ["Add project to config"]
     },
     {
-      "Signature": "pub fn del_project(&mut self, path: PathBuf) -> Result<PathBuf>",
-      "Comments": ["Delete project from config"]
+      "signature": "pub fn del_project(&mut self, path: PathBuf) -> Result<PathBuf>",
+      "comments": ["Delete project from config"]
     },
     {
-      "Signature": "pub fn get_projects(&self) -> Vec<PathBuf>",
-      "Comments": ["Get list of valid projects"]
+      "signature": "pub fn get_projects(&self) -> Vec<PathBuf>",
+      "comments": ["Get list of valid projects"]
     }
   ],
-  "Structs": [
+  "structs": [
     {
-      "Signature": "pub struct AppConfig",
-      "Comments": ["Main application configuration structure"]
+      "signature": "pub struct AppConfig",
+      "comments": ["Main application configuration structure"]
     }
   ],
-  "Imports": [
+  "imports": [
     "anyhow::Result",
     "serde::{Deserialize, Serialize}",
     "std::fs",
@@ -41,5 +41,17 @@
     "super::ollama::OllamaConfig",
     "super::opensearch::OpenSearchConfig"
   ],
-  "HeaderComments": ["Application configuration management"]
+  "header_comments": ["Application configuration management"],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "functions",
+    "функции",
+    "函数",
+    "structs",
+    "структуры",
+    "结构体"
+  ]
 }

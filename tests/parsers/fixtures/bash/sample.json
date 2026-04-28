@@ -1,37 +1,49 @@
 {
-  "Functions": [
+  "functions": [
     {
-      "Signature": "add()",
-      "Comments": ["Function to add two numbers", "Arguments: a b", "Returns: sum"]
+      "signature": "add()",
+      "comments": ["Function to add two numbers", "Arguments: a b", "Returns: sum"]
     },
     {
-      "Signature": "multiply()",
-      "Comments": ["Function to multiply two numbers"]
+      "signature": "multiply()",
+      "comments": ["Function to multiply two numbers"]
     },
     {
-      "Signature": "file_exists()",
-      "Comments": [
+      "signature": "file_exists()",
+      "comments": [
         "Function to check if file exists",
         "Arguments: path",
         "Returns: 0 if exists, 1 otherwise"
       ]
     },
     {
-      "Signature": "process_data()",
-      "Comments": ["Function with multiple lines"]
+      "signature": "process_data()",
+      "comments": ["Function with multiple lines"]
     }
   ],
-  "Variables": [
+  "variables": [
     {
-      "Signature": "CONFIG_DIR=\"$HOME/.vibe-analyzer\""
+      "signature": "CONFIG_DIR=\"$HOME/.vibe-analyzer\""
     },
     {
-      "Signature": "MAX_SIZE=1024"
+      "signature": "MAX_SIZE=1024"
     },
     {
-      "Signature": "TIMEOUT=30"
+      "signature": "TIMEOUT=30"
     }
   ],
-  "Imports": ["./utils.sh", "./config.sh"],
-  "HeaderComments": ["Module documentation for Bash testing", "This is also a module comment"]
+  "imports": ["./utils.sh", "./config.sh"],
+  "header_comments": ["Module documentation for Bash testing", "This is also a module comment"],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数"
+  ]
 }

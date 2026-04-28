@@ -1,8 +1,8 @@
 {
-  "Functions": [
+  "functions": [
     {
-      "Signature": "function add(a, b)",
-      "Comments": [
+      "signature": "function add(a, b)",
+      "comments": [
         "Adds two numbers",
         "@param {number} a - First number",
         "@param {number} b - Second number",
@@ -10,35 +10,50 @@
       ]
     },
     {
-      "Signature": "const multiply = (a, b)",
-      "Comments": ["Multiplies two numbers"]
+      "signature": "const multiply = (a, b)",
+      "comments": ["Multiplies two numbers"]
     },
     {
-      "Signature": "async function fetchData(url)",
-      "Comments": ["Async function example"]
+      "signature": "async function fetchData(url)",
+      "comments": ["Async function example"]
     }
   ],
-  "Classes": [
+  "classes": [
     {
-      "Signature": "class User",
-      "Comments": ["User class"]
+      "signature": "class User",
+      "comments": ["User class"]
     }
   ],
-  "Variables": [
+  "variables": [
     {
-      "Signature": "const config",
-      "Comments": ["Config object"]
+      "signature": "const config",
+      "comments": ["Config object"]
     },
     {
-      "Signature": "export const MAX_SIZE"
+      "signature": "export const MAX_SIZE"
     },
     {
-      "Signature": "export const APP_NAME"
+      "signature": "export const APP_NAME"
     },
     {
-      "Signature": "let counter"
+      "signature": "let counter"
     }
   ],
-  "Imports": ["fs", "path", "express", "url"],
-  "HeaderComments": ["Module documentation for JavaScript testing"]
+  "imports": ["fs", "path", "express", "url"],
+  "header_comments": ["Module documentation for JavaScript testing"],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数",
+    "classes",
+    "классы",
+    "类"
+  ]
 }

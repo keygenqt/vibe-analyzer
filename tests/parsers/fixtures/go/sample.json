@@ -1,48 +1,66 @@
 {
-  "HeaderComments": ["Module documentation for Go testing"],
-  "Enums": [
+  "header_comments": ["Module documentation for Go testing"],
+  "enums": [
     {
-      "Signature": "type Color int",
-      "Comments": ["Color type (enum-like)"]
+      "signature": "type Color int",
+      "comments": ["Color type (enum-like)"]
     }
   ],
-  "Functions": [
+  "functions": [
     {
-      "Signature": "func Add(a int, b int) int",
-      "Comments": ["Add adds two numbers"]
+      "signature": "func Add(a int, b int) int",
+      "comments": ["Add adds two numbers"]
     },
     {
-      "Signature": "func Multiply(a, b int) int",
-      "Comments": ["Multiply multiplies two numbers"]
+      "signature": "func Multiply(a, b int) int",
+      "comments": ["Multiply multiplies two numbers"]
     }
   ],
-  "Imports": ["fmt", "os", "strings"],
-  "Structs": [
+  "imports": ["fmt", "os", "strings"],
+  "structs": [
     {
-      "Signature": "type User struct",
-      "Comments": ["User struct"]
+      "signature": "type User struct",
+      "comments": ["User struct"]
     },
     {
-      "Signature": "type UserService struct",
-      "Comments": ["UserService struct"]
+      "signature": "type UserService struct",
+      "comments": ["UserService struct"]
     }
   ],
-  "Variables": [
+  "variables": [
     {
-      "Signature": "const MaxSize",
-      "Comments": ["Global constants"]
+      "signature": "const MaxSize",
+      "comments": ["Global constants"]
     },
     {
-      "Signature": "const DefaultTimeout",
-      "Comments": ["Global constants"]
+      "signature": "const DefaultTimeout",
+      "comments": ["Global constants"]
     },
     {
-      "Signature": "var AppName",
-      "Comments": ["Global variable 1"]
+      "signature": "var AppName",
+      "comments": ["Global variable 1"]
     },
     {
-      "Signature": "var counter",
-      "Comments": ["Global variable 2"]
+      "signature": "var counter",
+      "comments": ["Global variable 2"]
     }
+  ],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数",
+    "structs",
+    "структуры",
+    "结构体",
+    "enums",
+    "перечисления",
+    "枚举"
   ]
 }

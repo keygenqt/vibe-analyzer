@@ -1,8 +1,8 @@
 {
-  "Functions": [
+  "functions": [
     {
-      "Signature": "function add(a: number, b: number): number",
-      "Comments": [
+      "signature": "function add(a: number, b: number): number",
+      "comments": [
         "Adds two numbers",
         "@param a First number",
         "@param b Second number",
@@ -10,52 +10,73 @@
       ]
     },
     {
-      "Signature": "const multiply = (a: number, b: number): number",
-      "Comments": ["Multiplies two numbers"]
+      "signature": "const multiply = (a: number, b: number): number",
+      "comments": ["Multiplies two numbers"]
     },
     {
-      "Signature": "async function fetchData(url: string): Promise<string>",
-      "Comments": ["Async function example"]
+      "signature": "async function fetchData(url: string): Promise<string>",
+      "comments": ["Async function example"]
     }
   ],
-  "Classes": [
+  "classes": [
     {
-      "Signature": "export class User",
-      "Comments": ["User class"]
+      "signature": "export class User",
+      "comments": ["User class"]
     },
     {
-      "Signature": "export class UserService",
-      "Comments": ["Service class"]
+      "signature": "export class UserService",
+      "comments": ["Service class"]
     }
   ],
-  "Interfaces": [
+  "interfaces": [
     {
-      "Signature": "export interface User",
-      "Comments": ["User interface"]
+      "signature": "export interface User",
+      "comments": ["User interface"]
     }
   ],
-  "Enums": [
+  "enums": [
     {
-      "Signature": "export enum Color",
-      "Comments": ["Color enum"]
+      "signature": "export enum Color",
+      "comments": ["Color enum"]
     }
   ],
-  "Variables": [
+  "variables": [
     {
-      "Signature": "export const MAX_SIZE: number",
-      "Comments": ["Global constants"]
+      "signature": "export const MAX_SIZE: number",
+      "comments": ["Global constants"]
     },
     {
-      "Signature": "export const DEFAULT_TIMEOUT: number"
+      "signature": "export const DEFAULT_TIMEOUT: number"
     },
     {
-      "Signature": "export let appName: string",
-      "Comments": ["Global variables"]
+      "signature": "export let appName: string",
+      "comments": ["Global variables"]
     },
     {
-      "Signature": "let counter: number"
+      "signature": "let counter: number"
     }
   ],
-  "Imports": ["@angular/core", "axios", "lodash"],
-  "HeaderComments": ["Module documentation for TypeScript testing"]
+  "imports": ["@angular/core", "axios", "lodash"],
+  "header_comments": ["Module documentation for TypeScript testing"],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数",
+    "classes",
+    "классы",
+    "类",
+    "enums",
+    "перечисления",
+    "枚举",
+    "interfaces",
+    "интерфейсы",
+    "接口"
+  ]
 }

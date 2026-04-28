@@ -1,50 +1,68 @@
 {
-  "Classes": [
+  "classes": [
     {
-      "Signature": "class User",
-      "Comments": ["User class"]
+      "signature": "class User",
+      "comments": ["User class"]
     },
     {
-      "Signature": "class UserService",
-      "Comments": ["Service class"]
+      "signature": "class UserService",
+      "comments": ["Service class"]
     }
   ],
-  "HeaderComments": ["Module documentation for Dart testing", "This is also a module comment"],
-  "Enums": [
+  "header_comments": ["Module documentation for Dart testing", "This is also a module comment"],
+  "enums": [
     {
-      "Signature": "enum Color",
-      "Comments": ["Color enum"]
+      "signature": "enum Color",
+      "comments": ["Color enum"]
     }
   ],
-  "Functions": [
+  "functions": [
     {
-      "Signature": "int add(int a, int b)",
-      "Comments": ["Adds two numbers", "[a] First number", "[b] Second number"]
+      "signature": "int add(int a, int b)",
+      "comments": ["Adds two numbers", "[a] First number", "[b] Second number"]
     },
     {
-      "Signature": "int multiply(int a, int b)",
-      "Comments": ["Multiplies two numbers"]
+      "signature": "int multiply(int a, int b)",
+      "comments": ["Multiplies two numbers"]
     },
     {
-      "Signature": "Future<String> fetchData(String url)",
-      "Comments": ["Async function example"]
+      "signature": "Future<String> fetchData(String url)",
+      "comments": ["Async function example"]
     }
   ],
-  "Imports": ["dart:io", "dart:convert", "package:flutter/material.dart"],
-  "Variables": [
+  "imports": ["dart:io", "dart:convert", "package:flutter/material.dart"],
+  "variables": [
     {
-      "Signature": "const int MAX_SIZE",
-      "Comments": ["Global constants"]
+      "signature": "const int MAX_SIZE",
+      "comments": ["Global constants"]
     },
     {
-      "Signature": "final int DEFAULT_TIMEOUT"
+      "signature": "final int DEFAULT_TIMEOUT"
     },
     {
-      "Signature": "late String appName",
-      "Comments": ["Global variables"]
+      "signature": "late String appName",
+      "comments": ["Global variables"]
     },
     {
-      "Signature": "int counter"
+      "signature": "int counter"
     }
+  ],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数",
+    "classes",
+    "классы",
+    "类",
+    "enums",
+    "перечисления",
+    "枚举"
   ]
 }

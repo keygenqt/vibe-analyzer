@@ -1,239 +1,292 @@
-## Chapter 2. Getting Started
+# Quick Start
 
-### Prerequisites
+## Prerequisites
 
-Before installing Vibe Analyzer, you need two services running:
+Vibe Analyzer requires two external services:
 
-| Dependency     | Purpose                           | Minimum Version |
-| -------------- | --------------------------------- | --------------- |
-| **OpenSearch** | Stores and searches indexed code  | 2.x             |
-| **Ollama**     | LLM inference for code enrichment | Latest          |
+- **OpenSearch** — storage and search for indexed data
+- **Ollama** — running LLMs for code enrichment with descriptions and tags
 
-**OpenSearch** is the search engine. It stores parsed code structures and responds to MCP tool queries.
+Both services can be run locally via Docker.
 
-**Ollama** runs local language models. It generates descriptions and multilingual tags for your code during enrichment.
+## Installation
 
-### Installation
+### Install via Cargo (recommended)
+
+The package is available on [crates.io](https://crates.io/crates/vibe-analyzer):
 
 ```bash
-# Clone the repository
+cargo install vibe-analyzer
+```
+
+### Build from Source
+
+```bash
+# 1. Clone the repository
 git clone https://gitcode.com/keygenqt_vz/vibe-analyzer.git
 
-# Enter the project directory
+# 2. Enter the directory
 cd vibe-analyzer
 
-# Build the release binary
+# 3. Build
 cargo build --release
 ```
 
-The compiled binary is at `target/release/vibe-analyzer`. Move it to your PATH or use it directly.
+### Build Dependencies
 
-### Starting Required Services
+- Rust toolchain (cargo, rustc)
+- libssl-dev (for TLS)
 
-**Option 1: Docker (recommended)**
+## Starting Services
 
-The project includes Docker Compose files:
+The repository includes two ready-to-use docker-compose files:
+
+- `docker/opensearch/docker-compose.yml` — OpenSearch for indexing and search
+- `docker/open-webui/docker-compose.yml` — Open WebUI with Ollama for AI assistant connection
+
+### Docker (recommended)
+
+**OpenSearch:**
 
 ```bash
-# Start OpenSearch
-docker compose -f docker/opensearch/docker-compose.yml up -d
+cd docker/opensearch
+docker-compose up -d
+```
 
-# Verify OpenSearch is running
+**Open WebUI (optional, for AI assistant connection):**
+
+```bash
+cd docker/open-webui
+docker-compose up -d
+```
+
+### Verification
+
+```bash
+# OpenSearch should respond
 curl http://localhost:9200
 
-# Start Ollama
-ollama serve
-
-# Pull a model for enrichment
-ollama pull qwen2.5:14b
+# Ollama should be accessible
+curl http://localhost:11434/api/tags
 ```
 
-**Option 2: Manual installation**
+## Configuration
 
-Install OpenSearch and Ollama manually following their official documentation.
-Open WebUI is optional but recommended — it provides a chat interface for AI assistants.
+The configuration file is located at `~/.vibe-analyzer/config.json5`. It is created automatically with default settings the first time any CLI command is run.
 
-```bash
-# Optional: Start Open WebUI
-docker compose -f docker/open-webui/docker-compose.yml up -d
-```
-
-### Configuration
-
-The config file is at `~/.vibe-analyzer/config.json5`. Create it manually or run any CLI command — it will generate a default config.
+### Example Working Configuration
 
 ```json
 {
+  // Configuration version (do not modify)
+  "version": "0.0.1",
+
   // OpenSearch connection
   "opensearch": {
-    "host": "http://localhost:9200"
+    "host": "http://192.168.1.10:9200"
   },
-  // Ollama connection (supports multiple hosts for load balancing)
-  "ollama": {
-    "hosts": ["http://localhost:11434"],
-    "model": "qwen2.5:14b",
-    // Maximum characters per LLM request
-    "max_chunk_chars": 4200
-  },
-  // MCP server configuration
+
+  // MCP server
+  //
+  // host — bind address (0.0.0.0 for all interfaces, 127.0.0.1 local only)
+  // port — server port (default: 9020)
+  // protocol — MCP protocol version (2024-11-05, 2025-03-26, 2025-06-18, or 'latest')
   "mcp": {
     "host": "0.0.0.0",
-    "port": 3001
+    "port": 9020,
+    "protocol": "latest"
   },
-  // Development settings (optional)
-  // dev: {
-  //   log_level: "info",
-  // },
-  // Your knowledge sources
-  "sources": []
+
+  // Ollama LLM servers
+  //
+  // host — API endpoint
+  // model — model name
+  // max_chunk_chars — maximum characters per request
+  // max_chunk_files — maximum files per request
+  // timeout_secs — request timeout in seconds
+  // temperature — generation temperature (0.0 – 1.0)
+  // seed — seed for reproducibility
+  // num_ctx — context window size
+  // num_predict — maximum tokens in response
+  // ast_imports — include imports in analysis
+  // ast_variables — include variables in analysis
+  // ast_functions — include functions in analysis
+  // ast_enums — include enums in analysis
+  // ast_interfaces — include interfaces in analysis
+  "ollama": [
+    {
+      "host": "http://192.168.1.10:11434",
+      "model": "qwen2.5-coder:3b-instruct",
+      "max_chunk_chars": 4000,
+      "max_chunk_files": 3,
+      "timeout_secs": 60,
+      "temperature": 0.1,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 2048,
+      "ast_imports": false,
+      "ast_variables": false,
+      "ast_functions": true,
+      "ast_enums": true,
+      "ast_interfaces": true
+    },
+    {
+      "host": "http://localhost:11434",
+      "model": "qwen2.5-coder:3b-instruct",
+      "max_chunk_chars": 4000,
+      "max_chunk_files": 3,
+      "timeout_secs": 60,
+      "temperature": 0.1,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 2048,
+      "ast_imports": false,
+      "ast_variables": false,
+      "ast_functions": true,
+      "ast_enums": true,
+      "ast_interfaces": true
+    }
+  ],
+
+  // Knowledge sources for indexing
+  "sources": ["/Users/keygenqt/Documents/Gitcode/Projects/vibe-analyzer"]
 }
 ```
 
-Key settings:
-
-- `opensearch.host` — your OpenSearch endpoint
-- `ollama.hosts` — array of Ollama instances (single or cluster)
-- `ollama.model` — model used for enrichment (3B+ models recommended)
-- `mcp.host` / `mcp.port` — where the MCP server listens
-
-### Adding Your First Source
-
-A **source** is anything you want to search: a code project, a documentation folder, or both.
+### Checking Configuration
 
 ```bash
-# Add a project to analyze
+# View current settings
+cat ~/.vibe-analyzer/config.json5
+```
+
+## Adding a Knowledge Source
+
+A source is anything you want to index: a code project, a documentation folder, or both.
+
+```bash
+# Add a project
 vibe-analyzer source add /path/to/your/project
 
-# Add a documentation folder
-vibe-analyzer source add /path/to/your/docs
+# Add a documentation directory
+vibe-analyzer source add /path/to/docs
 
-# Verify sources are added
+# List all added sources
 vibe-analyzer source list
 ```
 
-### Scanning and Indexing
+## Scanning and Indexing
 
-Processing happens in two stages:
+Vibe Analyzer provides three commands for different tasks:
 
-**Stage 1: AST Extraction**
+### Export AST to File
 
-Parses all source files and extracts code structure — functions, classes, imports, variables, and more.
+Code structure extraction only, without LLM. The result is saved in JSON/JSON5/TOON/XML:
 
 ```bash
-# Scan all sources
+# All sources
 vibe-analyzer scan ast
 
-# Or scan a specific source
+# A specific source
 vibe-analyzer scan ast --target /path/to/your/project
+
+# With format specified
+vibe-analyzer scan ast --target /path/to/your/project --format json5
 ```
 
-**Stage 2: LLM Enrichment + Indexing**
+### Export AST with LLM Enrichment to File
 
-Sends extracted AST to Ollama for enrichment, then indexes everything into OpenSearch.
+AST parsing + enrichment via Ollama (descriptions, tags). The result is saved to a file:
 
 ```bash
-# Enrich and index a specific source
 vibe-analyzer scan analyze --target /path/to/your/project
 ```
 
-The `analyze` command does three things:
+> **Note:** enrichment requires a running Ollama with the selected model. If multiple Ollama hosts are configured, files are distributed among them via competing consumers.
 
-1. Sends code structures to Ollama in batches
-2. Receives descriptions and multilingual tags
-3. Indexes enriched data into OpenSearch
+### Indexing to OpenSearch
 
-Duration depends on project size and Ollama model speed. Large projects may take minutes.
-
-### Starting the MCP Server
-
-Once indexed, start the MCP server to expose search tools:
+Full cycle — AST parsing, LLM enrichment, and writing to OpenSearch for search via MCP tools:
 
 ```bash
-# Start MCP server
+vibe-analyzer scan index --target /path/to/your/project
+```
+
+After indexing, data is ready for search through the MCP server.
+
+## Starting the MCP Server
+
+```bash
 vibe-analyzer serve start
 ```
 
-The server runs on the configured host:port. It exposes 11 tools for AI assistants.
+The server starts on the address and port specified in the configuration (default `http://0.0.0.0:9020`).
 
-### Verifying Everything Works
+## Verifying Results
 
 ```bash
-# Check project statistics
+# Project statistics
 vibe-analyzer stats info --target /path/to/your/project
 
-# View directory tree (2 levels deep)
-vibe-analyzer stats tree --target /path/to/your/project -L 2
+# File tree
+vibe-analyzer stats tree --target /path/to/your/project
 
 # List all indexed projects
 vibe-analyzer stats info
 ```
 
-Expected output shows file counts, lines of code, and language breakdown.
+## Connecting an AI Assistant
 
-### Connecting an AI Assistant
+### Open WebUI
 
-**Open WebUI:**
+1. Make sure Open WebUI is running (see the "Starting Services" section)
+2. In Open WebUI settings, add an MCP server:
+   - URL: `http://<host>:9020` (as specified in the configuration)
+   - Transport: Streamable HTTP
+3. Once connected, the AI model will have 11 tools for searching code and documentation
 
-1. Open Open WebUI → Settings → MCP Servers
-2. Add server: `http://localhost:3001`
-3. Start a new chat — the model now has access to 11 Vibe Analyzer tools
+## Incremental Updates
 
-**Claude Desktop:**
-
-1. Open Claude → Settings → Developer → MCP Servers
-2. Add server with URL: `http://localhost:3001`
-3. Tools appear in the chat interface automatically
-
-### Incremental Updates
-
-Vibe Analyzer uses content hashing for incremental indexing. Only modified files are re-processed:
+Vibe Analyzer uses BLAKE3 hashes to track changes. When running `scan index` again, only modified files are processed:
 
 ```bash
-# Re-index only changed files across all sources
-vibe-analyzer scan analyze
+# Reindexing — only changed files are affected
+vibe-analyzer scan index --target /path/to/your/project
 ```
 
-Or trigger re-indexing through MCP:
-
-```
-AI Assistant: "Sync all projects"
-→ Tool: admin_sync
-→ Result: 15 new files indexed, 3 files updated
-```
-
-### Troubleshooting
-
-**OpenSearch not reachable:**
+To force a full reindex, use the `--force` flag:
 
 ```bash
-curl http://localhost:9200
-# If no response, check: docker ps | grep opensearch
+vibe-analyzer scan index --target /path/to/your/project --force
 ```
 
-**Ollama not responding:**
+The same can be done via the `admin_sync` MCP tool without restarting the server.
+
+## Troubleshooting
+
+### OpenSearch Unreachable
 
 ```bash
+# Check Docker container status
+docker ps | grep opensearch
+```
+
+### Ollama Not Responding
+
+```bash
+# Check if Ollama is running
 curl http://localhost:11434/api/tags
-# If no response, run: ollama serve
 ```
 
-**Model not found:**
+### Model Not Installed
 
 ```bash
-ollama list
-# If model is missing: ollama pull qwen2.5:14b
+# Download the model
+ollama pull qwen2.5-coder:3b-instruct
 ```
 
-**Config not found:**
+## What's Next
 
-```bash
-# Generate default config by running any command
-vibe-analyzer source list
-# Config created at ~/.vibe-analyzer/config.json5
-```
-
-### What's Next
-
-- [Chapter 3: CLI Reference](./cli-reference.md) — complete command reference
-- [Chapter 5: MCP Tools](./mcp-tools.md) — how to use all 11 search tools
-- [Chapter 6: Configuration](./configuration.md) — advanced configuration options
+- [Architecture](./architecture.md) — detailed breakdown of Vibe Analyzer's internals
+- [CLI Reference](./cli-reference.md) — complete command reference
+- [Integrations](./integrations.md) — connecting AI assistants

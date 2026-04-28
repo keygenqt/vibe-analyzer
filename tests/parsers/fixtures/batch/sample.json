@@ -1,32 +1,44 @@
 {
-  "Functions": [
+  "functions": [
     {
-      "Signature": ":add",
-      "Comments": ["Function to add two numbers"]
+      "signature": ":add",
+      "comments": ["Function to add two numbers"]
     },
     {
-      "Signature": ":multiply",
-      "Comments": ["Function to multiply two numbers"]
+      "signature": ":multiply",
+      "comments": ["Function to multiply two numbers"]
     },
     {
-      "Signature": ":file_exists",
-      "Comments": ["Function to check if file exists"]
+      "signature": ":file_exists",
+      "comments": ["Function to check if file exists"]
     },
     {
-      "Signature": ":process_data"
+      "signature": ":process_data"
     }
   ],
-  "Variables": [
+  "variables": [
     {
-      "Signature": "CONFIG_DIR=%USERPROFILE%\\.vibe-analyzer"
+      "signature": "CONFIG_DIR=%USERPROFILE%\\.vibe-analyzer"
     },
     {
-      "Signature": "MAX_SIZE=1024"
+      "signature": "MAX_SIZE=1024"
     },
     {
-      "Signature": "TIMEOUT=30"
+      "signature": "TIMEOUT=30"
     }
   ],
-  "Imports": ["utils.bat", "config.bat"],
-  "HeaderComments": ["Module documentation for Batch testing", "This is also a module comment"]
+  "imports": ["utils.bat", "config.bat"],
+  "header_comments": ["Module documentation for Batch testing", "This is also a module comment"],
+  "tags": [
+    "header_comments",
+    "imports",
+    "импорты",
+    "导入",
+    "variables",
+    "переменные",
+    "变量",
+    "functions",
+    "функции",
+    "函数"
+  ]
 }

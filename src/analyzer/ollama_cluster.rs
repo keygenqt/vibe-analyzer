@@ -1,5 +1,5 @@
 //! Ollama cluster for load balancing across multiple Ollama servers.
-//! Distributes requests in round-robin fashion for parallel processing.
+//! Uses competing consumers via shared mpsc channel for parallel file processing.
 
 use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
@@ -29,7 +29,7 @@ impl OllamaCluster {
         }
     }
 
-    /// Returns the next client in round-robin order.
+    /// Returns the next client order.
     pub fn next(&self) -> &OllamaClient {
         let idx = self.current.fetch_add(1, Ordering::Relaxed) % self.clients.len();
         &self.clients[idx]
