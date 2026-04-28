@@ -5,6 +5,7 @@ edition = "2024"
 license = "Apache-2.0"
 description = "Agentic RAG engine for code and knowledge bases. AST extraction, LLM enrichment, OpenSearch indexing."
 repository = "https://gitcode.com/keygenqt_vz/vibe-analyzer"
+documentation = "https://vibe-analyzer.keygenqt.com"
 authors = ["Vitaliy Zarubin <keygenqt@yandex.ru"]
 readme = "README.crates.md"
 
