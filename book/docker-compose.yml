@@ -35,7 +35,7 @@ services:
     image: nginx:stable-alpine
     restart: always
     ports:
-      - '8080:80'
+      - '3004:80'
     volumes:
       - book-output:/usr/share/nginx/html:ro
     depends_on:
