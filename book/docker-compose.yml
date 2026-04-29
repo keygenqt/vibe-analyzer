@@ -1,0 +1,46 @@
+# Vibe Analyzer Book
+# Builds mdBook documentation and serves via Nginx
+
+name: vibe-analyzer-book
+
+services:
+  builder:
+    container_name: vibe-analyzer-book-builder
+    image: rust:slim
+    working_dir: /build
+    volumes:
+      - .:/build
+      - book-output:/output
+    command:
+      - bash
+      - -c
+      - |
+        mkdir -p /output
+        cat > /output/default.conf << 'EOF'
+        server {
+            listen 80;
+            server_name _;
+            root /usr/share/nginx/html;
+            index index.html;
+            location / {
+                try_files $$uri $$uri/ =404;
+            }
+        }
+        EOF
+        cargo install mdbook
+        mdbook build --dest-dir /output
+
+  book:
+    container_name: vibe-analyzer-book
+    image: nginx:stable-alpine
+    restart: always
+    ports:
+      - '8080:80'
+    volumes:
+      - book-output:/usr/share/nginx/html:ro
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+
+volumes:
+  book-output:
