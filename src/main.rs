@@ -18,6 +18,7 @@ mod cli;
 mod configs;
 mod export;
 mod mcp;
+mod models;
 mod opensearch;
 mod scanner;
 mod utils;
