@@ -7,7 +7,6 @@ use std::path::PathBuf;
 
 use crate::configs::app::AppConfig;
 use crate::utils::path::get_config_dir;
-use crate::utils::spdx;
 
 /// Log level for tracing.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -98,9 +97,9 @@ impl DevConfig {
     }
 
     /// Ensures SPDX data is available, downloading if necessary.
-    pub async fn ensure_spdx_data(&self) -> Result<(), anyhow::Error> {
-        spdx::ensure_data(&self.spdx_data_path, self.is_default_path()).await
-    }
+    // pub async fn ensure_spdx_data(&self) -> Result<(), anyhow::Error> {
+    //     _spdx::ensure_data(&self.spdx_data_path, self.is_default_path()).await
+    // }
 
     /// Checks if the configured SPDX path is the default one.
     fn is_default_path(&self) -> bool {

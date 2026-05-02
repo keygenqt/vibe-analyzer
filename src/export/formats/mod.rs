@@ -3,5 +3,7 @@
 
 pub mod json;
 pub mod json5;
+pub mod toml;
 pub mod toon;
 pub mod xml;
+pub mod yaml;

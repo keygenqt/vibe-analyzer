@@ -1,19 +1,13 @@
 //! XML format exporter with pretty printing support.
 
 use anyhow::Result;
-use chrono::Local;
 use serde_xml_rs::to_string;
 use std::fs;
 use std::path::Path;
 use xml::reader::ParserConfig;
 use xml::writer::EmitterConfig;
 
-use crate::analyzer::data::output::analyzer_project_output::AnalyzerProjectOutput;
-use crate::analyzer::data::output::analyzer_projects_output::AnalyzerProjectsOutput;
-use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
-use crate::scanner::data::output::scan_projects_analysis_output::ScanProjectsAnalysisOutput;
-
-use super::super::writer::ExportWriter;
+use crate::export::writer::{ExportModel, ExportWriter};
 
 /// XML export writer implementing the ExportWriter trait.
 pub struct XmlWriter;
@@ -25,60 +19,27 @@ impl XmlWriter {
             .trim_whitespace(true)
             .ignore_comments(false)
             .create_reader(xml.as_bytes());
-
         let mut output = Vec::new();
         let mut writer = EmitterConfig::new()
-            .perform_indent(true) // Enables pretty indentation
+            .perform_indent(true)
             .normalize_empty_elements(false)
             .autopad_comments(false)
             .create_writer(&mut output);
-
         for event in reader {
             if let Some(event) = event?.as_writer_event() {
                 writer.write(event)?;
             }
         }
-
         Ok(String::from_utf8(output)?)
     }
 }
 
 impl ExportWriter for XmlWriter {
     /// Exports source analyses to a pretty-printed XML file.
-    fn export_scanner(
-        &self,
-        sources: &[ScanProjectAnalysisOutput],
-        output_path: &Path,
-    ) -> Result<()> {
-        let multi_analysis = ScanProjectsAnalysisOutput {
-            indexed_at: Local::now().to_rfc3339(),
-            sources: sources.to_vec(),
-        };
-
-        // Serialize to compact XML (no indentation)
-        let compact_xml = to_string(&multi_analysis)?;
-
-        // Pretty-print with indentation
-        let pretty_xml = Self::pretty_print(&compact_xml)?;
-
-        fs::write(output_path, pretty_xml)?;
-        Ok(())
-    }
-
-    /// Exports enriched source analyses to a pretty-printed XML file.
-    fn export_analyzer(&self, sources: &[AnalyzerProjectOutput], output_path: &Path) -> Result<()> {
-        let multi_analysis = AnalyzerProjectsOutput {
-            indexed_at: Local::now().to_rfc3339(),
-            sources: sources.to_vec(),
-        };
-
-        // Serialize to compact XML (no indentation)
-        let compact_xml = to_string(&multi_analysis)?;
-
-        // Pretty-print with indentation
-        let pretty_xml = Self::pretty_print(&compact_xml)?;
-
-        fs::write(output_path, pretty_xml)?;
+    fn export(&self, model: &ExportModel, output_path: &Path) -> Result<()> {
+        let compact = to_string(model)?;
+        let content = Self::pretty_print(&compact)?;
+        fs::write(output_path, content)?;
         Ok(())
     }
 }

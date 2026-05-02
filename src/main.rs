@@ -8,18 +8,17 @@ use clap::Parser;
 use clap::Subcommand;
 
 use crate::cli::scan::ScanAction;
-use crate::cli::serve::ServeAction;
 use crate::cli::source::SourceAction;
-use crate::cli::stats::StatsAction;
 use crate::configs::app::AppConfig;
 
 mod analyzer;
 mod cli;
 mod configs;
 mod export;
-mod mcp;
+mod ollama;
+// mod mcp;
 mod models;
-mod opensearch;
+// mod opensearch;
 mod scanner;
 mod utils;
 
@@ -45,23 +44,21 @@ enum Commands {
         action: ScanAction,
     },
 
-    /// Show project information and verify indexed data.
-    Stats {
-        #[command(subcommand)]
-        action: StatsAction,
-    },
-
+    // /// Show project information and verify indexed data.
+    // Stats {
+    //     #[command(subcommand)]
+    //     action: StatsAction,
+    // },
     /// Manage knowledge sources (add, remove, list, update)
     Source {
         #[command(subcommand)]
         action: SourceAction,
     },
-
-    /// Start MCP server for AI assistants integration
-    Serve {
-        #[command(subcommand)]
-        action: ServeAction,
-    },
+    // /// Start MCP server for AI assistants integration
+    // Serve {
+    //     #[command(subcommand)]
+    //     action: ServeAction,
+    // },
 }
 
 #[tokio::main]
@@ -74,8 +71,8 @@ async fn main() {
     match app.command {
         Some(Commands::Source { action }) => cli::source::run(action),
         Some(Commands::Scan { action }) => cli::scan::run(action).await,
-        Some(Commands::Stats { action }) => cli::stats::run(action).await,
-        Some(Commands::Serve { action }) => cli::serve::run(action).await,
+        // Some(Commands::Stats { action }) => cli::stats::run(action).await,
+        // Some(Commands::Serve { action }) => cli::serve::run(action).await,
         None => {
             let _ = App::command().print_help();
             print_newline!();

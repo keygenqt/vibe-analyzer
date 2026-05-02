@@ -2,16 +2,13 @@
 //! Provides path resolution, configuration directory handling, and source file discovery.
 
 use anyhow::Result;
-use chrono::Local;
 use dirs::home_dir;
 use ignore::WalkBuilder;
 use std::env;
 use std::path::Path;
 use std::path::PathBuf;
 
-use crate::export::options::ExportFormat;
-use crate::scanner::data::input::scan_file_info_input::ScanFileInfoInput;
-use crate::utils::app;
+// use crate::export::options::ExportFormat;
 use crate::utils::constants::CONFIG_DIR_NAME;
 use crate::utils::matcher;
 
@@ -28,18 +25,19 @@ pub fn get_config_dir() -> PathBuf {
     home.join(CONFIG_DIR_NAME)
 }
 
-/// Get Downloads directory path
-pub fn get_downloads_dir() -> PathBuf {
-    dirs::download_dir().expect("Failed to get downloads directory")
-}
+// /// Get Downloads directory path
+// pub fn get_downloads_dir() -> PathBuf {
+//     dirs::download_dir().expect("Failed to get downloads directory")
+// }
 
-/// Generates the default export file path in the Downloads directory.
-pub fn get_default_export(format: ExportFormat) -> PathBuf {
-    let timestamp = Local::now().format("%d-%m-%Y_%H-%M-%S");
-    let filename = format!("{}-{}.{}", app::app_name(), timestamp, format.extension());
-    let downloads_dir = get_downloads_dir();
-    downloads_dir.join(filename)
-}
+// @todo
+// /// Generates the default export file path in the Downloads directory.
+// pub fn get_default_export(format: ExportFormat) -> PathBuf {
+//     let timestamp = Local::now().format("%d-%m-%Y_%H-%M-%S");
+//     let filename = format!("{}-{}.{}", app::app_name(), timestamp, format.extension());
+//     let downloads_dir = get_downloads_dir();
+//     downloads_dir.join(filename)
+// }
 
 /// Resolves a path to absolute form, expanding ~, ., ..
 pub fn convert_relative(path: &str) -> Option<PathBuf> {
@@ -98,23 +96,12 @@ pub fn convert_relative(path: &str) -> Option<PathBuf> {
 }
 
 /// Returns list of files in a source (supports both single file and directory)
-pub fn source_files(source_path: &Path) -> Result<Vec<ScanFileInfoInput>> {
+pub fn source_files(source_path: &Path) -> Result<Vec<PathBuf>> {
     let source_path_abs = dunce::canonicalize(source_path)?;
 
     // Handle single file case
     if source_path_abs.is_file() {
-        let size = source_path_abs.metadata()?.len();
-        let file_name = source_path_abs
-            .file_name()
-            .unwrap_or_default()
-            .to_string_lossy()
-            .to_string();
-
-        return Ok(vec![ScanFileInfoInput {
-            path: source_path_abs,
-            relative_path: PathBuf::from(file_name),
-            size,
-        }]);
+        return Ok(vec![source_path_abs]);
     }
 
     // Check for .gitignore presence
@@ -159,15 +146,7 @@ pub fn source_files(source_path: &Path) -> Result<Vec<ScanFileInfoInput>> {
         if !has_gitignore && matcher::is_ignore(path) {
             continue;
         }
-
-        let relative_path = path.strip_prefix(&source_path_abs)?.to_path_buf();
-        let size = path.metadata()?.len();
-
-        files.push(ScanFileInfoInput {
-            path: path.to_path_buf(),
-            relative_path,
-            size,
-        });
+        files.push(path.to_path_buf());
     }
 
     Ok(files)

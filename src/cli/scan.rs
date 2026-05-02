@@ -1,40 +1,20 @@
 //! Scan commands for extracting structure from knowledge sources.
 //! Provides AST extraction, LLM enrichment, and OpenSearch indexing.
 
-use std::collections::HashMap;
+use clap::Subcommand;
 use std::path::PathBuf;
 
-use anyhow::Result;
-use clap::Subcommand;
-use colored::Colorize;
-
-use crate::analyzer::analyzer;
-use crate::analyzer::data::output::analyzer_project_output::AnalyzerProjectOutput;
-use crate::analyzer::ollama_cluster;
+use crate::analyzer::scan_analyze;
 use crate::configs::app::AppConfig;
-use crate::configs::app::IndexType;
 use crate::exit_error;
-use crate::export;
 use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
-use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::data::requests::opensearch_file_content_request::OpensearchFileContentRequest;
-use crate::opensearch::data::requests::opensearch_file_stats_request::OpensearchFileStatsRequest;
-use crate::opensearch::data::requests::opensearch_meta_request::OpensearchProjectMetaRequest;
-use crate::opensearch::data::responses::opensearch_list_hashes_response::OpensearchListHashesResponse;
-use crate::opensearch::indexer::IndexFilesReport;
-use crate::opensearch::indexer::IndexMetaReport;
-use crate::opensearch::indexer::IndexReport;
-use crate::opensearch::indexer::Indexer;
-use crate::opensearch::search::search_client::SearchClient;
-use crate::print_error;
+use crate::export::writer;
+use crate::export::writer::ExportModel;
 use crate::print_info;
-use crate::print_newline;
-use crate::print_progress;
 use crate::print_success;
 use crate::print_warning;
-use crate::scanner::data::output::scan_project_analysis_output::ScanProjectAnalysisOutput;
-use crate::scanner::scanner;
+use crate::scanner::scan_ast;
 
 /// Scan actions for different analysis types.
 #[derive(Subcommand)]
@@ -95,20 +75,19 @@ pub async fn run(action: ScanAction) {
             format,
             output,
         } => {
-            let result = match scan_ast(&config, target, None).await {
+            let projects = match scan_ast(&config, target).await {
                 Ok(result) => result,
                 Err(e) => exit_error!("{}", e),
             };
-
-            if !result.is_empty() {
+            if !projects.is_empty() {
                 print_info!("Saving file...");
-                let options = ExportOptions::new(format, output);
-                match export::writer::export_ast(result, &options) {
-                    Ok(json_path) => {
+                let options = ExportOptions::new("va", format, output);
+                match writer::export(ExportModel::new_ast(projects), &options) {
+                    Ok(path) => {
                         let elapsed = start_time.elapsed();
                         print_success!(
                             "Exported to: {} (took {:.1}s)",
-                            json_path.display(),
+                            path.display(),
                             elapsed.as_secs_f64()
                         );
                     }
@@ -123,20 +102,19 @@ pub async fn run(action: ScanAction) {
             format,
             output,
         } => {
-            let result = match scan_enriches(&config, target, None).await {
+            let projects = match scan_analyze(&config, target).await {
                 Ok(result) => result,
                 Err(e) => exit_error!("{}", e),
             };
-
-            if !result.is_empty() {
+            if !projects.is_empty() {
                 print_info!("Saving file...");
-                let options = ExportOptions::new(format, output);
-                match export::writer::export_enriched(result, &options) {
-                    Ok(json_path) => {
+                let options = ExportOptions::new("va", format, output);
+                match writer::export(ExportModel::new_analyze(projects), &options) {
+                    Ok(path) => {
                         let elapsed = start_time.elapsed();
                         print_success!(
                             "Exported to: {} (took {:.1}s)",
-                            json_path.display(),
+                            path.display(),
                             elapsed.as_secs_f64()
                         );
                     }
@@ -147,260 +125,124 @@ pub async fn run(action: ScanAction) {
             }
         }
         ScanAction::Index { target, force } => {
-            let result = match index_enriches(&config, target, force).await {
-                Ok(result) => {
-                    if result.files.files_indexed > 0 {
-                        let elapsed = start_time.elapsed();
-                        print_success!(
-                            "Indexing completed. Sources: {}, Files: {}, Analysis: {} (took {:.1}s)",
-                            result.meta.indexed,
-                            result.files.files_indexed,
-                            result.files.analysis_indexed,
-                            elapsed.as_secs_f64()
-                        );
-                    } else {
-                        print_success!(
-                            "Index is up to date — all files are already indexed and database is in sync"
-                        );
-                    }
-                }
-                Err(e) => exit_error!("{}", e),
-            };
+            // let result = match index_enriches(&config, target, force).await {
+            //     Ok(result) => {
+            //         if result.files.files_indexed > 0 {
+            //             let elapsed = start_time.elapsed();
+            //             print_success!(
+            //                 "Indexing completed. Sources: {}, Files: {}, Analysis: {} (took {:.1}s)",
+            //                 result.meta.indexed,
+            //                 result.files.files_indexed,
+            //                 result.files.analysis_indexed,
+            //                 elapsed.as_secs_f64()
+            //             );
+            //         } else {
+            //             print_success!(
+            //                 "Index is up to date — all files are already indexed and database is in sync"
+            //             );
+            //         }
+            //     }
+            //     Err(e) => exit_error!("{}", e),
+            // };
         }
     }
 }
 
-/// Scans configured sources and extracts AST with metadata.
-pub async fn scan_ast(
-    config: &AppConfig,
-    target: Option<String>,
-    hashes: Option<OpensearchListHashesResponse>,
-) -> Result<Vec<ScanProjectAnalysisOutput>> {
-    // Resolve sources to scan (custom path or from config)
-    let sources = match target {
-        Some(tg) => vec![config.get_source(&tg)?],
-        None => config.get_sources(),
-    };
+// /// Index enriched analysis results to OpenSearch.
+// pub async fn index_enriches(
+//     config: &AppConfig,
+//     target: Option<String>,
+//     force: bool,
+// ) -> Result<IndexReport> {
+//     // Connect to OpenSearch
+//     let client = OpenSearchClient::new(&config.opensearch.host)?;
 
-    // Collect analysis results from all sources
-    let mut all_analyses = Vec::new();
+//     // Check connection
+//     if !client.healthcheck().await? {
+//         anyhow::bail!("OpenSearch is not available at {}", config.opensearch.host);
+//     }
 
-    for source in sources {
-        let name = source.file_name().unwrap().to_string_lossy();
-        print_info!("Start scan source: {}", name.bold().blue());
-        match scanner::scan_source(
-            &source,
-            &hashes,
-            |percent, current, total| {
-                print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
-                if total == current {
-                    print_newline!();
-                }
-            },
-            |message| print_warning!("{}", message),
-        )
-        .await
-        {
-            Ok(analysis) => {
-                all_analyses.push(analysis);
-            }
-            Err(e) => {
-                print_newline!();
-                print_error!("Failed to scan {}: {}", name, e);
-            }
-        }
-    }
+//     // Create indexer coordinator
+//     let indexer = Indexer::new(client.clone());
 
-    Ok(all_analyses)
-}
+//     // Cleanup orphaned data after successful indexing
+//     print_info!("Cleaning up orphaned data...");
+//     indexer.cleanup(config).await?;
 
-/// Scans and enriches sources with LLM-powered analysis.
-pub async fn scan_enriches(
-    config: &AppConfig,
-    target: Option<String>,
-    hashes: Option<OpensearchListHashesResponse>,
-) -> Result<Vec<AnalyzerProjectOutput>> {
-    let cluster = ollama_cluster::OllamaCluster::new(&config.ollama);
-    // Validate Ollama configuration
-    if cluster.is_empty() {
-        anyhow::bail!("Ollama hosts not configured. Add it to ~/.vibe-analyzer/config.json");
-    }
+//     // Get hashes from OpenSearch for incremental indexing
+//     let search_client = SearchClient::new(client);
+//     let hashes: Option<OpensearchListHashesResponse> = if force {
+//         None
+//     } else {
+//         let targets: Vec<String> = match target.as_deref() {
+//             Some(tg) => vec![config.get_source(tg)?.to_string_lossy().to_string()],
+//             None => config
+//                 .get_sources()
+//                 .iter()
+//                 .map(|s| s.to_string_lossy().to_string())
+//                 .collect(),
+//         };
+//         let mut all_hashes = OpensearchListHashesResponse {
+//             hashes: HashMap::new(),
+//         };
+//         for tg in targets {
+//             let index = config.get_index(&tg, IndexType::Files)?;
+//             let file_hashes = search_client.get_hashes(&index).await?;
 
-    // Check Ollama availability
-    print_info!("Checking Ollama cluster...");
-    match cluster
-        .is_available(|current, total| {
-            print_progress!("Checking availability {}/{}", current, total);
-            if total == current {
-                print_newline!();
-            }
-        })
-        .await
-    {
-        Ok(_) => {}
-        Err(_) => {
-            print_newline!();
-            anyhow::bail!(
-                "One or more Ollama servers are not available. Check config or start Ollama service"
-            )
-        }
-    }
+//             for h in file_hashes {
+//                 all_hashes.hashes.insert(h.path, h.hash);
+//             }
+//         }
+//         Some(all_hashes)
+//     };
 
-    // Warm Ollama model
-    match cluster
-        .ensure_ready(|current, total| {
-            print_progress!("Warming up server {}/{}", current, total);
-            if total == current {
-                print_newline!();
-            }
-        })
-        .await
-    {
-        Ok(_) => print_success!("All {} Ollama servers ready", cluster.len()),
-        Err(e) => {
-            print_newline!();
-            Err(e)?
-        }
-    }
+//     // Get enriched data from analyzer (with incremental skip)
+//     let sources = scan_enriches(config, target, hashes).await?;
 
-    // Perform standard source scanning
-    let all_analyses = scan_ast(config, target, hashes).await?;
-    let total_files: usize = all_analyses.iter().map(|a| a.files.len()).sum();
-    if total_files == 0 {
-        print_info!("No files to scan");
-        return Ok(Vec::new());
-    }
-    print_success!("AST scanning completed: {} source", all_analyses.len());
+//     // Check if there are files to index
+//     let total_files: usize = sources.iter().map(|s| s.files.len()).sum();
+//     if total_files == 0 {
+//         return Ok(IndexReport {
+//             meta: IndexMetaReport::default(),
+//             files: IndexFilesReport::default(),
+//         });
+//     }
 
-    // Enrich each source with LLM analysis
-    let mut enriched_all_analyses = Vec::new();
+//     let total_files: usize = sources.iter().map(|s| s.files.len()).sum();
+//     print_success!(
+//         "LLM enrichment completed: {} sources, {} files",
+//         sources.len(),
+//         total_files
+//     );
 
-    for source_analyses in all_analyses {
-        let name = source_analyses.root.split("/").last().unwrap();
-        print_info!("Start scan enriched analysis: {}", name.bold().blue());
+//     // Index metadata for all sources
+//     print_info!("Starting data indexing to OpenSearch...");
+//     let meta_items = OpensearchProjectMetaRequest::from_enriched(&sources);
+//     let report_meta = indexer.index_meta(&meta_items, force).await?;
 
-        match analyzer::analyze_source(
-            &source_analyses,
-            &cluster,
-            |percent, current, total| {
-                print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
-                if total == current {
-                    print_newline!();
-                    print_info!("Cleaning up...");
-                }
-            },
-            |message| print_info!("{}", message),
-        )
-        .await
-        {
-            Ok(analysis) => {
-                enriched_all_analyses.push(analysis);
-            }
-            Err(e) => {
-                print_newline!();
-                Err(e)?
-            }
-        }
-    }
+//     // Index files and analysis for each source
+//     let mut total_files = 0;
+//     let mut total_analysis = 0;
 
-    Ok(enriched_all_analyses)
-}
+//     for source in &sources {
+//         let root = PathBuf::from(&source.root);
 
-/// Index enriched analysis results to OpenSearch.
-pub async fn index_enriches(
-    config: &AppConfig,
-    target: Option<String>,
-    force: bool,
-) -> Result<IndexReport> {
-    // Connect to OpenSearch
-    let client = OpenSearchClient::new(&config.opensearch.host)?;
+//         let file_items = OpensearchFileContentRequest::from_enriched(source)?;
+//         let analysis_items = OpensearchFileStatsRequest::from_enriched(source);
 
-    // Check connection
-    if !client.healthcheck().await? {
-        anyhow::bail!("OpenSearch is not available at {}", config.opensearch.host);
-    }
+//         let report_files = indexer
+//             .index_files(&root, &file_items, &analysis_items, force)
+//             .await?;
 
-    // Create indexer coordinator
-    let indexer = Indexer::new(client.clone());
+//         total_files += report_files.files_indexed;
+//         total_analysis += report_files.analysis_indexed;
+//     }
 
-    // Cleanup orphaned data after successful indexing
-    print_info!("Cleaning up orphaned data...");
-    indexer.cleanup(config).await?;
-
-    // Get hashes from OpenSearch for incremental indexing
-    let search_client = SearchClient::new(client);
-    let hashes: Option<OpensearchListHashesResponse> = if force {
-        None
-    } else {
-        let targets: Vec<String> = match target.as_deref() {
-            Some(tg) => vec![config.get_source(tg)?.to_string_lossy().to_string()],
-            None => config
-                .get_sources()
-                .iter()
-                .map(|s| s.to_string_lossy().to_string())
-                .collect(),
-        };
-        let mut all_hashes = OpensearchListHashesResponse {
-            hashes: HashMap::new(),
-        };
-        for tg in targets {
-            let index = config.get_index(&tg, IndexType::Files)?;
-            let file_hashes = search_client.get_hashes(&index).await?;
-
-            for h in file_hashes {
-                all_hashes.hashes.insert(h.path, h.hash);
-            }
-        }
-        Some(all_hashes)
-    };
-
-    // Get enriched data from analyzer (with incremental skip)
-    let sources = scan_enriches(config, target, hashes).await?;
-
-    // Check if there are files to index
-    let total_files: usize = sources.iter().map(|s| s.files.len()).sum();
-    if total_files == 0 {
-        return Ok(IndexReport {
-            meta: IndexMetaReport::default(),
-            files: IndexFilesReport::default(),
-        });
-    }
-
-    let total_files: usize = sources.iter().map(|s| s.files.len()).sum();
-    print_success!(
-        "LLM enrichment completed: {} sources, {} files",
-        sources.len(),
-        total_files
-    );
-
-    // Index metadata for all sources
-    print_info!("Starting data indexing to OpenSearch...");
-    let meta_items = OpensearchProjectMetaRequest::from_enriched(&sources);
-    let report_meta = indexer.index_meta(&meta_items, force).await?;
-
-    // Index files and analysis for each source
-    let mut total_files = 0;
-    let mut total_analysis = 0;
-
-    for source in &sources {
-        let root = PathBuf::from(&source.root);
-
-        let file_items = OpensearchFileContentRequest::from_enriched(source)?;
-        let analysis_items = OpensearchFileStatsRequest::from_enriched(source);
-
-        let report_files = indexer
-            .index_files(&root, &file_items, &analysis_items, force)
-            .await?;
-
-        total_files += report_files.files_indexed;
-        total_analysis += report_files.analysis_indexed;
-    }
-
-    Ok(IndexReport {
-        meta: report_meta,
-        files: IndexFilesReport {
-            files_indexed: total_files,
-            analysis_indexed: total_analysis,
-        },
-    })
-}
+//     Ok(IndexReport {
+//         meta: report_meta,
+//         files: IndexFilesReport {
+//             files_indexed: total_files,
+//             analysis_indexed: total_analysis,
+//         },
+//     })
+// }
