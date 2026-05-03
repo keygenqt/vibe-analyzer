@@ -3,10 +3,9 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
-use crate::opensearch::search::search_client::SearchClient;
+use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
 
-impl SearchClient {
+impl OpenSearchToolsClient {
     /// Get file AST by root and path from analysis indexes.
     pub async fn get_file_ast(
         &self,
@@ -37,7 +36,7 @@ impl SearchClient {
             }
         });
 
-        let resp = self.client.search(&index_list, query).await?;
+        let resp = self.client.call(&index_list, query).await?;
         let hits = resp["hits"]["hits"]
             .as_array()
             .ok_or_else(|| anyhow::anyhow!("Invalid response format"))?;

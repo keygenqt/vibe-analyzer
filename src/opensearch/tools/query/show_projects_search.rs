@@ -4,11 +4,11 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::configs::app::AppConfig;
-use crate::opensearch::data::responses::opensearch_project_meta_response::OpensearchProjectMetaResponse;
-use crate::opensearch::search::search_client::SearchClient;
+use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
 
-impl SearchClient {
+use crate::configs::app::AppConfig;
+
+impl OpenSearchToolsClient {
     /// Returns metadata for all indexed projects.
     pub async fn show_projects_search(&self) -> Result<Vec<OpensearchProjectMetaResponse>> {
         let index = AppConfig::meta_index();
@@ -16,7 +16,7 @@ impl SearchClient {
             "size": 999,
             "query": { "match_all": {} }
         });
-        let resp = self.client.search(&index, query).await?;
+        let resp = self.client.call(&index, query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
         let results: Vec<OpensearchProjectMetaResponse> = hits
             .iter()

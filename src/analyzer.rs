@@ -24,7 +24,11 @@ struct WorkerStats {
 }
 
 /// Scan and enrich sources with LLM-powered analysis.
-pub async fn scan_analyze(config: &AppConfig, target: Option<String>) -> Result<Vec<ProjectModel>> {
+pub async fn scan_analyze(
+    config: &AppConfig,
+    target: Option<String>,
+    force: bool,
+) -> Result<Vec<ProjectModel>> {
     let cluster = OllamaCluster::new(&config.ollama);
     if cluster.is_empty() {
         anyhow::bail!("Ollama hosts not configured. Add to ~/.vibe-analyzer/config.json");
@@ -46,7 +50,7 @@ pub async fn scan_analyze(config: &AppConfig, target: Option<String>) -> Result<
     print_success!("All {} Ollama servers ready", cluster.len());
 
     // Scan sources
-    let projects = scanner::scan_ast(config, target).await?;
+    let projects = scanner::scan_ast(config, target, force).await?;
     let total_files: usize = projects.iter().map(|p| p.files.len()).sum();
     if total_files == 0 {
         print_info!("No files to scan");

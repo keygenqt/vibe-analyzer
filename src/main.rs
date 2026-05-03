@@ -15,10 +15,11 @@ mod analyzer;
 mod cli;
 mod configs;
 mod export;
+mod indexer;
 mod ollama;
 // mod mcp;
 mod models;
-// mod opensearch;
+mod opensearch;
 mod scanner;
 mod utils;
 

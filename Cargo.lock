@@ -896,6 +896,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "glob"
+version = "0.3.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0cc23270f6e1808e30a928bdc84dea0b9b4136a8bc82338574f23baf47bbd280"
+
+[[package]]
 name = "globset"
 version = "0.4.18"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3184,23 +3190,9 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "tree-sitter",
- "tree-sitter-arkts-ng",
- "tree-sitter-bash",
- "tree-sitter-batch",
- "tree-sitter-c-sharp",
- "tree-sitter-dart",
- "tree-sitter-go",
- "tree-sitter-java",
- "tree-sitter-javascript",
- "tree-sitter-kotlin-ng",
- "tree-sitter-markdown-fork",
- "tree-sitter-python",
- "tree-sitter-rust",
- "tree-sitter-swift",
- "tree-sitter-typescript",
  "uuid",
  "vibe-ast",
+ "vibe-fs",
  "walkdir",
  "xml",
  "yaml_serde",
@@ -3231,6 +3223,21 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-swift",
  "tree-sitter-typescript",
+]
+
+[[package]]
+name = "vibe-fs"
+version = "0.0.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f68029f99e37c0943484551b1eb2d100b3513d0df07420cda30777a9fca06559"
+dependencies = [
+ "blake3",
+ "dirs",
+ "dunce",
+ "glob",
+ "ignore",
+ "rmp-serde",
+ "serde",
 ]
 
 [[package]]

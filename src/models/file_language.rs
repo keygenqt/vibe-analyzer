@@ -28,9 +28,6 @@ pub struct FileLanguageModel {
     /// File size in bytes.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub size_bytes: Option<u64>,
-    /// BLAKE3 hash.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub hash: Option<String>,
     /// Number of lines.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub lines_of_code: Option<usize>,
@@ -70,12 +67,15 @@ pub struct FileLanguageModel {
     /// YAML frontmatter key-value pairs.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub frontmatter: Option<HashMap<String, String>>,
-    /// Full file content.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub content: Option<String>,
     /// Search tags (structural + LLM-generated).
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub tags: Vec<String>,
+    /// BLAKE3 hash.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub hash: Option<String>,
+    /// Full file content.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub content: Option<String>,
     /// Detected programming or markup language.
     #[serde(skip)]
     pub node_language: Option<Language>,
@@ -110,7 +110,6 @@ impl FileModel for FileLanguageModel {
             language: self.language.clone(),
             summary: None,
             size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
-            hash: None,
             lines_of_code: self.lines_of_code.or_else(|| self.lines_of_code()),
             functions: self.functions.clone(),
             classes: self.classes.clone(),
@@ -124,8 +123,9 @@ impl FileModel for FileLanguageModel {
             links: self.links.clone(),
             code_blocks: self.code_blocks.clone(),
             frontmatter: self.frontmatter.clone(),
-            content: None,
             tags: Vec::new(),
+            hash: None,
+            content: None,
             node_language: None,
         })
     }
@@ -136,7 +136,6 @@ impl FileModel for FileLanguageModel {
             language: self.language.clone(),
             summary: self.summary.clone(),
             size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
-            hash: None,
             lines_of_code: self.lines_of_code.or_else(|| self.lines_of_code()),
             functions: self.functions.clone(),
             classes: self.classes.clone(),
@@ -150,10 +149,15 @@ impl FileModel for FileLanguageModel {
             links: self.links.clone(),
             code_blocks: self.code_blocks.clone(),
             frontmatter: self.frontmatter.clone(),
-            content: None,
             tags: self.tags.clone(),
+            hash: None,
+            content: None,
             node_language: None,
         })
+    }
+
+    fn format_index(&self) -> FileModels {
+        self.format_analyze()
     }
 }
 

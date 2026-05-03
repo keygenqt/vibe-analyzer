@@ -7,13 +7,9 @@ use anyhow::Result;
 use serde_json::Value;
 use serde_json::json;
 
-use crate::opensearch::data::requests::opensearch_file_stats_request::OpensearchFileStatsRequest;
-use crate::opensearch::data::responses::opensearch_stats_response::OpensearchStatsLanguageResponse;
-use crate::opensearch::data::responses::opensearch_stats_response::OpensearchStatsResponse;
-use crate::opensearch::search::search_client::SearchClient;
-use crate::scanner::data::output::scan_project_stats_output::ScanProjectStatsOutput;
+use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
 
-impl SearchClient {
+impl OpenSearchToolsClient {
     /// Get statistics for multiple sources.
     pub async fn show_stats_search(&self, indexes: &[String]) -> Result<OpensearchStatsResponse> {
         let mut lang_map: HashMap<String, OpensearchStatsLanguageResponse> = HashMap::new();

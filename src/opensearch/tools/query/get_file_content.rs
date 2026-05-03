@@ -3,9 +3,9 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::search::search_client::SearchClient;
+use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
 
-impl SearchClient {
+impl OpenSearchToolsClient {
     /// Get file content by root and path from files indexes.
     /// If root is None, searches across all provided indexes without root filter.
     pub async fn get_file_content(
@@ -37,7 +37,7 @@ impl SearchClient {
             }
         });
 
-        let resp = self.client.search(&index_list, query).await?;
+        let resp = self.client.call(&index_list, query).await?;
         let hits = resp["hits"]["hits"]
             .as_array()
             .ok_or_else(|| anyhow::anyhow!("Invalid response format"))?;

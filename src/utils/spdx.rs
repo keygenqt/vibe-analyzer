@@ -11,8 +11,7 @@ use tempfile::tempdir;
 use tokio::sync::OnceCell;
 use zip::ZipArchive;
 
-use crate::print_info;
-use crate::utils::path::get_config_dir;
+use crate::{print_info, utils::path::config_dir};
 
 /// SPDX license list repository URL.
 const SPDX_REPO_URL: &str = "https://github.com/spdx/license-list-data/archive/refs/heads/main.zip";
@@ -49,7 +48,7 @@ impl LicenseDetector {
 
     /// Initialize license store from cache or download SPDX data.
     async fn init_store() -> Store {
-        let cache_path = get_config_dir().join("askalono-cache.bin.zstd");
+        let cache_path = config_dir().join("askalono-cache.bin.zstd");
         if cache_path.exists() {
             let file = File::open(&cache_path).expect("Failed to open cache file");
             return Store::from_cache(file).expect("Failed to load cache");

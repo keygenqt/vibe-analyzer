@@ -13,11 +13,8 @@ use crate::configs::dev::LogLevel;
 use crate::configs::mcp::McpConfig;
 use crate::print_info;
 use crate::utils;
-use crate::utils::app;
 use crate::utils::constants;
-use crate::utils::hash::hash_from_path;
 use crate::utils::json5::Json5;
-use crate::utils::path::convert_relative;
 use crate::utils::path::{self};
 
 use super::ollama::OllamaConfig;
@@ -25,19 +22,6 @@ use super::opensearch::OpenSearchConfig;
 
 /// Global config directory override.
 static GLOBAL_CONFIG_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
-
-/// Type of OpenSearch index.
-#[allow(dead_code)]
-pub enum IndexType {
-    /// Metadata index (shared across all sources).
-    Meta,
-    /// Files content index.
-    Files,
-    /// Files analysis index (AST + enrichment).
-    Analysis,
-    /// All index types.
-    All,
-}
 
 /// Main application configuration structure.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,7 +63,7 @@ impl AppConfig {
         if let Some(Some(dir)) = GLOBAL_CONFIG_DIR.get() {
             dir.clone()
         } else {
-            path::get_config_dir()
+            path::config_dir()
         }
     }
 
@@ -122,8 +106,7 @@ impl AppConfig {
 
             // Normalize paths on load
             for source in &mut config.sources {
-                let path_str = source.to_string_lossy();
-                if let Some(abs_path) = convert_relative(&path_str) {
+                if let Ok(abs_path) = vibe_fs::resolve(&source) {
                     *source = abs_path;
                 }
             }
@@ -211,11 +194,7 @@ impl AppConfig {
 
     /// Add source to config.
     pub fn add_source(&mut self, path: PathBuf) {
-        let path_str = path.to_string_lossy();
-        let absolute_path = match convert_relative(&path_str) {
-            Some(p) => p,
-            None => path,
-        };
+        let absolute_path = vibe_fs::resolve(&path).unwrap_or(path);
 
         if !self.sources.contains(&absolute_path) {
             self.sources.push(absolute_path);
@@ -225,10 +204,7 @@ impl AppConfig {
 
     /// Remove source from config by target path.
     pub fn remove_source(&mut self, target: &str) -> Result<PathBuf> {
-        // Try to resolve path, but don't require it to exist
-        let search_path = convert_relative(target).unwrap_or_else(|| PathBuf::from(target));
-
-        // Search by exact match OR by matching the end of the path (name)
+        let search_path = vibe_fs::resolve(target).unwrap_or_else(|_| PathBuf::from(target));
         if let Some(pos) = self.sources.iter().position(|p| {
             *p == search_path || p.ends_with(target) || p.to_string_lossy().ends_with(target)
         }) {
@@ -239,7 +215,6 @@ impl AppConfig {
             Err(anyhow::anyhow!("Source not found: {}", target))
         }
     }
-
     /// Get source by exact path or unique directory name.
     pub fn get_source(&self, target: &str) -> Result<PathBuf> {
         let path = PathBuf::from(target);
@@ -280,60 +255,5 @@ impl AppConfig {
             .filter(|p| p.exists())
             .cloned()
             .collect()
-    }
-
-    /// Get meta index name.
-    pub fn meta_index() -> String {
-        format!("{}-meta", app::app_name())
-    }
-
-    /// Get files index name for a source.
-    pub fn files_index(root: &PathBuf) -> String {
-        format!("{}-files-{}", app::app_name(), hash_from_path(root))
-    }
-
-    /// Get files analysis index name for a source.
-    pub fn files_analysis_index(root: &PathBuf) -> String {
-        format!(
-            "{}-files-analysis-{}",
-            app::app_name(),
-            hash_from_path(root)
-        )
-    }
-
-    /// Get index name for a specific source by target.
-    pub fn get_index(&self, target: &str, index_type: IndexType) -> Result<String> {
-        let source = self.get_source(target)?;
-        Ok(match index_type {
-            IndexType::Meta => Self::meta_index(),
-            IndexType::Files => Self::files_index(&source),
-            IndexType::Analysis => Self::files_analysis_index(&source),
-            IndexType::All => unreachable!("All not supported for single source"),
-        })
-    }
-
-    /// Get indexes names for all sources.
-    pub fn get_indexes(&self, index_type: IndexType) -> Vec<String> {
-        match index_type {
-            IndexType::Meta => vec![Self::meta_index()],
-            IndexType::Files => self
-                .get_sources()
-                .iter()
-                .map(|source| Self::files_index(source))
-                .collect(),
-            IndexType::Analysis => self
-                .get_sources()
-                .iter()
-                .map(|source| Self::files_analysis_index(source))
-                .collect(),
-            IndexType::All => {
-                let mut indexes = vec![Self::meta_index()];
-                for source in self.get_sources() {
-                    indexes.push(Self::files_index(&source));
-                    indexes.push(Self::files_analysis_index(&source));
-                }
-                indexes
-            }
-        }
     }
 }

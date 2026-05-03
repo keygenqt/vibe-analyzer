@@ -94,4 +94,7 @@ pub trait FileModel {
 
     /// AST + enrichment export.
     fn format_analyze(&self) -> crate::models::file_models::FileModels;
+
+    /// Indexing export: structure + enrichment, no content/hash.
+    fn format_index(&self) -> crate::models::file_models::FileModels;
 }

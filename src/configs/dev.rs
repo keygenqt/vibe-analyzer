@@ -6,7 +6,7 @@ use serde::Serialize;
 use std::path::PathBuf;
 
 use crate::configs::app::AppConfig;
-use crate::utils::path::get_config_dir;
+use crate::utils::path::config_dir;
 
 /// Log level for tracing.
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
@@ -67,7 +67,7 @@ impl Default for DevConfig {
     fn default() -> Self {
         Self {
             log_level: LogLevel::Default,
-            spdx_data_path: get_config_dir().join("spdx"),
+            spdx_data_path: config_dir().join("spdx"),
         }
     }
 }
@@ -103,6 +103,6 @@ impl DevConfig {
 
     /// Checks if the configured SPDX path is the default one.
     fn is_default_path(&self) -> bool {
-        self.spdx_data_path == get_config_dir().join("spdx")
+        self.spdx_data_path == config_dir().join("spdx")
     }
 }

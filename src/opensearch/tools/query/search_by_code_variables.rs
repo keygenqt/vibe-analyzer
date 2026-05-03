@@ -3,11 +3,9 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::data::requests::opensearch_file_stats_request::OpensearchFileStatsRequest;
-use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
-use crate::opensearch::search::search_client::SearchClient;
+use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
 
-impl SearchClient {
+impl OpenSearchToolsClient {
     pub async fn search_by_code_variables(
         &self,
         indexes: &[String],
@@ -59,7 +57,7 @@ impl SearchClient {
             }),
         };
 
-        let resp = self.client.search(&index_list, search_query).await?;
+        let resp = self.client.call(&index_list, search_query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
 
         let results: Vec<OpensearchFileMetaResponse> = hits

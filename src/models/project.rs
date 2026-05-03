@@ -97,6 +97,18 @@ impl ProjectModel {
         }
     }
 
+    /// Format project for meta index (without files).
+    pub fn format_index(&self) -> Self {
+        ProjectModel {
+            path: self.path.clone(),
+            readme: self.readme.clone(),
+            summary: self.summary.clone(),
+            licenses: self.licenses.clone(),
+            stats: self.stats.clone(),
+            files: Vec::new(),
+        }
+    }
+
     /// Compute aggregated statistics from file list.
     fn compute_stats(files: &[FileModels]) -> StatsModel {
         let total_files = files.len();

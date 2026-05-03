@@ -50,4 +50,8 @@ impl FileModel for FileTextModel {
     fn format_analyze(&self) -> FileModels {
         self.format_ast()
     }
+
+    fn format_index(&self) -> FileModels {
+        self.format_ast()
+    }
 }

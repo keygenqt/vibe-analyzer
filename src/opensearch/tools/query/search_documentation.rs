@@ -4,9 +4,7 @@ use anyhow::Result;
 use serde_json::Value;
 use serde_json::json;
 
-use crate::opensearch::data::requests::opensearch_file_stats_request::OpensearchFileStatsRequest;
-use crate::opensearch::data::responses::opensearch_file_meta_response::OpensearchFileMetaResponse;
-use crate::opensearch::search::search_client::SearchClient;
+use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
 
 /// Detects script types in query string.
 struct ScriptFlags {
@@ -15,7 +13,7 @@ struct ScriptFlags {
     cjk: bool,
 }
 
-impl SearchClient {
+impl OpenSearchToolsClient {
     /// Searches markdown documentation across analysis indexes.
     /// Returns matching files with headings, links, code blocks, and frontmatter.
     pub async fn search_documentation(
@@ -48,7 +46,7 @@ impl SearchClient {
             serde_json::to_string(&search_query).unwrap()
         );
 
-        let resp = self.client.search(&index_list, search_query).await?;
+        let resp = self.client.call(&index_list, search_query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
 
         let results: Vec<OpensearchFileMetaResponse> = hits

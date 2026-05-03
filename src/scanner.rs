@@ -11,10 +11,13 @@ use crate::print_info;
 use crate::print_newline;
 use crate::print_progress;
 use crate::print_warning;
-use crate::utils::path;
 
 /// Scans configured sources and extracts AST with metadata.
-pub async fn scan_ast(config: &AppConfig, target: Option<String>) -> Result<Vec<ProjectModel>> {
+pub async fn scan_ast(
+    config: &AppConfig,
+    target: Option<String>,
+    force: bool,
+) -> Result<Vec<ProjectModel>> {
     let sources = match target {
         Some(tg) => vec![config.get_source(&tg)?],
         None => config.get_sources(),
@@ -24,7 +27,7 @@ pub async fn scan_ast(config: &AppConfig, target: Option<String>) -> Result<Vec<
         let name = source.file_name().unwrap().to_string_lossy();
         print_info!("Start scan source: {}", name.bold().blue());
         let canonical_path = dunce::canonicalize(&source)?;
-        let files_full = path::source_files(&canonical_path)?;
+        let files_full = vibe_fs::scan(&canonical_path, force)?;
         let total = files_full.len();
         let mut results = Vec::with_capacity(total);
         for (i, path) in files_full.iter().enumerate() {

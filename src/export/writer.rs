@@ -11,7 +11,6 @@ use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
-use crate::utils::path;
 use anyhow::Result;
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -91,17 +90,15 @@ fn get_default_export(prefix: &String, format: ExportFormat) -> PathBuf {
 
 /// Export project model to file in specified format.
 pub fn export(model: ExportModel, options: &ExportOptions) -> Result<PathBuf> {
-    // Look up the writer for the requested format
     let writer =
         get_writer(options.format).ok_or_else(|| anyhow::anyhow!("Exporter is not registered."))?;
-    // Resolve output path: use custom path or generate default
+
     let output_path = match options.output.clone() {
-        Some(path) => path::convert_relative(&path.to_string_lossy())
-            .ok_or_else(|| anyhow::anyhow!("Error path for save output."))?,
+        Some(path) => vibe_fs::resolve(&path)
+            .map_err(|e| anyhow::anyhow!("Error path for save output: {}", e))?,
         None => get_default_export(&options.prefix, options.format),
     };
-    // Perform the actual export
+
     writer.export(&model, &output_path)?;
-    // Done
     Ok(output_path)
 }

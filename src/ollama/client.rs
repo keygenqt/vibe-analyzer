@@ -91,7 +91,6 @@ impl OllamaClient {
         // Extract content from markdown code block
         if let Some(start_md) = content.find("```") {
             let after_start = &content[start_md + 3..];
-            // Skip optional language identifier
             let body_start = after_start.find('\n').map(|i| i + 1).unwrap_or(0);
             let body = &after_start[body_start..];
             if let Some(end_md) = body.find("```") {
@@ -112,7 +111,15 @@ impl OllamaClient {
             .rfind(|c: char| c == '}' || c == ']')
             .map(|i| i + 1)
             .unwrap_or(content.len());
-        let mut json = content[start..end].trim().to_string();
+        let json = content[start..end].trim().to_string();
+
+        // Try to parse as-is first
+        if serde_json::from_str::<serde_json::Value>(&json).is_ok() {
+            return json;
+        }
+
+        // Fix malformed JSON
+        let mut json = json;
 
         // Fix unquoted keys: `key:` → `"key":`
         let key_re = regex::Regex::new(r"(?m)^(\s*)([a-zA-Z_][a-zA-Z0-9_]*)(\s*:)").unwrap();
@@ -121,10 +128,6 @@ impl OllamaClient {
         // Fix comma-before-closing: `,}` or `,]`
         let comma_re = regex::Regex::new(r",(\s*[\]}])").unwrap();
         json = comma_re.replace_all(&json, r#"$1"#).to_string();
-
-        // Fix single-quoted strings: `'key'` → `"key"`
-        let sq_re = regex::Regex::new(r"'([^']*)'").unwrap();
-        json = sq_re.replace_all(&json, r#""$1""#).to_string();
 
         // Balance braces and brackets
         let mut braces: i32 = 0;
