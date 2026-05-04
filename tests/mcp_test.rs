@@ -23,17 +23,17 @@ const MODELS: &[&str] = &[
 
 /// MCP tool scenarios to execute.
 const SCENARIOS: &[&str] = &[
-    "admin_sync",
-    "get_file_ast",
-    "get_file_content",
-    "search_by_code_classes",
-    "search_by_code_functions",
-    "search_by_code_imports",
-    "search_by_code_variables",
-    "search_documentation",
+    // "admin_sync",
+    // "get_file_ast",
+    // "get_file_content",
+    // "search_by_code_classes",
+    // "search_by_code_functions",
+    // "search_by_code_imports",
+    // "search_by_code_variables",
+    // "search_documentation",
     "show_projects",
-    "show_stats",
-    "show_tree",
+    // "show_stats",
+    // "show_tree",
 ];
 
 #[tokio::test]

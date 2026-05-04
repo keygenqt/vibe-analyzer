@@ -7,12 +7,15 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
-use crate::configs::app::IndexType;
-use crate::mcp::server::AppState;
-use crate::mcp::tools::data::params::mcp_show_tree_params::McpShowTreeParams;
-use crate::mcp::tools::data::responses::mcp_show_tree_response::McpShowTreeResponse;
-use crate::utils::mcp_normalize::get_targets_normalize;
-use crate::utils::mcp_normalize::number_normalize;
+use crate::utils::mcp_normalize::target_normalize;
+use crate::{
+    mcp::{
+        params::show_tree_params::ShowTreeParams,
+        responses::{McpResponse, show_tree_response::ShowTreeResponse},
+        server::AppState,
+    },
+    utils::mcp_normalize::number_normalize,
+};
 
 /// Tool for generating directory tree structure.
 #[derive(Clone)]
@@ -27,30 +30,34 @@ impl ShowTreeTool {
     }
 
     /// Executes the tree generation.
-    pub async fn execute(&self, params: McpShowTreeParams) -> Result<CallToolResult, ErrorData> {
-        // Normalize target and level
-        let indexes =
-            get_targets_normalize(&self.state.config, &params.target, IndexType::Analysis)
-                .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
-        let level = number_normalize(params.level, McpShowTreeParams::default_level());
+    pub async fn execute(&self, params: ShowTreeParams) -> Result<CallToolResult, ErrorData> {
+        // Normalize target
+        let target = target_normalize(&self.state.config, params.target.as_deref())
+            .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
 
-        // Fetch structure from OpenSearch
-        let result = self
+        // Normalize level
+        let level = number_normalize(params.level, ShowTreeParams::default_level(), None);
+
+        // Create tools client
+        let client = self
             .state
-            .search_client
-            .show_tree(&indexes, level as usize)
+            .open_search_client
+            .client_tool_files_meta(target.clone())
+            .await
+            .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
+
+        // Fetch tree
+        let output = client
+            .show_tree(level)
             .await
             .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
-        // Build and return response
+        // Build response
+        let response = ShowTreeResponse::try_from(output)
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
         Ok(CallToolResult::success(vec![Content::text(
-            McpShowTreeResponse {
-                target: params.target.clone(),
-                tree: result.tree,
-                total_files: result.files,
-                total_dirs: result.directories,
-            }
-            .format(),
+            response.format(),
         )]))
     }
 }

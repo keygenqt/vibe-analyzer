@@ -23,7 +23,6 @@ use crate::mcp::handler::AliasHandler;
 use crate::mcp::log;
 use crate::mcp::router::RouterTools;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::search::search_client::SearchClient;
 use crate::print_info;
 use crate::utils::app;
 
@@ -31,7 +30,7 @@ use crate::utils::app;
 #[derive(Clone, FromRef)]
 pub struct AppState {
     pub config: Arc<AppConfig>,
-    pub search_client: Arc<SearchClient>,
+    pub open_search_client: Arc<OpenSearchClient>,
     pub protocol_version: ProtocolVersion,
 }
 
@@ -60,10 +59,9 @@ pub async fn run_server(
         std::env::set_current_dir(&dir)?;
     }
 
-    let client = OpenSearchClient::new(&config.opensearch.host)?;
     let state = AppState {
         config: Arc::new(config.clone()),
-        search_client: Arc::new(SearchClient::new(client)),
+        open_search_client: Arc::new(OpenSearchClient::new(&config)?),
         protocol_version: protocol_version.clone(),
     };
 

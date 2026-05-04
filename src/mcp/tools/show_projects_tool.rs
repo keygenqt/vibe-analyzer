@@ -7,9 +7,14 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
-use crate::mcp::server::AppState;
-use crate::mcp::tools::data::responses::mcp_show_projects_response::McpShowProjectInfoResponse;
-use crate::mcp::tools::data::responses::mcp_show_projects_response::McpShowProjectsResponse;
+use crate::{
+    mcp::{
+        params::show_projects_params::ShowProjectsParams,
+        responses::{McpResponse, show_projects_response::ShowProjectsResponse},
+        server::AppState,
+    },
+    utils::mcp_normalize::number_normalize,
+};
 
 /// Tool for listing all knowledge sources.
 #[derive(Clone)]
@@ -24,25 +29,26 @@ impl ShowProjectsTool {
     }
 
     /// Returns list of available projects.
-    pub async fn execute(&self) -> Result<CallToolResult, ErrorData> {
-        // Fetch and map projects from OpenSearch
-        let projects: Vec<McpShowProjectInfoResponse> = self
-            .state
-            .search_client
-            .show_projects_search()
-            .await
-            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?
-            .iter()
-            .map(|m| m.into())
-            .collect();
+    pub async fn execute(&self, params: ShowProjectsParams) -> Result<CallToolResult, ErrorData> {
+        let size = number_normalize(params.size, ShowProjectsParams::default_size(), Some(100));
 
-        // Build response
+        let client = self
+            .state
+            .open_search_client
+            .client_tool_projects_meta()
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        let projects = client
+            .show_projects_search(size)
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        let response = ShowProjectsResponse::try_from(projects.as_slice())
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
         Ok(CallToolResult::success(vec![Content::text(
-            McpShowProjectsResponse {
-                total: projects.len(),
-                projects,
-            }
-            .format(),
+            response.format(),
         )]))
     }
 }

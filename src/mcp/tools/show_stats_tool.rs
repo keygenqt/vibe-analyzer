@@ -7,11 +7,12 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
-use crate::configs::app::IndexType;
-use crate::mcp::server::AppState;
-use crate::mcp::tools::data::params::mcp_show_stats_params::McpShowStatsParams;
-use crate::mcp::tools::data::responses::mcp_show_stats_response::McpShowStatsResponse;
-use crate::utils::mcp_normalize::get_targets_normalize;
+use crate::mcp::{
+    params::show_stats_params::ShowStatsParams,
+    responses::{McpResponse, show_stats_response::ShowStatsResponse},
+    server::AppState,
+};
+use crate::utils::mcp_normalize::target_normalize;
 
 /// Tool for retrieving project statistics.
 #[derive(Clone)]
@@ -26,28 +27,31 @@ impl ShowStatsTool {
     }
 
     /// Executes the statistics query.
-    pub async fn execute(&self, params: McpShowStatsParams) -> Result<CallToolResult, ErrorData> {
-        // Normalize target and get indexes
-        let indexes =
-            get_targets_normalize(&self.state.config, &params.target, IndexType::Analysis)
-                .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
+    pub async fn execute(&self, params: ShowStatsParams) -> Result<CallToolResult, ErrorData> {
+        // Normalize target
+        let target = target_normalize(&self.state.config, params.target.as_deref())
+            .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
 
-        // Fetch stats from OpenSearch
-        let results = self
+        // Create tools client
+        let client = self
             .state
-            .search_client
-            .show_stats_search(&indexes)
+            .open_search_client
+            .client_tool_files_meta(target.clone())
+            .await
+            .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
+
+        // Fetch stats
+        let output = client
+            .show_stats_search()
             .await
             .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
-        // Build and return response
+        // Build response
+        let response = ShowStatsResponse::try_from(output)
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
         Ok(CallToolResult::success(vec![Content::text(
-            McpShowStatsResponse {
-                target: params.target.clone(),
-                languages: results.languages.into_iter().map(|l| l.into()).collect(),
-                total: results.total.into(),
-            }
-            .format(),
+            response.format(),
         )]))
     }
 }

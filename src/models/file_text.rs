@@ -54,4 +54,15 @@ impl FileModel for FileTextModel {
     fn format_index(&self) -> FileModels {
         self.format_ast()
     }
+
+    fn format_tool(&self) -> FileModels {
+        FileModels::Text(FileTextModel {
+            path: self.path.clone(),
+            preview: self.preview.clone().or_else(|| self.preview(None)),
+            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
+            extension: None,
+            hash: None,
+            content: None,
+        })
+    }
 }

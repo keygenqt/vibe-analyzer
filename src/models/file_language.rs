@@ -3,17 +3,14 @@
 
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::Path};
-use vibe_ast::{
-    Language,
-    nodes::{
-        class_node::ClassNode, enum_node::EnumNode, function_node::FunctionNode,
-        heading_node::HeadingNode, interface_node::InterfaceNode, link_node::LinkNode,
-        nodes::Nodes, struct_node::StructNode, variable_node::VariableNode,
-    },
-    traits::LanguageNode,
-};
+use vibe_ast::{Language, nodes::nodes::Nodes, traits::LanguageNode};
 
-use crate::models::{file_model::FileModel, file_models::FileModels};
+use crate::models::{
+    ast_class::AstClassModel, ast_enum::AstEnumModel, ast_function::AstFunctionModel,
+    ast_heading::AstHeadingModel, ast_interface::AstInterfaceModel, ast_link::AstLinkModel,
+    ast_model::AstModel, ast_struct::AstStructModel, ast_variable::AstVariableModel,
+    file_model::FileModel, file_models::FileModels,
+};
 
 /// Parsed source code or Markdown file.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -33,22 +30,22 @@ pub struct FileLanguageModel {
     pub lines_of_code: Option<usize>,
     /// Top-level functions and methods.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub functions: Vec<FunctionModel>,
+    pub functions: Vec<AstFunctionModel>,
     /// Class declarations.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub classes: Vec<Class>,
+    pub classes: Vec<AstClassModel>,
     /// Struct declarations.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub structs: Vec<StructModel>,
+    pub structs: Vec<AstStructModel>,
     /// Enum declarations.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub enums: Vec<EnumModel>,
+    pub enums: Vec<AstEnumModel>,
     /// Interface or trait declarations.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub interfaces: Vec<InterfaceModel>,
+    pub interfaces: Vec<AstInterfaceModel>,
     /// Global variables and constants.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub variables: Vec<VariableModel>,
+    pub variables: Vec<AstVariableModel>,
     /// Import declarations.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub imports: Vec<String>,
@@ -57,10 +54,10 @@ pub struct FileLanguageModel {
     pub header_comments: Vec<String>,
     /// Markdown headings with previews.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub headings: Vec<HeadingModel>,
+    pub headings: Vec<AstHeadingModel>,
     /// Markdown links.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub links: Vec<LinkModel>,
+    pub links: Vec<AstLinkModel>,
     /// Code block languages used in the file.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub code_blocks: Vec<String>,
@@ -111,16 +108,16 @@ impl FileModel for FileLanguageModel {
             summary: None,
             size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
             lines_of_code: self.lines_of_code.or_else(|| self.lines_of_code()),
-            functions: self.functions.clone(),
-            classes: self.classes.clone(),
-            structs: self.structs.clone(),
-            enums: self.enums.clone(),
-            interfaces: self.interfaces.clone(),
-            variables: self.variables.clone(),
+            functions: self.functions.iter().map(|f| f.format_ast()).collect(),
+            classes: self.classes.iter().map(|c| c.format_ast()).collect(),
+            structs: self.structs.iter().map(|s| s.format_ast()).collect(),
+            enums: self.enums.iter().map(|e| e.format_ast()).collect(),
+            interfaces: self.interfaces.iter().map(|i| i.format_ast()).collect(),
+            variables: self.variables.iter().map(|v| v.format_ast()).collect(),
             imports: self.imports.clone(),
             header_comments: self.header_comments.clone(),
-            headings: self.headings.clone(),
-            links: self.links.clone(),
+            headings: self.headings.iter().map(|h| h.format_ast()).collect(),
+            links: self.links.iter().map(|l| l.format_ast()).collect(),
             code_blocks: self.code_blocks.clone(),
             frontmatter: self.frontmatter.clone(),
             tags: Vec::new(),
@@ -137,16 +134,16 @@ impl FileModel for FileLanguageModel {
             summary: self.summary.clone(),
             size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
             lines_of_code: self.lines_of_code.or_else(|| self.lines_of_code()),
-            functions: self.functions.clone(),
-            classes: self.classes.clone(),
-            structs: self.structs.clone(),
-            enums: self.enums.clone(),
-            interfaces: self.interfaces.clone(),
-            variables: self.variables.clone(),
+            functions: self.functions.iter().map(|f| f.format_analyze()).collect(),
+            classes: self.classes.iter().map(|c| c.format_analyze()).collect(),
+            structs: self.structs.iter().map(|s| s.format_analyze()).collect(),
+            enums: self.enums.iter().map(|e| e.format_analyze()).collect(),
+            interfaces: self.interfaces.iter().map(|i| i.format_analyze()).collect(),
+            variables: self.variables.iter().map(|v| v.format_analyze()).collect(),
             imports: self.imports.clone(),
             header_comments: self.header_comments.clone(),
-            headings: self.headings.clone(),
-            links: self.links.clone(),
+            headings: self.headings.iter().map(|h| h.format_analyze()).collect(),
+            links: self.links.iter().map(|l| l.format_analyze()).collect(),
             code_blocks: self.code_blocks.clone(),
             frontmatter: self.frontmatter.clone(),
             tags: self.tags.clone(),
@@ -158,6 +155,32 @@ impl FileModel for FileLanguageModel {
 
     fn format_index(&self) -> FileModels {
         self.format_analyze()
+    }
+
+    fn format_tool(&self) -> FileModels {
+        FileModels::Language(FileLanguageModel {
+            path: self.path.clone(),
+            language: self.language.clone(),
+            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
+            functions: self.functions.iter().map(|f| f.format_tool()).collect(),
+            classes: self.classes.iter().map(|c| c.format_tool()).collect(),
+            structs: self.structs.iter().map(|s| s.format_tool()).collect(),
+            enums: self.enums.iter().map(|e| e.format_tool()).collect(),
+            interfaces: self.interfaces.iter().map(|i| i.format_tool()).collect(),
+            variables: self.variables.iter().map(|v| v.format_tool()).collect(),
+            imports: self.imports.clone(),
+            header_comments: self.header_comments.clone(),
+            headings: self.headings.iter().map(|h| h.format_tool()).collect(),
+            links: self.links.iter().map(|l| l.format_tool()).collect(),
+            code_blocks: self.code_blocks.clone(),
+            frontmatter: self.frontmatter.clone(),
+            tags: vec![],
+            summary: None,
+            lines_of_code: None,
+            hash: None,
+            content: None,
+            node_language: None,
+        })
     }
 }
 
@@ -337,159 +360,6 @@ impl From<Nodes> for FileLanguageModel {
                 node_language: Some(Language::TypeScript),
                 ..Default::default()
             },
-        }
-    }
-}
-
-/// Function or method signature with documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct FunctionModel {
-    /// Full function signature.
-    pub signature: String,
-    /// Documentation comments.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub comments: Vec<String>,
-}
-
-impl From<FunctionNode> for FunctionModel {
-    fn from(node: FunctionNode) -> Self {
-        FunctionModel {
-            signature: node.signature,
-            comments: node.comments,
-        }
-    }
-}
-
-/// Class declaration with documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Class {
-    /// Full class signature.
-    pub signature: String,
-    /// Documentation comments.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub comments: Vec<String>,
-}
-
-impl From<ClassNode> for Class {
-    fn from(node: ClassNode) -> Self {
-        Class {
-            signature: node.signature,
-            comments: node.comments,
-        }
-    }
-}
-
-/// Struct or record declaration with documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StructModel {
-    /// Full struct signature.
-    pub signature: String,
-    /// Documentation comments.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub comments: Vec<String>,
-}
-
-impl From<StructNode> for StructModel {
-    fn from(node: StructNode) -> Self {
-        StructModel {
-            signature: node.signature,
-            comments: node.comments,
-        }
-    }
-}
-
-/// Enum declaration with documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EnumModel {
-    /// Full enum signature.
-    pub signature: String,
-    /// Documentation comments.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub comments: Vec<String>,
-}
-
-impl From<EnumNode> for EnumModel {
-    fn from(node: EnumNode) -> Self {
-        EnumModel {
-            signature: node.signature,
-            comments: node.comments,
-        }
-    }
-}
-
-/// Interface or trait declaration with documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InterfaceModel {
-    /// Full interface signature.
-    pub signature: String,
-    /// Documentation comments.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub comments: Vec<String>,
-}
-
-impl From<InterfaceNode> for InterfaceModel {
-    fn from(node: InterfaceNode) -> Self {
-        InterfaceModel {
-            signature: node.signature,
-            comments: node.comments,
-        }
-    }
-}
-
-/// Global variable or constant with documentation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VariableModel {
-    /// Full variable signature.
-    pub signature: String,
-    /// Documentation comments.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub comments: Vec<String>,
-}
-
-impl From<VariableNode> for VariableModel {
-    fn from(node: VariableNode) -> Self {
-        VariableModel {
-            signature: node.signature,
-            comments: node.comments,
-        }
-    }
-}
-
-/// Markdown heading with level, title, and content preview.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct HeadingModel {
-    /// Heading level (1-6).
-    pub level: u8,
-    /// Heading text.
-    pub title: String,
-    /// First non-empty line after the heading.
-    pub preview: String,
-}
-
-impl From<HeadingNode> for HeadingModel {
-    fn from(node: HeadingNode) -> Self {
-        HeadingModel {
-            level: node.level,
-            title: node.title,
-            preview: node.preview,
-        }
-    }
-}
-
-/// Markdown link with display text and URL.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct LinkModel {
-    /// Visible text of the link.
-    pub text: String,
-    /// Target URL.
-    pub url: String,
-}
-
-impl From<LinkNode> for LinkModel {
-    fn from(node: LinkNode) -> Self {
-        LinkModel {
-            text: node.text,
-            url: node.url,
         }
     }
 }

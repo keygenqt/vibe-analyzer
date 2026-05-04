@@ -3,7 +3,7 @@
 
 use std::path::Path;
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use vibe_ast::nodes::nodes::Nodes;
 
 use crate::models::{
@@ -11,7 +11,7 @@ use crate::models::{
     file_text::FileTextModel,
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum FileModels {
     Language(FileLanguageModel),

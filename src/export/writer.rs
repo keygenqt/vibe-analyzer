@@ -11,6 +11,7 @@ use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
+use crate::utils::app;
 use anyhow::Result;
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -81,9 +82,9 @@ fn get_writer(format: ExportFormat) -> Option<&'static dyn ExportWriter> {
 }
 
 /// Generates the default export file path in the Downloads directory.
-fn get_default_export(prefix: &String, format: ExportFormat) -> PathBuf {
+fn get_default_export(format: ExportFormat) -> PathBuf {
     let timestamp = Local::now().format("%d-%m-%Y_%H-%M-%S");
-    let filename = format!("{}-{}.{}", prefix, timestamp, format.extension());
+    let filename = format!("{}-{}.{}", app::app_name(), timestamp, format.extension());
     let downloads_dir = dirs::download_dir().expect("Failed to get downloads directory");
     downloads_dir.join(filename)
 }
@@ -96,7 +97,7 @@ pub fn export(model: ExportModel, options: &ExportOptions) -> Result<PathBuf> {
     let output_path = match options.output.clone() {
         Some(path) => vibe_fs::resolve(&path)
             .map_err(|e| anyhow::anyhow!("Error path for save output: {}", e))?,
-        None => get_default_export(&options.prefix, options.format),
+        None => get_default_export(options.format),
     };
 
     writer.export(&model, &output_path)?;

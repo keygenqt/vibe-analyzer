@@ -4,12 +4,9 @@
 use clap::Subcommand;
 
 use crate::configs::app::AppConfig;
-use crate::configs::app::IndexType;
 use crate::exit_error;
 use crate::opensearch::client::OpenSearchClient;
-use crate::opensearch::search::search_client::SearchClient;
 use crate::print_info;
-use crate::print_warning;
 
 /// Project information and statistics commands.
 #[derive(Subcommand)]
@@ -25,7 +22,7 @@ pub enum StatsAction {
     Tree {
         /// Target source
         #[arg(long)]
-        target: String,
+        target: Option<String>,
 
         /// Maximum depth to traverse (default: 3)
         #[arg(long, short = 'L', default_value = "3")]
@@ -42,7 +39,7 @@ pub async fn run(action: StatsAction) {
     };
 
     // Establish connection to OpenSearch
-    let client = match OpenSearchClient::new(&config.opensearch.host) {
+    let client = match OpenSearchClient::new(&config) {
         Ok(client) => client,
         Err(e) => exit_error!("{}", e),
     };
@@ -56,17 +53,14 @@ pub async fn run(action: StatsAction) {
         );
     }
 
-    // Initialize search client for query execution
-    let search_client = SearchClient::new(client);
-
     // Dispatch to appropriate search handler
     match action {
         StatsAction::Tree { target, level } => {
-            let index = match config.get_index(&target, IndexType::Files) {
-                Ok(value) => value,
+            let client_tool = match client.client_tool_files_meta(target).await {
+                Ok(client) => client,
                 Err(e) => exit_error!("{}", e),
             };
-            let tree = match search_client.show_tree(&vec![index], level).await {
+            let tree = match client_tool.show_tree(level).await {
                 Ok(value) => value,
                 Err(e) => exit_error!("{}", e),
             };
@@ -83,33 +77,21 @@ pub async fn run(action: StatsAction) {
             );
         }
         StatsAction::Info { target } => {
-            let indexes = match &target {
-                Some(tg) => {
-                    let analysis_index = match config.get_index(tg, IndexType::Analysis) {
-                        Ok(idx) => idx,
-                        Err(e) => exit_error!("{}", e),
-                    };
-                    vec![analysis_index]
-                }
-                None => config.get_indexes(IndexType::Analysis),
+            let client_tool = match client.client_tool_files_meta(target).await {
+                Ok(client) => client,
+                Err(e) => exit_error!("{}", e),
             };
-            if indexes.is_empty() {
-                print_warning!("No indexes found to create stats");
-                return;
-            }
-            let stats = match search_client.show_stats_search(&indexes).await {
+            let stats = match client_tool.show_stats_search().await {
                 Ok(s) => s,
                 Err(e) => exit_error!("{}", e),
             };
             let elapsed = start_time.elapsed();
             let separator = "━".repeat(79);
-            // Pretty table output
             println!("{}", separator);
             println!(
                 "{:15} {:>15} {:>15} {:>15} {:>15}",
                 "Language", "Files", "Lines", "AST Objects", "Size"
             );
-            // Print languages
             println!("{}", separator);
             for lang in &stats.languages {
                 if lang.language != "Other" {
@@ -119,7 +101,6 @@ pub async fn run(action: StatsAction) {
                     );
                 }
             }
-            // Print Other
             if let Some(other) = stats.languages.iter().find(|l| l.language == "Other") {
                 println!("{}", separator);
                 println!(
@@ -127,7 +108,6 @@ pub async fn run(action: StatsAction) {
                     other.language, other.files, other.lines, "", other.size_human
                 );
             }
-            // Print Total
             println!("{}", separator);
             println!(
                 "{:15} {:>15} {:>15} {:>15} {:>15}",

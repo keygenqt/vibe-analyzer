@@ -12,24 +12,15 @@ use rmcp::tool_handler;
 use rmcp::tool_router;
 use std::sync::Arc;
 
+use crate::mcp::params::get_file_ast_params::GetFileAstParams;
+use crate::mcp::params::get_file_content_params::GetFileContentParams;
+use crate::mcp::params::show_projects_params::ShowProjectsParams;
+use crate::mcp::params::show_stats_params::ShowStatsParams;
+use crate::mcp::params::show_tree_params::ShowTreeParams;
 use crate::mcp::server::AppState;
 use crate::mcp::tools::admin_sync_tool::AdminSyncTool;
-use crate::mcp::tools::data::params::mcp_get_file_ast_params::McpGetFileAstParams;
-use crate::mcp::tools::data::params::mcp_get_file_content_params::McpGetFileContentParams;
-use crate::mcp::tools::data::params::mcp_search_by_code_classes_params::McpSearchByCodeClassesParams;
-use crate::mcp::tools::data::params::mcp_search_by_code_functions_params::McpSearchByCodeFunctionsParams;
-use crate::mcp::tools::data::params::mcp_search_by_code_imports_params::McpSearchByCodeImportsParams;
-use crate::mcp::tools::data::params::mcp_search_by_code_variables_params::McpSearchByCodeVariablesParams;
-use crate::mcp::tools::data::params::mcp_search_documentation_params::McpSearchDocumentationParams;
-use crate::mcp::tools::data::params::mcp_show_stats_params::McpShowStatsParams;
-use crate::mcp::tools::data::params::mcp_show_tree_params::McpShowTreeParams;
 use crate::mcp::tools::get_file_ast_tool::GetFileAstTool;
 use crate::mcp::tools::get_file_content_tool::GetFileContentTool;
-use crate::mcp::tools::search_by_code_classes_tool::SearchByCodeClassesTool;
-use crate::mcp::tools::search_by_code_functions_tool::SearchByCodeFunctionsTool;
-use crate::mcp::tools::search_by_code_imports_tool::SearchByCodeImportsTool;
-use crate::mcp::tools::search_by_code_variables_tool::SearchByCodeVariablesTool;
-use crate::mcp::tools::search_documentation_tool::SearchDocumentationTool;
 use crate::mcp::tools::show_projects_tool::ShowProjectsTool;
 use crate::mcp::tools::show_stats_tool::ShowStatsTool;
 use crate::mcp::tools::show_tree_tool::ShowTreeTool;
@@ -96,27 +87,9 @@ RULES:
         AdminSyncTool::new(self.state.clone()).execute().await
     }
 
-    // -------------------------------------------------------------------------------
-    // -- Get ------------------------------------------------------------------------
-    // -------------------------------------------------------------------------------
-
-    #[tool(
-        name = "get_file_content",
-        description = r#"
-Returns full file content.
-
-RULES:
-1. Call when user asks to see file content, open file, show file
-"#
-    )]
-    async fn get_file_content(
-        &self,
-        Parameters(params): Parameters<McpGetFileContentParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        GetFileContentTool::new(self.state.clone())
-            .execute(params)
-            .await
-    }
+    //     // -------------------------------------------------------------------------------
+    //     // -- Get ------------------------------------------------------------------------
+    //     // -------------------------------------------------------------------------------
 
     #[tool(
         name = "get_file_ast",
@@ -125,13 +98,31 @@ Returns full AST for a file.
 
 RULES:
 1. Call when user asks for file structure, functions in file, AST
-"#
+    "#
     )]
     async fn get_file_ast(
         &self,
-        Parameters(params): Parameters<McpGetFileAstParams>,
+        Parameters(params): Parameters<GetFileAstParams>,
     ) -> Result<CallToolResult, ErrorData> {
         GetFileAstTool::new(self.state.clone())
+            .execute(params)
+            .await
+    }
+
+    #[tool(
+        name = "get_file_content",
+        description = r#"
+Returns full file content.
+
+RULES:
+1. Call when user asks to see file content, open file, show file
+    "#
+    )]
+    async fn get_file_content(
+        &self,
+        Parameters(params): Parameters<GetFileContentParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        GetFileContentTool::new(self.state.clone())
             .execute(params)
             .await
     }
@@ -147,11 +138,15 @@ Shows all projects with names and summaries.
 
 RULES:
 1. Call when user asks: "what projects", "list projects", "какие проекты есть"
-2. ONE call returns everything
 "#
     )]
-    async fn show_projects(&self) -> Result<CallToolResult, ErrorData> {
-        ShowProjectsTool::new(self.state.clone()).execute().await
+    async fn show_projects(
+        &self,
+        Parameters(params): Parameters<ShowProjectsParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        ShowProjectsTool::new(self.state.clone())
+            .execute(params)
+            .await
     }
 
     #[tool(
@@ -161,11 +156,11 @@ Shows project statistics: files, lines of code, languages breakdown.
 
 RULES:
 1. Call when user asks for project statistics, file counts, or code size
-"#
+    "#
     )]
     async fn show_stats(
         &self,
-        Parameters(params): Parameters<McpShowStatsParams>,
+        Parameters(params): Parameters<ShowStatsParams>,
     ) -> Result<CallToolResult, ErrorData> {
         ShowStatsTool::new(self.state.clone()).execute(params).await
     }
@@ -177,133 +172,133 @@ Shows files and folders inside a project.
 
 RULES:
 1. Call when user asks about project tree, files, folders
-"#
+    "#
     )]
     async fn show_tree(
         &self,
-        Parameters(params): Parameters<McpShowTreeParams>,
+        Parameters(params): Parameters<ShowTreeParams>,
     ) -> Result<CallToolResult, ErrorData> {
         ShowTreeTool::new(self.state.clone()).execute(params).await
     }
 
-    // -------------------------------------------------------------------------------
-    // -- Search ---------------------------------------------------------------------
-    // -------------------------------------------------------------------------------
+    //     // -------------------------------------------------------------------------------
+    //     // -- Search ---------------------------------------------------------------------
+    //     // -------------------------------------------------------------------------------
 
-    #[tool(
-        name = "search_by_code_imports",
-        description = r#"
-Finds imports in code.
+    //     #[tool(
+    //         name = "search_by_code_imports",
+    //         description = r#"
+    // Finds imports in code.
 
-RULES:
-1. Call when user asks about imports, dependencies, libraries used
-2. Returns file paths and matching import statements
-3. For "all imports", use empty query or "*"
-"#
-    )]
-    async fn search_by_code_imports(
-        &self,
-        Parameters(params): Parameters<McpSearchByCodeImportsParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        SearchByCodeImportsTool::new(self.state.clone())
-            .execute(params)
-            .await
-    }
+    // RULES:
+    // 1. Call when user asks about imports, dependencies, libraries used
+    // 2. Returns file paths and matching import statements
+    // 3. For "all imports", use empty query or "*"
+    // "#
+    //     )]
+    //     async fn search_by_code_imports(
+    //         &self,
+    //         Parameters(params): Parameters<McpSearchByCodeImportsParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         SearchByCodeImportsTool::new(self.state.clone())
+    //             .execute(params)
+    //             .await
+    //     }
 
-    #[tool(
-        name = "search_by_code_functions",
-        description = r#"
-Finds functions and methods in code.
+    //     #[tool(
+    //         name = "search_by_code_functions",
+    //         description = r#"
+    // Finds functions and methods in code.
 
-RULES:
-1. Call when user asks about functions, methods, procedures
-2. Returns file paths and matching function signatures
-"#
-    )]
-    async fn search_by_code_functions(
-        &self,
-        Parameters(params): Parameters<McpSearchByCodeFunctionsParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        SearchByCodeFunctionsTool::new(self.state.clone())
-            .execute(params)
-            .await
-    }
+    // RULES:
+    // 1. Call when user asks about functions, methods, procedures
+    // 2. Returns file paths and matching function signatures
+    // "#
+    //     )]
+    //     async fn search_by_code_functions(
+    //         &self,
+    //         Parameters(params): Parameters<McpSearchByCodeFunctionsParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         SearchByCodeFunctionsTool::new(self.state.clone())
+    //             .execute(params)
+    //             .await
+    //     }
 
-    #[tool(
-        name = "search_by_code_classes",
-        description = r#"
-Finds classes, structs, and interfaces in code.
+    //     #[tool(
+    //         name = "search_by_code_classes",
+    //         description = r#"
+    // Finds classes, structs, and interfaces in code.
 
-RULES:
-1. Call when user asks about classes, structs, interfaces, types, traits, abstract classes, implements, extends
-2. Returns file paths and matching type declarations
-"#
-    )]
-    async fn search_by_code_classes(
-        &self,
-        Parameters(params): Parameters<McpSearchByCodeClassesParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        SearchByCodeClassesTool::new(self.state.clone())
-            .execute(params)
-            .await
-    }
+    // RULES:
+    // 1. Call when user asks about classes, structs, interfaces, types, traits, abstract classes, implements, extends
+    // 2. Returns file paths and matching type declarations
+    // "#
+    //     )]
+    //     async fn search_by_code_classes(
+    //         &self,
+    //         Parameters(params): Parameters<McpSearchByCodeClassesParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         SearchByCodeClassesTool::new(self.state.clone())
+    //             .execute(params)
+    //             .await
+    //     }
 
-    #[tool(
-        name = "search_by_code_variables",
-        description = r#"
-Finds variables and enums in code.
+    //     #[tool(
+    //         name = "search_by_code_variables",
+    //         description = r#"
+    // Finds variables and enums in code.
 
-RULES:
-1. Call when user asks about variables, constants, enums, globals, static fields, let bindings, mutables
-2. Returns file paths and matching variable/enum declarations
-"#
-    )]
-    async fn search_by_code_variables(
-        &self,
-        Parameters(params): Parameters<McpSearchByCodeVariablesParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        SearchByCodeVariablesTool::new(self.state.clone())
-            .execute(params)
-            .await
-    }
+    // RULES:
+    // 1. Call when user asks about variables, constants, enums, globals, static fields, let bindings, mutables
+    // 2. Returns file paths and matching variable/enum declarations
+    // "#
+    //     )]
+    //     async fn search_by_code_variables(
+    //         &self,
+    //         Parameters(params): Parameters<McpSearchByCodeVariablesParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         SearchByCodeVariablesTool::new(self.state.clone())
+    //             .execute(params)
+    //             .await
+    //     }
 
-    // -------------------------------------------------------------------------------
-    // -- Docs -----------------------------------------------------------------------
-    // -------------------------------------------------------------------------------
+    //     // -------------------------------------------------------------------------------
+    //     // -- Docs -----------------------------------------------------------------------
+    //     // -------------------------------------------------------------------------------
 
-    #[tool(
-        name = "search_documentation",
-        description = r#"
-Searches all markdown documentation and files across projects.
+    //     #[tool(
+    //         name = "search_documentation",
+    //         description = r#"
+    // Searches all markdown documentation and files across projects.
 
-RULES:
-1. Default tool for non-code questions (who, what, how, rules, processes)
-2. Returns headings, links, code blocks, frontmatter
-"#
-    )]
-    async fn search_documentation(
-        &self,
-        Parameters(params): Parameters<McpSearchDocumentationParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        SearchDocumentationTool::new(self.state.clone())
-            .execute(params)
-            .await
-    }
+    // RULES:
+    // 1. Default tool for non-code questions (who, what, how, rules, processes)
+    // 2. Returns headings, links, code blocks, frontmatter
+    // "#
+    //     )]
+    //     async fn search_documentation(
+    //         &self,
+    //         Parameters(params): Parameters<McpSearchDocumentationParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         SearchDocumentationTool::new(self.state.clone())
+    //             .execute(params)
+    //             .await
+    //     }
 
-    #[tool(
-        name = "search_knowledge",
-        description = r#"
-Searches the knowledge base for documentation, guides, rules, and lore.
+    //     #[tool(
+    //         name = "search_knowledge",
+    //         description = r#"
+    // Searches the knowledge base for documentation, guides, rules, and lore.
 
-RULES:
-1. Use for questions about project knowledge, characters, coding standards, processes
-2. Returns matching files with headings, links, and code blocks
-"#
-    )]
-    async fn search_knowledge(
-        &self,
-        Parameters(params): Parameters<McpSearchDocumentationParams>,
-    ) -> Result<CallToolResult, ErrorData> {
-        self.search_documentation(Parameters(params)).await
-    }
+    // RULES:
+    // 1. Use for questions about project knowledge, characters, coding standards, processes
+    // 2. Returns matching files with headings, links, and code blocks
+    // "#
+    //     )]
+    //     async fn search_knowledge(
+    //         &self,
+    //         Parameters(params): Parameters<McpSearchDocumentationParams>,
+    //     ) -> Result<CallToolResult, ErrorData> {
+    //         self.search_documentation(Parameters(params)).await
+    //     }
 }

@@ -42,4 +42,13 @@ impl FileModel for FileBinaryModel {
     fn format_index(&self) -> FileModels {
         self.format_ast()
     }
+
+    fn format_tool(&self) -> FileModels {
+        FileModels::Binary(FileBinaryModel {
+            path: self.path.clone(),
+            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
+            extension: None,
+            hash: None,
+        })
+    }
 }

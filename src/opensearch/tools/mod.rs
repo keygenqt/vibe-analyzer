@@ -1,5 +1,5 @@
-//! @todo
-//! @todo
+//! OpenSearch tools.
+//! Provides search implementations for MCP tools.
 
 pub mod query;
-pub mod tools_client;
+pub mod tool_client;

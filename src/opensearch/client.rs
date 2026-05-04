@@ -6,17 +6,18 @@ use anyhow::Result;
 use blake3::Hasher;
 use reqwest::Client;
 use serde_json::Value;
-use serde_json::json;
 use std::path::Path;
 use std::path::PathBuf;
 use std::time::Duration;
 
 use crate::configs::app::AppConfig;
-use crate::models::file_model::FileModel;
-use crate::models::file_models::FileModels;
-use crate::models::project::ProjectModel;
-use crate::opensearch::indexes::indexes_client::OpenSearchIndexesClient;
+use crate::opensearch::indexes::index_client::OpenSearchIndexClient;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 use crate::utils::app;
+
+pub const PROJECT_META_SUFFIX: &str = "project-meta";
+pub const FILES_META_SUFFIX: &str = "files-analysis";
+pub const FILES_SUFFIX: &str = "files";
 
 #[derive(Clone)]
 pub struct OpenSearchClient {
@@ -41,22 +42,61 @@ impl OpenSearchClient {
     }
 
     /// Create indexes client for the given index name.
-    pub fn indexes(&self, name: &str) -> OpenSearchIndexesClient {
-        OpenSearchIndexesClient::new(self, name.to_string())
+    pub fn client_index(&self, name: &str) -> OpenSearchIndexClient {
+        OpenSearchIndexClient::new(self, name.to_string())
     }
 
-    /// Check if OpenSearch cluster is reachable.
-    pub async fn healthcheck(&self) -> Result<bool> {
-        match self
-            .client
-            .get(&self.base_url)
-            .timeout(Duration::from_secs(5))
-            .send()
-            .await
-        {
-            Ok(resp) => Ok(resp.status().is_success()),
-            Err(_) => Ok(false),
+    /// Create tools client for the meta index.
+    pub async fn client_tool_projects_meta(&self) -> Result<OpenSearchToolClient> {
+        let index = self.client_index(&self.projects_meta_index());
+        if !index.index_exists().await? {
+            anyhow::bail!("Index '{}' does not exist", index.name);
         }
+        Ok(OpenSearchToolClient::new(self, vec![index.name]))
+    }
+
+    /// Create tools client for all files_meta indices.
+    pub async fn client_tool_files_meta(
+        &self,
+        target: Option<String>,
+    ) -> Result<OpenSearchToolClient> {
+        let sources = if let Some(t) = target {
+            vec![self.config.get_source(&t)?]
+        } else {
+            self.config.get_sources()
+        };
+
+        let mut names = vec![];
+        for source in &sources {
+            let index = self.client_index(&self.files_meta_index(source));
+            if index.index_exists().await? {
+                names.push(index.name);
+            }
+        }
+        if names.is_empty() {
+            anyhow::bail!("No files_meta indices found. Run indexing first.");
+        }
+        Ok(OpenSearchToolClient::new(self, names))
+    }
+
+    /// Create tools client for all files indices.
+    pub async fn client_tool_files(&self, target: Option<String>) -> Result<OpenSearchToolClient> {
+        let sources = if let Some(t) = target {
+            vec![self.config.get_source(&t)?]
+        } else {
+            self.config.get_sources()
+        };
+        let mut names = vec![];
+        for source in &sources {
+            let index = self.client_index(&self.files_index(source));
+            if index.index_exists().await? {
+                names.push(index.name);
+            }
+        }
+        if names.is_empty() {
+            anyhow::bail!("No files indices found. Run indexing first.");
+        }
+        Ok(OpenSearchToolClient::new(self, names))
     }
 
     /// Build a HEAD request to the given path.
@@ -86,21 +126,41 @@ impl OpenSearchClient {
 
     /// Get meta index name.
     pub fn projects_meta_index(&self) -> String {
-        format!("{}-meta", app::app_name())
+        format!("{}-{}", app::app_name(), PROJECT_META_SUFFIX)
     }
 
     /// Get files analysis index name for a source.
     pub fn files_meta_index(&self, root: &PathBuf) -> String {
         format!(
-            "{}-files-analysis-{}",
+            "{}-{}-{}",
             app::app_name(),
+            FILES_META_SUFFIX,
             self.hash_from_path(root)
         )
     }
 
     /// Get files index name for a source.
     pub fn files_index(&self, root: &PathBuf) -> String {
-        format!("{}-files-{}", app::app_name(), self.hash_from_path(root))
+        format!(
+            "{}-{}-{}",
+            app::app_name(),
+            FILES_SUFFIX,
+            self.hash_from_path(root)
+        )
+    }
+
+    /// Check if OpenSearch cluster is reachable.
+    pub async fn healthcheck(&self) -> Result<bool> {
+        match self
+            .client
+            .get(&self.base_url)
+            .timeout(Duration::from_secs(5))
+            .send()
+            .await
+        {
+            Ok(resp) => Ok(resp.status().is_success()),
+            Err(_) => Ok(false),
+        }
     }
 
     /// List all index names.
@@ -115,137 +175,6 @@ impl OpenSearchClient {
             .into_iter()
             .filter_map(|v| v["index"].as_str().map(String::from))
             .collect())
-    }
-
-    /// Clean up orphaned documents across all indexes.
-    pub async fn indexes_cleanup(&self) -> Result<()> {
-        let sources = self.config.get_sources();
-        let active_roots: Vec<String> = sources
-            .iter()
-            .map(|s| s.to_string_lossy().to_string())
-            .collect();
-
-        // Clean orphaned projects from meta index
-        self.indexes(&self.projects_meta_index())
-            .cleanup_orphaned_projects(&active_roots)
-            .await?;
-
-        // Clean orphaned files for each source
-        for source in &sources {
-            let active_files = vibe_fs::scan(source, true)?;
-
-            self.indexes(&self.files_meta_index(source))
-                .cleanup_orphaned_files(&active_files)
-                .await?;
-
-            self.indexes(&self.files_index(source))
-                .cleanup_orphaned_files(&active_files)
-                .await?;
-        }
-
-        // Delete indexes for removed sources
-        let all_indices = self.indexes_list().await?;
-        let expected: Vec<String> = sources
-            .iter()
-            .flat_map(|s| [self.files_index(s), self.files_meta_index(s)])
-            .chain(std::iter::once(self.projects_meta_index()))
-            .collect();
-
-        for index in all_indices {
-            if index.starts_with(&format!("{}-", app::app_name())) && !expected.contains(&index) {
-                self.indexes(&index).index_delete().await?;
-            }
-        }
-
-        Ok(())
-    }
-
-    /// Create all required indexes if they don't exist.
-    pub async fn indexes_create(&self) -> Result<()> {
-        let sources = self.config.get_sources();
-        // Create project meta index
-        let meta = self.indexes(&self.projects_meta_index());
-        if !meta.index_exists().await? {
-            meta.create_project_meta().await?;
-        }
-        // Create file indexes for each source
-        for source in &sources {
-            let files_meta = self.indexes(&self.files_meta_index(source));
-            if !files_meta.index_exists().await? {
-                files_meta.create_file_meta().await?;
-            }
-            let files = self.indexes(&self.files_index(source));
-            if !files.index_exists().await? {
-                files.create_file_raw().await?;
-            }
-        }
-        Ok(())
-    }
-
-    /// Index a project: meta, file analysis, and file content.
-    pub async fn index_update(&self, project: &ProjectModel) -> Result<()> {
-        let root = PathBuf::from(&project.path);
-
-        // Index project meta
-        let meta = self.indexes(&self.projects_meta_index());
-        let meta_json = serde_json::to_value(project.format_index())?;
-        meta.bulk(&[(project.path.clone(), meta_json)]).await?;
-
-        // Index file analysis (AST + enrichment)
-        let files_meta = self.indexes(&self.files_meta_index(&root));
-        let meta_docs: Vec<(String, serde_json::Value)> = project
-            .files
-            .iter()
-            .map(|f| match f {
-                FileModels::Language(m) => m.format_index(),
-                FileModels::Text(m) => m.format_index(),
-                FileModels::Binary(m) => m.format_index(),
-            })
-            .map(|f| {
-                let path = match &f {
-                    FileModels::Language(m) => m.path().to_string(),
-                    FileModels::Text(m) => m.path().to_string(),
-                    FileModels::Binary(m) => m.path().to_string(),
-                };
-                let json = serde_json::to_value(&f)?;
-                Ok((path, json))
-            })
-            .collect::<Result<Vec<_>>>()?;
-        files_meta.bulk(&meta_docs).await?;
-
-        // Index file raw content
-        let files_raw = self.indexes(&self.files_index(&root));
-        let raw_docs: Vec<(String, serde_json::Value)> = project
-            .files
-            .iter()
-            .filter_map(|f| {
-                let path = match f {
-                    FileModels::Language(m) => m.path(),
-                    FileModels::Text(m) => m.path(),
-                    FileModels::Binary(_) => return None,
-                };
-                let content = match f {
-                    FileModels::Language(m) => m.content.clone(),
-                    FileModels::Text(m) => m.content.clone(),
-                    FileModels::Binary(_) => None,
-                };
-                content.map(|c| (path.to_string(), json!({"path": path, "content": c})))
-            })
-            .collect();
-        files_raw.bulk(&raw_docs).await?;
-
-        Ok(())
-    }
-
-    /// Delete all indexes for this application.
-    pub async fn indexes_delete(&self) -> Result<()> {
-        let all_indices = self.indexes_list().await?;
-        for index in all_indices {
-            if index.starts_with(&format!("{}-", app::app_name())) {
-                self.indexes(&index).index_delete().await?;
-            }
-        }
-        Ok(())
     }
 
     /// Computes BLAKE3 hash from a string path for project identification.

@@ -3,9 +3,9 @@
 use anyhow::Result;
 use serde_json::{Value, json};
 
-use crate::opensearch::indexes::indexes_client::OpenSearchIndexesClient;
+use crate::opensearch::indexes::index_client::OpenSearchIndexClient;
 
-impl OpenSearchIndexesClient {
+impl OpenSearchIndexClient {
     /// Delete projects not present in active roots.
     pub async fn cleanup_orphaned_projects(&self, active_roots: &[String]) -> Result<Value> {
         let query = json!({

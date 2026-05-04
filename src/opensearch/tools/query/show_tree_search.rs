@@ -1,39 +1,43 @@
-//! Search functionality for OpenSearch indices.
-//! Provides meta, ast, file, and get queries.
+//! Directory tree and file structure queries.
 
 use anyhow::Result;
 
-use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
+use crate::{
+    models::file_models::FileModels, opensearch::tools::tool_client::OpenSearchToolClient, utils,
+};
 
-impl OpenSearchToolsClient {
+/// Directory tree output.
+pub struct ShowTreeOutput {
+    pub tree: String,
+    pub directories: usize,
+    pub files: usize,
+}
+
+impl OpenSearchToolClient {
     /// Generate directory tree structure from file paths.
-    pub async fn show_tree(
-        &self,
-        indexes: &[String],
-        level: usize,
-    ) -> Result<OpensearchStructureResponse> {
-        let mut all_hashes = Vec::new();
+    pub async fn show_tree(&self, level: usize) -> Result<ShowTreeOutput> {
+        let docs = self.scroll_files_meta().await?;
 
-        for index in indexes {
-            if !self.client.index_exists(index).await? {
-                continue;
-            }
-            let hashes = self.get_hashes(index).await?;
-            all_hashes.extend(hashes);
-        }
+        let paths: Vec<String> = docs
+            .iter()
+            .map(|f| match f {
+                FileModels::Language(m) => m.path.clone(),
+                FileModels::Text(m) => m.path.clone(),
+                FileModels::Binary(m) => m.path.clone(),
+            })
+            .collect();
 
-        if all_hashes.is_empty() {
-            return Ok(OpensearchStructureResponse {
+        if paths.is_empty() {
+            return Ok(ShowTreeOutput {
                 tree: String::new(),
                 directories: 0,
                 files: 0,
             });
         }
 
-        // Find common root prefix of all paths
-        let common_root = all_hashes
+        let common_root: &str = paths
             .iter()
-            .map(|h| h.path.as_str())
+            .map(|s| s.as_str())
             .reduce(|a, b| {
                 let common: String = a
                     .chars()
@@ -41,24 +45,18 @@ impl OpenSearchToolsClient {
                     .take_while(|(x, y)| x == y)
                     .map(|(c, _)| c)
                     .collect();
-                Box::leak(Box::new(common)) as &str
+                Box::leak(common.into_boxed_str())
             })
             .unwrap_or("");
 
-        // Trim to last '/' to get the project root directory
-        let root = if let Some(last_slash) = common_root.rfind('/') {
-            &common_root[..last_slash]
-        } else {
-            common_root
-        };
+        let root = common_root
+            .rfind('/')
+            .map(|i| &common_root[..i])
+            .unwrap_or(common_root);
 
-        // Collect all paths
-        let paths: Vec<String> = all_hashes.iter().map(|h| h.path.clone()).collect();
+        let (tree, dirs, files) = utils::tree::build_tree(root, &paths, level);
 
-        // Build tree
-        let (tree, dirs, files) = crate::utils::tree::build_tree(root, &paths, level);
-
-        Ok(OpensearchStructureResponse {
+        Ok(ShowTreeOutput {
             tree,
             directories: dirs,
             files,

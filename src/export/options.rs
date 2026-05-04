@@ -39,9 +39,6 @@ impl ExportFormat {
 /// User-controllable options for the export operation.
 #[derive(Debug, Clone)]
 pub struct ExportOptions {
-    /// File name prefix for default output path.
-    pub prefix: String,
-
     /// Output format (JSON, JSON5, TOON, XML, YAML, TOML).
     pub format: ExportFormat,
 
@@ -51,11 +48,7 @@ pub struct ExportOptions {
 
 impl ExportOptions {
     /// Creates a new ExportOptions instance with the specified format and output path.
-    pub fn new(prefix: &str, format: ExportFormat, output: Option<PathBuf>) -> Self {
-        Self {
-            prefix: prefix.to_string(),
-            format,
-            output,
-        }
+    pub fn new(format: ExportFormat, output: Option<PathBuf>) -> Self {
+        Self { format, output }
     }
 }

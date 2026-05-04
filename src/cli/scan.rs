@@ -82,7 +82,7 @@ pub async fn run(action: ScanAction) {
             };
             if !projects.is_empty() {
                 print_info!("Saving file...");
-                let options = ExportOptions::new("va", format, output);
+                let options = ExportOptions::new(format, output);
                 match writer::export(ExportModel::new_ast(projects), &options) {
                     Ok(path) => {
                         let elapsed = start_time.elapsed();
@@ -109,7 +109,7 @@ pub async fn run(action: ScanAction) {
             };
             if !projects.is_empty() {
                 print_info!("Saving file...");
-                let options = ExportOptions::new("va", format, output);
+                let options = ExportOptions::new(format, output);
                 match writer::export(ExportModel::new_analyze(projects), &options) {
                     Ok(path) => {
                         let elapsed = start_time.elapsed();

@@ -3,48 +3,39 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
-impl OpenSearchToolsClient {
-    /// Get file content by root and path from files indexes.
-    /// If root is None, searches across all provided indexes without root filter.
-    pub async fn get_file_content(
-        &self,
-        indexes: &[String],
-        root: Option<&str>,
-        path: &str,
-    ) -> Result<String> {
-        let index_list = indexes.join(",");
-
-        let mut must = vec![json!({
-            "bool": {
-                "should": [
-                    { "term": { "path": path } },
-                    { "wildcard": { "path": { "value": format!("*{}", path), "boost": 0.5 } } }
-                ],
-                "minimum_should_match": 1
-            }
-        })];
-
-        if let Some(root) = root {
-            must.insert(0, json!({ "term": { "root": root } }));
-        }
-
+impl OpenSearchToolClient {
+    /// Get file content by path from files indexes.
+    pub async fn get_file_content(&self, path: &str) -> Result<(String, String)> {
         let query = json!({
             "size": 1,
             "query": {
-                "bool": { "must": must }
+                "bool": {
+                    "should": [
+                        { "term": { "path": path } },
+                        { "wildcard": { "path": { "value": format!("*{}", path), "boost": 0.5 } } }
+                    ],
+                    "minimum_should_match": 1
+                }
             }
         });
 
-        let resp = self.client.call(&index_list, query).await?;
+        let resp = self.call(query).await?;
         let hits = resp["hits"]["hits"]
             .as_array()
             .ok_or_else(|| anyhow::anyhow!("Invalid response format"))?;
 
-        hits.first()
-            .and_then(|h| h["_source"]["content"].as_str())
-            .map(|c| c.to_string())
-            .ok_or_else(|| anyhow::anyhow!("File not found: {}", path))
+        let hit = hits
+            .first()
+            .ok_or_else(|| anyhow::anyhow!("File not found: {}", path))?;
+
+        let file_path = hit["_source"]["path"].as_str().unwrap_or(path).to_string();
+        let content = hit["_source"]["content"]
+            .as_str()
+            .ok_or_else(|| anyhow::anyhow!("Content not found for: {}", path))?
+            .to_string();
+
+        Ok((file_path, content))
     }
 }

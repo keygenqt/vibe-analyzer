@@ -5,9 +5,9 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde_json::{Value, json};
 
-use crate::opensearch::indexes::indexes_client::OpenSearchIndexesClient;
+use crate::opensearch::indexes::index_client::OpenSearchIndexClient;
 
-impl OpenSearchIndexesClient {
+impl OpenSearchIndexClient {
     /// Delete orphaned documents not in active paths.
     pub async fn cleanup_orphaned_files(&self, paths: &[PathBuf]) -> Result<Value> {
         let paths: Vec<String> = paths

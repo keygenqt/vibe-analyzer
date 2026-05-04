@@ -3,40 +3,30 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
+use crate::{
+    models::file_models::FileModels, opensearch::tools::tool_client::OpenSearchToolClient,
+};
 
-impl OpenSearchToolsClient {
-    /// Get file AST by root and path from analysis indexes.
-    pub async fn get_file_ast(
-        &self,
-        indexes: &[String],
-        root: Option<&str>,
-        path: &str,
-    ) -> Result<OpensearchFileMetaResponse> {
-        let index_list = indexes.join(",");
-
-        let mut must = vec![json!({
-            "bool": {
-                "should": [
-                    { "term": { "path": path } },
-                    { "wildcard": { "path": { "value": format!("*{}", path), "boost": 0.5 } } }
-                ],
-                "minimum_should_match": 1
-            }
-        })];
-
-        if let Some(root) = root {
-            must.insert(0, json!({ "term": { "root": root } }));
-        }
-
+impl OpenSearchToolClient {
+    /// Get file AST by path from analysis indexes.
+    pub async fn get_file_ast(&self, path: &str) -> Result<FileModels> {
         let query = json!({
             "size": 1,
             "query": {
-                "bool": { "must": must }
+                "bool": {
+                    "filter": [
+                        { "term": { "type": "language" } }
+                    ],
+                    "should": [
+                        { "term": { "path": path } },
+                        { "wildcard": { "path": { "value": format!("*{}", path), "boost": 0.5 } } }
+                    ],
+                    "minimum_should_match": 1
+                }
             }
         });
 
-        let resp = self.client.call(&index_list, query).await?;
+        let resp = self.call(query).await?;
         let hits = resp["hits"]["hits"]
             .as_array()
             .ok_or_else(|| anyhow::anyhow!("Invalid response format"))?;

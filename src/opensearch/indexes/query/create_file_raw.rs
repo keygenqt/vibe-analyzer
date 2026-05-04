@@ -3,9 +3,9 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::indexes::indexes_client::OpenSearchIndexesClient;
+use crate::opensearch::indexes::index_client::OpenSearchIndexClient;
 
-impl OpenSearchIndexesClient {
+impl OpenSearchIndexClient {
     /// Create vibe_files_{hash} index with mapping for file content.
     pub async fn create_file_raw(&self) -> Result<()> {
         let mapping = json!({

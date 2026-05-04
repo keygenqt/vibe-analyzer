@@ -3,9 +3,9 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::indexes::indexes_client::OpenSearchIndexesClient;
+use crate::opensearch::indexes::index_client::OpenSearchIndexClient;
 
-impl OpenSearchIndexesClient {
+impl OpenSearchIndexClient {
     /// Create vibe_meta index with mapping for project metadata.
     pub async fn create_project_meta(&self) -> Result<()> {
         let mapping = json!({

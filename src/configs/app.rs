@@ -215,6 +215,7 @@ impl AppConfig {
             Err(anyhow::anyhow!("Source not found: {}", target))
         }
     }
+
     /// Get source by exact path or unique directory name.
     pub fn get_source(&self, target: &str) -> Result<PathBuf> {
         let path = PathBuf::from(target);

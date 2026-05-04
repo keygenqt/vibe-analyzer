@@ -3,7 +3,7 @@
 
 use std::{collections::HashMap, path::Path};
 
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use tokio::runtime::Handle;
 use vibe_ast::Language;
 
@@ -13,7 +13,7 @@ use crate::{
 };
 
 /// Project-level metadata.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ReadmeModel {
     /// README content preview.
     pub preview: String,
@@ -32,7 +32,7 @@ pub struct ReadmeModel {
 }
 
 /// License information.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct LicenseModel {
     /// Path to license file.
     pub path: String,
@@ -43,7 +43,7 @@ pub struct LicenseModel {
 }
 
 /// Aggregated project statistics.
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct StatsModel {
     /// Total number of files.
     pub total_files: usize,
@@ -60,7 +60,7 @@ pub struct StatsModel {
 }
 
 /// Scanned project with all metadata and files.
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProjectModel {
     /// Project root path.
     pub path: String,

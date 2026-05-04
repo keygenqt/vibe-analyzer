@@ -9,9 +9,10 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
-use crate::cli::scan::index_enriches;
+use crate::indexer::scan_index;
+use crate::mcp::responses::McpResponse;
+use crate::mcp::responses::admin_sync_response::AdminSyncResponse;
 use crate::mcp::server::AppState;
-use crate::mcp::tools::data::responses::mcp_admin_sync_response::McpAdminSyncResponse;
 
 static INDEXING: AtomicBool = AtomicBool::new(false);
 
@@ -31,16 +32,16 @@ impl AdminSyncTool {
     pub async fn execute(&self) -> Result<CallToolResult, ErrorData> {
         if INDEXING.swap(true, Ordering::SeqCst) {
             return Ok(CallToolResult::success(vec![Content::text(
-                McpAdminSyncResponse::already_running().format(),
+                AdminSyncResponse::already_running().format(),
             )]));
         }
         let config = self.state.config.clone();
         tokio::spawn(async move {
-            let _ = index_enriches(&config, None, false).await;
+            let _ = scan_index(&config, None, false).await;
             INDEXING.store(false, Ordering::SeqCst);
         });
         Ok(CallToolResult::success(vec![Content::text(
-            McpAdminSyncResponse::started().format(),
+            AdminSyncResponse::started().format(),
         )]))
     }
 }

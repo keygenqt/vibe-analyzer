@@ -3,11 +3,11 @@
 
 pub mod get_file_ast;
 pub mod get_file_content;
-pub mod search_by_code_classes;
-pub mod search_by_code_functions;
-pub mod search_by_code_imports;
-pub mod search_by_code_variables;
-pub mod search_documentation;
+// pub mod search_by_code_classes;
+// pub mod search_by_code_functions;
+// pub mod search_by_code_imports;
+// pub mod search_by_code_variables;
+// pub mod search_documentation;
 pub mod show_projects_search;
 pub mod show_stats_search;
 pub mod show_tree_search;
