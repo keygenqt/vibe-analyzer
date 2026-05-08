@@ -1,9 +1,11 @@
 //! Raw file model.
 //! Contains full file content for storage and retrieval.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::models::{file_model::FileModel, file_models::FileModels};
+use crate::models::file_model::FileModel;
+use crate::models::file_models::FileModels;
 
 /// Raw file with full content.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -27,6 +29,7 @@ pub struct FileTextModel {
     pub content: Option<String>,
 }
 
+/// File model implementation for text files.
 impl FileModel for FileTextModel {
     fn path(&self) -> &str {
         &self.path

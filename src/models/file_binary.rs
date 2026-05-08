@@ -1,9 +1,11 @@
 //! Binary file model.
 //! Represents a non-text file (images, archives, executables).
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
-use crate::models::{file_model::FileModel, file_models::FileModels};
+use crate::models::file_model::FileModel;
+use crate::models::file_models::FileModels;
 
 /// Binary file detected by content analysis.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -21,6 +23,7 @@ pub struct FileBinaryModel {
     pub hash: Option<String>,
 }
 
+/// File model implementation for binary files.
 impl FileModel for FileBinaryModel {
     fn path(&self) -> &str {
         &self.path

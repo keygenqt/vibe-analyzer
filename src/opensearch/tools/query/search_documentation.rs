@@ -4,36 +4,40 @@ use anyhow::Result;
 use serde_json::Value;
 use serde_json::json;
 
-use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
+use crate::models::file_models::FileModels;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
 /// Detects script types in query string.
 struct ScriptFlags {
+    /// Cyrillic script detected.
     cyrillic: bool,
+    /// Latin script detected.
     latin: bool,
+    /// CJK (Chinese/Japanese/Korean) script detected.
     cjk: bool,
 }
 
-impl OpenSearchToolsClient {
+impl OpenSearchToolClient {
     /// Searches markdown documentation across analysis indexes.
-    /// Returns matching files with headings, links, code blocks, and frontmatter.
     pub async fn search_documentation(
         &self,
-        indexes: &[String],
         query: Option<String>,
         limit: usize,
-    ) -> Result<Vec<OpensearchFileMetaResponse>> {
-        let index_list = indexes.join(",");
-
+    ) -> Result<Vec<FileModels>> {
         let search_query = match query {
             Some(ref q) => Self::build_docs_query(q, limit),
             None => json!({
                 "size": limit,
                 "query": {
                     "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } },
+                            { "term": { "language": "Markdown" } }
+                        ],
                         "should": [
-                            { "exists": { "field": "ast.headings" } },
-                            { "exists": { "field": "ast.links" } },
-                            { "exists": { "field": "ast.frontmatter" } }
+                            { "exists": { "field": "headings" } },
+                            { "exists": { "field": "links" } },
+                            { "exists": { "field": "frontmatter" } }
                         ],
                         "minimum_should_match": 1
                     }
@@ -41,21 +45,12 @@ impl OpenSearchToolsClient {
             }),
         };
 
-        tracing::trace!(
-            "search_documentation query: {}",
-            serde_json::to_string(&search_query).unwrap()
-        );
-
-        let resp = self.client.call(&index_list, search_query).await?;
+        let resp = self.call(search_query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
 
-        let results: Vec<OpensearchFileMetaResponse> = hits
+        let results: Vec<FileModels> = hits
             .iter()
-            .filter_map(|h| {
-                let source: OpensearchFileStatsRequest =
-                    serde_json::from_value(h["_source"].clone()).ok()?;
-                Some(OpensearchFileMetaResponse::from(source))
-            })
+            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
             .collect();
 
         Ok(results)
@@ -83,11 +78,11 @@ impl OpenSearchToolsClient {
     fn build_title_wildcards(words: &[&str]) -> Vec<Value> {
         let mut wildcards = Vec::new();
         for word in words {
-            wildcards.push(json!({ "wildcard": { "ast.headings.title.keyword": { "value": format!("*{}*", word), "boost": 10.0 } } }));
+            wildcards.push(json!({ "wildcard": { "headings.title.keyword": { "value": format!("*{}*", word), "boost": 10.0 } } }));
             let char_count = word.chars().count();
             if char_count > 4 {
                 let stemmed: String = word.chars().take(char_count - 1).collect();
-                wildcards.push(json!({ "wildcard": { "ast.headings.title.keyword": { "value": format!("*{}*", stemmed), "boost": 10.0 } } }));
+                wildcards.push(json!({ "wildcard": { "headings.title.keyword": { "value": format!("*{}*", stemmed), "boost": 10.0 } } }));
             }
         }
         wildcards
@@ -103,21 +98,21 @@ impl OpenSearchToolsClient {
         tags: &mut Vec<Value>,
     ) {
         if flags.cyrillic {
-            title.push(json!({ "match": { "ast.headings.title.russian": { "query": q, "operator": "or", "boost": 4.0, "fuzziness": "AUTO" } } }));
-            preview.push(json!({ "match_phrase": { "ast.headings.preview.russian": { "query": q, "boost": 2.0 } } }));
-            links.push(json!({ "match": { "ast.links.text.russian": { "query": q, "operator": "or", "boost": 2.0, "fuzziness": "AUTO" } } }));
+            title.push(json!({ "match": { "headings.title.russian": { "query": q, "operator": "or", "boost": 4.0, "fuzziness": "AUTO" } } }));
+            preview.push(json!({ "match_phrase": { "headings.preview.russian": { "query": q, "boost": 2.0 } } }));
+            links.push(json!({ "match": { "links.text.russian": { "query": q, "operator": "or", "boost": 2.0, "fuzziness": "AUTO" } } }));
             tags.push(json!({ "match": { "tags.russian": { "query": q, "boost": 1.0 } } }));
         }
         if flags.latin {
-            title.push(json!({ "match": { "ast.headings.title.english": { "query": q, "operator": "or", "boost": 4.0, "fuzziness": "AUTO" } } }));
-            preview.push(json!({ "match_phrase": { "ast.headings.preview.english": { "query": q, "boost": 2.0 } } }));
-            links.push(json!({ "match": { "ast.links.text.english": { "query": q, "operator": "or", "boost": 2.0, "fuzziness": "AUTO" } } }));
+            title.push(json!({ "match": { "headings.title.english": { "query": q, "operator": "or", "boost": 4.0, "fuzziness": "AUTO" } } }));
+            preview.push(json!({ "match_phrase": { "headings.preview.english": { "query": q, "boost": 2.0 } } }));
+            links.push(json!({ "match": { "links.text.english": { "query": q, "operator": "or", "boost": 2.0, "fuzziness": "AUTO" } } }));
             tags.push(json!({ "match": { "tags.english": { "query": q, "boost": 1.0 } } }));
         }
         if flags.cjk {
-            title.push(json!({ "match": { "ast.headings.title.chinese": { "query": q, "operator": "or", "boost": 4.0, "fuzziness": "AUTO" } } }));
-            preview.push(json!({ "match_phrase": { "ast.headings.preview.chinese": { "query": q, "boost": 2.0 } } }));
-            links.push(json!({ "match": { "ast.links.text.chinese": { "query": q, "operator": "or", "boost": 2.0, "fuzziness": "AUTO" } } }));
+            title.push(json!({ "match": { "headings.title.chinese": { "query": q, "operator": "or", "boost": 4.0, "fuzziness": "AUTO" } } }));
+            preview.push(json!({ "match_phrase": { "headings.preview.chinese": { "query": q, "boost": 2.0 } } }));
+            links.push(json!({ "match": { "links.text.chinese": { "query": q, "operator": "or", "boost": 2.0, "fuzziness": "AUTO" } } }));
             tags.push(json!({ "match": { "tags.chinese": { "query": q, "boost": 1.0 } } }));
         }
     }
@@ -147,17 +142,16 @@ impl OpenSearchToolsClient {
 
         let mut links_should = link_matches;
         if !links_should.is_empty() {
-            links_should.push(json!({ "term": { "ast.links.url": { "value": q, "boost": 1.5 } } }));
+            links_should.push(json!({ "term": { "links.url": { "value": q, "boost": 1.5 } } }));
         }
 
-        let mut should = vec![
-            json!({ "term": { "ast.frontmatter.knowledge": { "value": "true", "boost": 5.0 } } }),
-        ];
+        let mut should =
+            vec![json!({ "term": { "frontmatter.knowledge": { "value": "true", "boost": 5.0 } } })];
 
         if !headings_should.is_empty() {
             should.push(json!({
                 "nested": {
-                    "path": "ast.headings",
+                    "path": "headings",
                     "boost": 10.0,
                     "query": {
                         "bool": {
@@ -171,7 +165,7 @@ impl OpenSearchToolsClient {
         if !links_should.is_empty() {
             should.push(json!({
                 "nested": {
-                    "path": "ast.links",
+                    "path": "links",
                     "query": {
                         "bool": {
                             "should": links_should
@@ -181,13 +175,17 @@ impl OpenSearchToolsClient {
             }));
         }
 
-        should.push(json!({ "match": { "ast.code_blocks": { "query": q, "boost": 1.5 } } }));
+        should.push(json!({ "match": { "code_blocks": { "query": q, "boost": 1.5 } } }));
         should.extend(tag_matches);
 
         json!({
             "size": limit,
             "query": {
                 "bool": {
+                    "filter": [
+                        { "term": { "type": "language" } },
+                        { "term": { "language": "Markdown" } }
+                    ],
                     "should": should,
                     "minimum_should_match": 1
                 }

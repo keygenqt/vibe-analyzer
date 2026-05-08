@@ -1,16 +1,17 @@
 //! Project model.
 //! Represents a scanned project with metadata and files.
 
-use std::{collections::HashMap, path::Path};
+use std::collections::HashMap;
+use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use tokio::runtime::Handle;
 use vibe_ast::Language;
 
-use crate::{
-    models::{file_model::FileModel, file_models::FileModels},
-    utils::spdx::LicenseDetector,
-};
+use crate::models::file_model::FileModel;
+use crate::models::file_models::FileModels;
+use crate::utils::spdx::LicenseDetector;
 
 /// Project-level metadata.
 #[derive(Debug, Clone, Serialize, Deserialize)]

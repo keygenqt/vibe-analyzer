@@ -6,14 +6,14 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde_json::json;
 
-use crate::{
-    analyzer,
-    configs::app::AppConfig,
-    models::{file_model::FileModel, file_models::FileModels, project::ProjectModel},
-    opensearch::client::OpenSearchClient,
-    print_info,
-    utils::app,
-};
+use crate::analyzer;
+use crate::configs::app::AppConfig;
+use crate::models::file_model::FileModel;
+use crate::models::file_models::FileModels;
+use crate::models::project::ProjectModel;
+use crate::opensearch::client::OpenSearchClient;
+use crate::print_info;
+use crate::utils::app;
 
 pub struct IndexReport {
     pub index_files: usize,

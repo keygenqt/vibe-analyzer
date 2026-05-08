@@ -7,11 +7,10 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
-use crate::mcp::{
-    params::show_stats_params::ShowStatsParams,
-    responses::{McpResponse, show_stats_response::ShowStatsResponse},
-    server::AppState,
-};
+use crate::mcp::params::show_stats_params::ShowStatsParams;
+use crate::mcp::responses::McpResponse;
+use crate::mcp::responses::show_stats_response::ShowStatsResponse;
+use crate::mcp::server::AppState;
 use crate::utils::mcp_normalize::target_normalize;
 
 /// Tool for retrieving project statistics.

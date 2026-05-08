@@ -3,28 +3,28 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
+use crate::models::file_models::FileModels;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
-impl OpenSearchToolsClient {
-    /// Search for imports across multiple indexes.
-    /// If query is None, returns all files with imports.
+impl OpenSearchToolClient {
+    /// Searches for import statements across analysis indexes.
     pub async fn search_by_code_imports(
         &self,
-        indexes: &[String],
         query: Option<String>,
         limit: usize,
-    ) -> Result<Vec<OpensearchFileMetaResponse>> {
-        let index_list = indexes.join(",");
-
+    ) -> Result<Vec<FileModels>> {
         let search_query = match query {
             Some(q) => json!({
                 "size": limit,
                 "query": {
                     "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } }
+                        ],
                         "should": [
                             { "match": { "tags": { "query": q, "boost": 4.0 } } },
                             { "match": { "ast.tags": { "query": q, "boost": 3.0 } } },
-                            { "match": { "ast.imports": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } }
+                            { "match": { "imports": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } }
                         ],
                         "minimum_should_match": 1
                     }
@@ -33,21 +33,24 @@ impl OpenSearchToolsClient {
             None => json!({
                 "size": limit,
                 "query": {
-                    "match": { "ast.tags": "imports" }
+                    "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } }
+                        ],
+                        "must": [
+                            { "match": { "tags": "imports" } }
+                        ]
+                    }
                 }
             }),
         };
 
-        let resp = self.client.call(&index_list, search_query).await?;
+        let resp = self.call(search_query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
 
-        let results: Vec<OpensearchFileMetaResponse> = hits
+        let results: Vec<FileModels> = hits
             .iter()
-            .filter_map(|h| {
-                let source: OpensearchFileStatsRequest =
-                    serde_json::from_value(h["_source"].clone()).ok()?;
-                Some(OpensearchFileMetaResponse::from(source))
-            })
+            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
             .collect();
 
         Ok(results)

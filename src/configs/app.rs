@@ -8,9 +8,9 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
-use crate::configs::dev::DevConfig;
-use crate::configs::dev::LogLevel;
+use crate::configs::log_level::LogLevel;
 use crate::configs::mcp::McpConfig;
+use crate::exit_error;
 use crate::print_info;
 use crate::utils;
 use crate::utils::constants;
@@ -20,56 +20,71 @@ use crate::utils::path::{self};
 use super::ollama::OllamaConfig;
 use super::opensearch::OpenSearchConfig;
 
-/// Global config directory override.
-static GLOBAL_CONFIG_DIR: OnceLock<Option<PathBuf>> = OnceLock::new();
+/// Global config path override.
+static GLOBAL_CONFIG_PATH: OnceLock<Option<PathBuf>> = OnceLock::new();
 
 /// Main application configuration structure.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AppConfig {
+    /// Configuration version.
     pub version: String,
+    /// Log level for terminal/tracing output.
+    pub log_level: LogLevel,
+    /// OpenSearch connection settings.
     pub opensearch: OpenSearchConfig,
+    /// MCP server settings.
     pub mcp: McpConfig,
+    /// Ollama LLM servers.
     pub ollama: Vec<OllamaConfig>,
+    /// Knowledge sources to index.
     pub sources: Vec<PathBuf>,
-
-    /// Development and debugging configuration
-    #[serde(default, skip_serializing_if = "DevConfig::should_skip")]
-    pub dev: DevConfig,
 }
 
 impl Default for AppConfig {
+    /// Creates default configuration with safe defaults.
     fn default() -> Self {
         Self {
             version: constants::CONFIG_VERSION.to_string(),
+            log_level: LogLevel::default(),
             opensearch: OpenSearchConfig::default(),
             mcp: McpConfig::default(),
             ollama: vec![OllamaConfig::default()],
             sources: vec![],
-            dev: DevConfig::default(),
         }
     }
 }
 
 impl AppConfig {
-    /// Sets the global config directory override.
-    pub fn set_global_config_dir(dir: Option<PathBuf>) {
-        if GLOBAL_CONFIG_DIR.get().is_none() {
-            let _ = GLOBAL_CONFIG_DIR.set(dir);
+    /// Sets the global config path override. Must be a valid JSON5 file.
+    pub fn set_global_config(path: Option<PathBuf>) {
+        if let Some(ref p) = path {
+            if !p.exists() {
+                exit_error!("Config file not found: {}", p.display());
+            }
+            if p.extension().map_or(true, |ext| ext != "json5") {
+                exit_error!("Config file must be .json5: {}", p.display());
+            }
         }
-    }
-
-    /// Returns the config directory (either global override or default).
-    pub fn config_dir() -> PathBuf {
-        if let Some(Some(dir)) = GLOBAL_CONFIG_DIR.get() {
-            dir.clone()
-        } else {
-            path::config_dir()
+        if GLOBAL_CONFIG_PATH.get().is_none() {
+            let _ = GLOBAL_CONFIG_PATH.set(path);
         }
     }
 
     /// Returns the config file path.
     pub fn config_path() -> PathBuf {
         Self::config_dir().join(constants::CONFIG_FILE_NAME)
+    }
+
+    /// Returns the config directory (either global override or default).
+    pub fn config_dir() -> PathBuf {
+        if let Some(Some(config_path)) = GLOBAL_CONFIG_PATH.get() {
+            config_path
+                .parent()
+                .map(|p| p.to_path_buf())
+                .unwrap_or_else(|| path::config_dir())
+        } else {
+            path::config_dir()
+        }
     }
 
     /// Load config from file, respecting global override.
@@ -87,8 +102,7 @@ impl AppConfig {
                 Ok(config) => config,
                 Err(_) => {
                     return Err(anyhow::anyhow!(
-                        "Failed to parse config file (possibly from older version).\n\
-                 Delete {} and run again to create a new one.",
+                        "Failed to parse config file (possibly from older version).\nDelete {} and run again to create a new one.",
                         config_path.display()
                     ));
                 }
@@ -96,8 +110,7 @@ impl AppConfig {
 
             if config.version != constants::CONFIG_VERSION {
                 return Err(anyhow::anyhow!(
-                    "Config version mismatch: found {}, expected {}\n\
-             Delete {} and run again to create a new one.",
+                    "Config version mismatch: found {}, expected {}\nDelete {} and run again to create a new one.",
                     config.version,
                     constants::CONFIG_VERSION,
                     config_path.display()
@@ -115,7 +128,7 @@ impl AppConfig {
         };
 
         // Initialize tracing with log level from config
-        Self::init_tracing(&config.dev.log_level);
+        Self::init_tracing(&config.log_level);
 
         Ok(config)
     }
@@ -135,9 +148,12 @@ impl AppConfig {
         if !config_dir.exists() {
             fs::create_dir_all(&config_dir)?;
         }
-
-        let mut commits = vec![
+        let commits = vec![
             Json5::Commit("version", vec!["Configuration version (do not modify)"]),
+            Json5::Commit(
+                "log_level",
+                vec!["Log level: cli, error, warn, info, debug, trace"],
+            ),
             Json5::Commit("opensearch", vec!["OpenSearch connection"]),
             Json5::Commit(
                 "mcp",
@@ -172,20 +188,6 @@ impl AppConfig {
             ),
             Json5::Commit("sources", vec!["Knowledge sources to index"]),
         ];
-
-        // Add dev block with comments only if it existed in the original config
-        if self.dev.exists_in_config() {
-            commits.push(Json5::Commit(
-                "dev",
-                vec![
-                    "Development configuration",
-                    "",
-                    "log_level - Log level: default, trace, debug, info, warn, error",
-                    "spdx_data_path - Override SPDX data path for license detection",
-                ],
-            ));
-        }
-
         let json = json5::to_string(self)?;
         let content = utils::json5::add_commits(json, commits);
         fs::write(Self::config_path(), content)?;
@@ -195,7 +197,6 @@ impl AppConfig {
     /// Add source to config.
     pub fn add_source(&mut self, path: PathBuf) {
         let absolute_path = vibe_fs::resolve(&path).unwrap_or(path);
-
         if !self.sources.contains(&absolute_path) {
             self.sources.push(absolute_path);
             let _ = self.save();
@@ -219,42 +220,44 @@ impl AppConfig {
     /// Get source by exact path or unique directory name.
     pub fn get_source(&self, target: &str) -> Result<PathBuf> {
         let path = PathBuf::from(target);
-        let path: Vec<&PathBuf> = if path.exists() && path.is_dir() {
-            vec![&path]
-        } else {
-            self.sources
-                .iter()
-                .filter(|source| {
-                    source
-                        .to_string_lossy()
-                        .split('/')
-                        .last()
-                        .map(|name| name == target)
-                        .unwrap_or(false)
-                })
-                .collect()
-        };
-
-        if path.is_empty() {
+        if path.is_absolute() && path.exists() && path.is_dir() {
+            return Ok(path);
+        }
+        let sources: Vec<PathBuf> = self
+            .sources
+            .iter()
+            .filter_map(|s| vibe_fs::resolve(s).ok())
+            .filter(|s| s.exists())
+            .collect();
+        let found: Vec<&PathBuf> = sources
+            .iter()
+            .filter(|source| {
+                source
+                    .to_string_lossy()
+                    .split('/')
+                    .last()
+                    .map(|name| name == target)
+                    .unwrap_or(false)
+            })
+            .collect();
+        if found.is_empty() {
             return Err(anyhow::anyhow!("Source not found: {}", target));
         }
-
-        if path.len() > 1 {
+        if found.len() > 1 {
             return Err(anyhow::anyhow!(
-                "Multiple sources found with name '{}'. Use full path instead.",
+                "Multiple sources found with name '{}'",
                 target
             ));
         }
-
-        Ok(path.first().unwrap().to_path_buf())
+        Ok(found[0].clone())
     }
 
     /// Get list of valid sources.
     pub fn get_sources(&self) -> Vec<PathBuf> {
         self.sources
             .iter()
+            .filter_map(|p| vibe_fs::resolve(p).ok())
             .filter(|p| p.exists())
-            .cloned()
             .collect()
     }
 }

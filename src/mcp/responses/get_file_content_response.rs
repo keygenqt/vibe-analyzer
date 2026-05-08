@@ -14,6 +14,7 @@ pub struct GetFileContentResponse {
 }
 
 impl McpResponse for GetFileContentResponse {
+    /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
         format!(
             "[File: {}]\nUse this data to respond to the user.\n\n{}",

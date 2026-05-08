@@ -1,8 +1,9 @@
 //! Pretty printing macros for CLI and server output.
 //! Automatically switches between colored console and tracing logs based on runtime mode.
 
-use crate::configs::dev::LogLevel;
 use std::sync::OnceLock;
+
+use crate::configs::log_level::LogLevel;
 
 /// Global log level for the application.
 pub static LOG_LEVEL: OnceLock<String> = OnceLock::new();
@@ -12,9 +13,9 @@ pub fn set_log_level(level: &LogLevel) {
     LOG_LEVEL.set(level.as_str().to_string()).ok();
 }
 
-/// Returns true if tracing is enabled (log_level is not "default").
+/// Returns true if tracing is enabled (log_level is not "cli").
 pub fn is_tracing() -> bool {
-    LOG_LEVEL.get().map(|s| s.as_str()).unwrap_or("default") != "default"
+    LOG_LEVEL.get().map(|s| s.as_str()).unwrap_or("cli") != "cli"
 }
 
 /// Strip ANSI color codes from a string.

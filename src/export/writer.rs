@@ -30,6 +30,7 @@ pub struct ExportModel {
 }
 
 impl ExportModel {
+    /// Creates export with AST-only formatting.
     pub fn new_ast(projects: Vec<ProjectModel>) -> Self {
         ExportModel {
             indexed_at: Local::now().to_rfc3339(),
@@ -43,6 +44,7 @@ impl ExportModel {
         }
     }
 
+    /// Creates export with AST + enrichment formatting.
     pub fn new_analyze(projects: Vec<ProjectModel>) -> Self {
         ExportModel {
             indexed_at: Local::now().to_rfc3339(),
@@ -93,13 +95,11 @@ fn get_default_export(format: ExportFormat) -> PathBuf {
 pub fn export(model: ExportModel, options: &ExportOptions) -> Result<PathBuf> {
     let writer =
         get_writer(options.format).ok_or_else(|| anyhow::anyhow!("Exporter is not registered."))?;
-
     let output_path = match options.output.clone() {
         Some(path) => vibe_fs::resolve(&path)
             .map_err(|e| anyhow::anyhow!("Error path for save output: {}", e))?,
         None => get_default_export(options.format),
     };
-
     writer.export(&model, &output_path)?;
     Ok(output_path)
 }

@@ -5,7 +5,8 @@ use std::time::Duration;
 
 use anyhow::Result;
 
-use crate::{models::file_language::FileLanguageModel, ollama::client::OllamaClient};
+use crate::models::file_language::FileLanguageModel;
+use crate::ollama::client::OllamaClient;
 
 /// Maximum retry attempts for failed enrichment requests.
 const MAX_RETRIES: usize = 3;

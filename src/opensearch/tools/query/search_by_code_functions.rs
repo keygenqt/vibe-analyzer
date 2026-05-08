@@ -3,32 +3,34 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
+use crate::models::file_models::FileModels;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
-impl OpenSearchToolsClient {
+impl OpenSearchToolClient {
+    /// Searches for functions and methods across analysis indexes.
     pub async fn search_by_code_functions(
         &self,
-        indexes: &[String],
         query: Option<String>,
         limit: usize,
-    ) -> Result<Vec<OpensearchFileMetaResponse>> {
-        let index_list = indexes.join(",");
-
+    ) -> Result<Vec<FileModels>> {
         let search_query = match query {
             Some(q) => json!({
                 "size": limit,
                 "query": {
                     "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } }
+                        ],
                         "should": [
                             { "match": { "tags": { "query": q, "boost": 4.0 } } },
                             { "match": { "ast.tags": { "query": q, "boost": 3.0 } } },
                             { "nested": {
-                                "path": "ast.functions",
+                                "path": "functions",
                                 "query": {
                                     "bool": {
                                         "should": [
-                                            { "match_phrase_prefix": { "ast.functions.signature": { "query": q, "boost": 2.0 } } },
-                                            { "match": { "ast.functions.comments": { "query": q, "boost": 1.5, "fuzziness": "AUTO" } } }
+                                            { "match_phrase_prefix": { "functions.signature": { "query": q, "boost": 2.0 } } },
+                                            { "match": { "functions.comments": { "query": q, "boost": 1.5, "fuzziness": "AUTO" } } }
                                         ]
                                     }
                                 }
@@ -41,21 +43,24 @@ impl OpenSearchToolsClient {
             None => json!({
                 "size": limit,
                 "query": {
-                    "match": { "ast.tags": "functions" }
+                    "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } }
+                        ],
+                        "must": [
+                            { "match": { "tags": "functions" } }
+                        ]
+                    }
                 }
             }),
         };
 
-        let resp = self.client.call(&index_list, search_query).await?;
+        let resp = self.call(search_query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
 
-        let results: Vec<OpensearchFileMetaResponse> = hits
+        let results: Vec<FileModels> = hits
             .iter()
-            .filter_map(|h| {
-                let source: OpensearchFileStatsRequest =
-                    serde_json::from_value(h["_source"].clone()).ok()?;
-                Some(OpensearchFileMetaResponse::from(source))
-            })
+            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
             .collect();
 
         Ok(results)

@@ -2,12 +2,14 @@
 //! Generic search interface for all MCP tools.
 
 use anyhow::Result;
-use serde_json::{Value, json};
+use serde_json::Value;
+use serde_json::json;
 
-use crate::{
-    models::{file_models::FileModels, project::ProjectModel},
-    opensearch::client::{FILES_META_SUFFIX, OpenSearchClient, PROJECT_META_SUFFIX},
-};
+use crate::models::file_models::FileModels;
+use crate::models::project::ProjectModel;
+use crate::opensearch::client::FILES_META_SUFFIX;
+use crate::opensearch::client::OpenSearchClient;
+use crate::opensearch::client::PROJECT_META_SUFFIX;
 
 /// Client for executing search queries against project indices.
 #[derive(Clone)]

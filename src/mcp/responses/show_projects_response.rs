@@ -5,7 +5,8 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{mcp::responses::McpResponse, models::project::ProjectModel};
+use crate::mcp::responses::McpResponse;
+use crate::models::project::ProjectModel;
 
 /// Response from show_projects tool.
 #[derive(Debug, Serialize)]
@@ -63,6 +64,7 @@ impl TryFrom<&[ProjectModel]> for ShowProjectsResponse {
 }
 
 impl McpResponse for ShowProjectsResponse {
+    /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
         format!(
             "[{} project(s)]\nUse this data to respond to the user.\n\n{}",

@@ -5,10 +5,9 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{
-    mcp::responses::McpResponse,
-    opensearch::tools::query::show_stats_search::{LanguageStatsOutput, ShowStatsOutput},
-};
+use crate::mcp::responses::McpResponse;
+use crate::opensearch::tools::query::show_stats_search::LanguageStatsOutput;
+use crate::opensearch::tools::query::show_stats_search::ShowStatsOutput;
 
 /// Response from show_stats tool.
 #[derive(Debug, Serialize)]
@@ -47,6 +46,7 @@ pub struct ShowStatTotalResponse {
     pub size_human: String,
 }
 
+/// Converts language stats to MCP response item.
 impl From<LanguageStatsOutput> for ShowStatLanguageResponse {
     fn from(l: LanguageStatsOutput) -> Self {
         ShowStatLanguageResponse {
@@ -59,6 +59,7 @@ impl From<LanguageStatsOutput> for ShowStatLanguageResponse {
     }
 }
 
+/// Converts language stats to MCP total response.
 impl From<LanguageStatsOutput> for ShowStatTotalResponse {
     fn from(l: LanguageStatsOutput) -> Self {
         ShowStatTotalResponse {
@@ -70,6 +71,7 @@ impl From<LanguageStatsOutput> for ShowStatTotalResponse {
     }
 }
 
+/// Converts stats output to MCP response.
 impl TryFrom<ShowStatsOutput> for ShowStatsResponse {
     type Error = anyhow::Error;
 
@@ -82,6 +84,7 @@ impl TryFrom<ShowStatsOutput> for ShowStatsResponse {
 }
 
 impl McpResponse for ShowStatsResponse {
+    /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
         format!(
             "[{} language(s), {} file(s), {} line(s)]\nUse this data to respond to the user.\n\n{}",

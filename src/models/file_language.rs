@@ -1,16 +1,25 @@
 //! Language file model.
 //! Represents a parsed source code or Markdown file with all extracted elements.
 
-use serde::{Deserialize, Serialize};
-use std::{collections::HashMap, path::Path};
-use vibe_ast::{Language, nodes::nodes::Nodes, traits::LanguageNode};
+use serde::Deserialize;
+use serde::Serialize;
+use std::collections::HashMap;
+use std::path::Path;
+use vibe_ast::Language;
+use vibe_ast::nodes::nodes::Nodes;
+use vibe_ast::traits::LanguageNode;
 
-use crate::models::{
-    ast_class::AstClassModel, ast_enum::AstEnumModel, ast_function::AstFunctionModel,
-    ast_heading::AstHeadingModel, ast_interface::AstInterfaceModel, ast_link::AstLinkModel,
-    ast_model::AstModel, ast_struct::AstStructModel, ast_variable::AstVariableModel,
-    file_model::FileModel, file_models::FileModels,
-};
+use crate::models::ast_class::AstClassModel;
+use crate::models::ast_enum::AstEnumModel;
+use crate::models::ast_function::AstFunctionModel;
+use crate::models::ast_heading::AstHeadingModel;
+use crate::models::ast_interface::AstInterfaceModel;
+use crate::models::ast_link::AstLinkModel;
+use crate::models::ast_model::AstModel;
+use crate::models::ast_struct::AstStructModel;
+use crate::models::ast_variable::AstVariableModel;
+use crate::models::file_model::FileModel;
+use crate::models::file_models::FileModels;
 
 /// Parsed source code or Markdown file.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
@@ -92,6 +101,7 @@ impl FileLanguageModel {
     }
 }
 
+/// File model implementation for language files.
 impl FileModel for FileLanguageModel {
     fn path(&self) -> &str {
         &self.path
@@ -154,7 +164,29 @@ impl FileModel for FileLanguageModel {
     }
 
     fn format_index(&self) -> FileModels {
-        self.format_analyze()
+        FileModels::Language(FileLanguageModel {
+            path: self.path.clone(),
+            language: self.language.clone(),
+            summary: self.summary.clone(),
+            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
+            lines_of_code: self.lines_of_code.or_else(|| self.lines_of_code()),
+            functions: self.functions.iter().map(|f| f.format_index()).collect(),
+            classes: self.classes.iter().map(|c| c.format_index()).collect(),
+            structs: self.structs.iter().map(|s| s.format_index()).collect(),
+            enums: self.enums.iter().map(|e| e.format_index()).collect(),
+            interfaces: self.interfaces.iter().map(|i| i.format_index()).collect(),
+            variables: self.variables.iter().map(|v| v.format_index()).collect(),
+            imports: self.imports.clone(),
+            header_comments: self.header_comments.clone(),
+            headings: self.headings.iter().map(|h| h.format_index()).collect(),
+            links: self.links.iter().map(|l| l.format_index()).collect(),
+            code_blocks: self.code_blocks.clone(),
+            frontmatter: self.frontmatter.clone(),
+            tags: self.tags.clone(),
+            hash: None,
+            content: None,
+            node_language: None,
+        })
     }
 
     fn format_tool(&self) -> FileModels {
@@ -184,6 +216,7 @@ impl FileModel for FileLanguageModel {
     }
 }
 
+/// Converts parsed AST nodes into a language file model.
 impl From<Nodes> for FileLanguageModel {
     fn from(nodes: Nodes) -> Self {
         match nodes {

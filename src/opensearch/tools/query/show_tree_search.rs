@@ -2,14 +2,17 @@
 
 use anyhow::Result;
 
-use crate::{
-    models::file_models::FileModels, opensearch::tools::tool_client::OpenSearchToolClient, utils,
-};
+use crate::models::file_models::FileModels;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
+use crate::utils;
 
 /// Directory tree output.
 pub struct ShowTreeOutput {
+    /// Directory tree as formatted text.
     pub tree: String,
+    /// Number of directories.
     pub directories: usize,
+    /// Number of files.
     pub files: usize,
 }
 

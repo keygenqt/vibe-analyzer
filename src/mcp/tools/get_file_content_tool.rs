@@ -7,14 +7,11 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
-use crate::{
-    mcp::{
-        params::get_file_content_params::GetFileContentParams,
-        responses::{McpResponse, get_file_content_response::GetFileContentResponse},
-        server::AppState,
-    },
-    utils,
-};
+use crate::mcp::params::get_file_content_params::GetFileContentParams;
+use crate::mcp::responses::McpResponse;
+use crate::mcp::responses::get_file_content_response::GetFileContentResponse;
+use crate::mcp::server::AppState;
+use crate::utils;
 
 /// Tool for retrieving file content.
 #[derive(Clone)]

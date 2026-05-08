@@ -3,43 +3,45 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
+use crate::models::file_models::FileModels;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
-impl OpenSearchToolsClient {
+impl OpenSearchToolClient {
+    /// Searches for variables and enums across analysis indexes.
     pub async fn search_by_code_variables(
         &self,
-        indexes: &[String],
         query: Option<String>,
         limit: usize,
-    ) -> Result<Vec<OpensearchFileMetaResponse>> {
-        let index_list = indexes.join(",");
-
+    ) -> Result<Vec<FileModels>> {
         let search_query = match query {
             Some(q) => json!({
                 "size": limit,
                 "query": {
                     "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } }
+                        ],
                         "should": [
                             { "match": { "tags": { "query": q, "boost": 4.0 } } },
                             { "match": { "ast.tags": { "query": q, "boost": 3.0 } } },
                             { "nested": {
-                                "path": "ast.variables",
+                                "path": "variables",
                                 "query": {
                                     "bool": {
                                         "should": [
-                                            { "match": { "ast.variables.signature": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } },
-                                            { "match": { "ast.variables.comments": { "query": q, "boost": 1.5 } } }
+                                            { "match": { "variables.signature": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } },
+                                            { "match": { "variables.comments": { "query": q, "boost": 1.5 } } }
                                         ]
                                     }
                                 }
                             }},
                             { "nested": {
-                                "path": "ast.enums",
+                                "path": "enums",
                                 "query": {
                                     "bool": {
                                         "should": [
-                                            { "match": { "ast.enums.signature": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } },
-                                            { "match": { "ast.enums.comments": { "query": q, "boost": 1.5 } } }
+                                            { "match": { "enums.signature": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } },
+                                            { "match": { "enums.comments": { "query": q, "boost": 1.5 } } }
                                         ]
                                     }
                                 }
@@ -52,21 +54,24 @@ impl OpenSearchToolsClient {
             None => json!({
                 "size": limit,
                 "query": {
-                    "match": { "ast.tags": "variables enums" }
+                    "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } }
+                        ],
+                        "must": [
+                            { "match": { "tags": "variables enums" } }
+                        ]
+                    }
                 }
             }),
         };
 
-        let resp = self.client.call(&index_list, search_query).await?;
+        let resp = self.call(search_query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
 
-        let results: Vec<OpensearchFileMetaResponse> = hits
+        let results: Vec<FileModels> = hits
             .iter()
-            .filter_map(|h| {
-                let source: OpensearchFileStatsRequest =
-                    serde_json::from_value(h["_source"].clone()).ok()?;
-                Some(OpensearchFileMetaResponse::from(source))
-            })
+            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
             .collect();
 
         Ok(results)

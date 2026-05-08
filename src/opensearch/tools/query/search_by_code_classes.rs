@@ -3,54 +3,56 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::opensearch::tools::tools_client::OpenSearchToolsClient;
+use crate::models::file_models::FileModels;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
-impl OpenSearchToolsClient {
+impl OpenSearchToolClient {
+    /// Searches for classes, structs, and interfaces across analysis indexes.
     pub async fn search_by_code_classes(
         &self,
-        indexes: &[String],
         query: Option<String>,
         limit: usize,
-    ) -> Result<Vec<OpensearchFileMetaResponse>> {
-        let index_list = indexes.join(",");
-
+    ) -> Result<Vec<FileModels>> {
         let search_query = match query {
             Some(q) => json!({
                 "size": limit,
                 "query": {
                     "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } }
+                        ],
                         "should": [
                             { "match": { "tags": { "query": q, "boost": 4.0 } } },
                             { "match": { "ast.tags": { "query": q, "boost": 3.0 } } },
                             { "nested": {
-                                "path": "ast.classes",
+                                "path": "classes",
                                 "query": {
                                     "bool": {
                                         "should": [
-                                            { "match_phrase_prefix": { "ast.classes.signature": { "query": q, "boost": 2.0 } } },
-                                            { "match": { "ast.classes.comments": { "query": q, "boost": 1.5, "fuzziness": "AUTO" } } }
+                                            { "match_phrase_prefix": { "classes.signature": { "query": q, "boost": 2.0 } } },
+                                            { "match": { "classes.comments": { "query": q, "boost": 1.5, "fuzziness": "AUTO" } } }
                                         ]
                                     }
                                 }
                             }},
                             { "nested": {
-                                "path": "ast.structs",
+                                "path": "structs",
                                 "query": {
                                     "bool": {
                                         "should": [
-                                            { "match_phrase_prefix": { "ast.structs.signature": { "query": q, "boost": 2.0 } } },
-                                            { "match": { "ast.structs.comments": { "query": q, "boost": 1.5, "fuzziness": "AUTO" } } }
+                                            { "match_phrase_prefix": { "structs.signature": { "query": q, "boost": 2.0 } } },
+                                            { "match": { "structs.comments": { "query": q, "boost": 1.5, "fuzziness": "AUTO" } } }
                                         ]
                                     }
                                 }
                             }},
                             { "nested": {
-                                "path": "ast.interfaces",
+                                "path": "interfaces",
                                 "query": {
                                     "bool": {
                                         "should": [
-                                            { "match_phrase_prefix": { "ast.interfaces.signature": { "query": q, "boost": 2.0 } } },
-                                            { "match": { "ast.interfaces.comments": { "query": q, "boost": 1.5, "fuzziness": "AUTO" } } }
+                                            { "match_phrase_prefix": { "interfaces.signature": { "query": q, "boost": 2.0 } } },
+                                            { "match": { "interfaces.comments": { "query": q, "boost": 1.5, "fuzziness": "AUTO" } } }
                                         ]
                                     }
                                 }
@@ -63,21 +65,24 @@ impl OpenSearchToolsClient {
             None => json!({
                 "size": limit,
                 "query": {
-                    "match": { "ast.tags": "classes structs interfaces" }
+                    "bool": {
+                        "filter": [
+                            { "term": { "type": "language" } }
+                        ],
+                        "must": [
+                            { "match": { "tags": "classes structs interfaces" } }
+                        ]
+                    }
                 }
             }),
         };
 
-        let resp = self.client.call(&index_list, search_query).await?;
+        let resp = self.call(search_query).await?;
         let hits = resp["hits"]["hits"].as_array().unwrap();
 
-        let results: Vec<OpensearchFileMetaResponse> = hits
+        let results: Vec<FileModels> = hits
             .iter()
-            .filter_map(|h| {
-                let source: OpensearchFileStatsRequest =
-                    serde_json::from_value(h["_source"].clone()).ok()?;
-                Some(OpensearchFileMetaResponse::from(source))
-            })
+            .filter_map(|h| serde_json::from_value(h["_source"].clone()).ok())
             .collect();
 
         Ok(results)

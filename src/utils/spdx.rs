@@ -6,12 +6,14 @@ use std::io::Write;
 use std::path::Path;
 
 use anyhow::Result;
-use askalono::{Store, TextData};
+use askalono::Store;
+use askalono::TextData;
 use tempfile::tempdir;
 use tokio::sync::OnceCell;
 use zip::ZipArchive;
 
-use crate::{print_info, utils::path::config_dir};
+use crate::configs::app::AppConfig;
+use crate::print_info;
 
 /// SPDX license list repository URL.
 const SPDX_REPO_URL: &str = "https://github.com/spdx/license-list-data/archive/refs/heads/main.zip";
@@ -48,14 +50,16 @@ impl LicenseDetector {
 
     /// Initialize license store from cache or download SPDX data.
     async fn init_store() -> Store {
-        let cache_path = config_dir().join("askalono-cache.bin.zstd");
+        let cache_path = AppConfig::config_dir().join("askalono-cache.bin.zstd");
         if cache_path.exists() {
             let file = File::open(&cache_path).expect("Failed to open cache file");
             return Store::from_cache(file).expect("Failed to load cache");
         }
 
-        let config = crate::configs::app::AppConfig::load().expect("Failed to load config");
-        let details_path = config.dev.spdx_details_path();
+        let details_path = AppConfig::config_dir()
+            .join("spdx")
+            .join("json")
+            .join("details");
 
         if !Self::has_json_files(&details_path) {
             print_info!("SPDX data not found. Downloading...");

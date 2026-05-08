@@ -5,13 +5,12 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{
-    mcp::responses::McpResponse,
-    models::{
-        ast_class::AstClassModel, ast_interface::AstInterfaceModel, ast_model::AstModel,
-        ast_struct::AstStructModel, file_models::FileModels,
-    },
-};
+use crate::mcp::responses::McpResponse;
+use crate::models::ast_class::AstClassModel;
+use crate::models::ast_interface::AstInterfaceModel;
+use crate::models::ast_model::AstModel;
+use crate::models::ast_struct::AstStructModel;
+use crate::models::file_models::FileModels;
 
 /// Response from search_by_code_classes tool.
 #[derive(Debug, Serialize)]
@@ -59,6 +58,7 @@ impl TryFrom<&FileModels> for SearchByCodeClassesMetaResponse {
 }
 
 impl McpResponse for SearchByCodeClassesResponse {
+    /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
         format!(
             "[{} type(s) found for '{}']\nUse this data to respond to the user.\n\n{}",

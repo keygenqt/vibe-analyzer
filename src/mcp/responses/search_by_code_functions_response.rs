@@ -5,10 +5,10 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{
-    mcp::responses::McpResponse,
-    models::{ast_function::AstFunctionModel, ast_model::AstModel, file_models::FileModels},
-};
+use crate::mcp::responses::McpResponse;
+use crate::models::ast_function::AstFunctionModel;
+use crate::models::ast_model::AstModel;
+use crate::models::file_models::FileModels;
 
 /// Response from search_by_code_functions tool.
 #[derive(Debug, Serialize)]
@@ -50,6 +50,7 @@ impl TryFrom<&FileModels> for SearchByCodeFunctionsMetaResponse {
 }
 
 impl McpResponse for SearchByCodeFunctionsResponse {
+    /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
         format!(
             "[{} file(s) found for '{}']\nUse this data to respond to the user.\n\n{}",

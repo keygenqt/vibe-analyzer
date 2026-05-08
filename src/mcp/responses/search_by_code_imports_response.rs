@@ -5,7 +5,8 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{mcp::responses::McpResponse, models::file_models::FileModels};
+use crate::mcp::responses::McpResponse;
+use crate::models::file_models::FileModels;
 
 /// Response from search_by_code_imports tool.
 #[derive(Debug, Serialize)]
@@ -47,6 +48,7 @@ impl TryFrom<&FileModels> for SearchByCodeImportsMetaResponse {
 }
 
 impl McpResponse for SearchByCodeImportsResponse {
+    /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
         format!(
             "[{} import(s) found for '{}']\nUse this data to respond to the user.\n\n{}",

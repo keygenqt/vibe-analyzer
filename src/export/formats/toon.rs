@@ -6,7 +6,8 @@ use serde_toon;
 use std::fs;
 use std::path::Path;
 
-use crate::export::writer::{ExportModel, ExportWriter};
+use crate::export::writer::ExportModel;
+use crate::export::writer::ExportWriter;
 
 /// TOON export writer implementing the ExportWriter trait.
 pub struct ToonWriter;

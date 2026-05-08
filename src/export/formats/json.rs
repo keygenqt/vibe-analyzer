@@ -6,7 +6,8 @@ use serde_json;
 use std::fs;
 use std::path::Path;
 
-use crate::export::writer::{ExportModel, ExportWriter};
+use crate::export::writer::ExportModel;
+use crate::export::writer::ExportWriter;
 
 /// JSON export writer implementing the ExportWriter trait.
 pub struct JsonWriter;

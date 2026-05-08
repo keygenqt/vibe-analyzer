@@ -21,12 +21,9 @@ impl OpenSearchIndexClient {
             "mappings": {
                 "dynamic": "strict",
                 "properties": {
-                    // Common
                     "path": { "type": "keyword" },
                     "type": { "type": "keyword" },
                     "size_bytes": { "type": "long" },
-
-                    // Language
                     "language": { "type": "keyword" },
                     "summary": {
                         "type": "text",
@@ -96,13 +93,19 @@ impl OpenSearchIndexClient {
                             "title": {
                                 "type": "text",
                                 "fields": {
-                                    "keyword": { "type": "keyword" }
+                                    "keyword": { "type": "keyword" },
+                                    "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                    "english": { "type": "text", "analyzer": "english_analyzer" },
+                                    "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
                                 }
                             },
                             "preview": {
                                 "type": "text",
                                 "fields": {
-                                    "keyword": { "type": "keyword" }
+                                    "keyword": { "type": "keyword" },
+                                    "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                    "english": { "type": "text", "analyzer": "english_analyzer" },
+                                    "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
                                 }
                             }
                         }
@@ -110,16 +113,27 @@ impl OpenSearchIndexClient {
                     "links": {
                         "type": "nested",
                         "properties": {
-                            "text": { "type": "keyword" },
+                            "text": {
+                                "type": "text",
+                                "fields": {
+                                    "keyword": { "type": "keyword" },
+                                    "russian": { "type": "text", "analyzer": "russian_analyzer" },
+                                    "english": { "type": "text", "analyzer": "english_analyzer" },
+                                    "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
+                                }
+                            },
                             "url": { "type": "keyword" }
                         }
                     },
-                    "code_blocks": { "type": "keyword" },
+                    "code_blocks": {
+                        "type": "text",
+                        "fields": {
+                            "keyword": { "type": "keyword" }
+                        }
+                    },
                     "frontmatter": { "type": "object", "dynamic": true },
-
-                    // Text
                     "preview": { "type": "text" },
-                    "extension": { "type": "keyword" },
+                    "extension": { "type": "keyword" }
                 }
             }
         });

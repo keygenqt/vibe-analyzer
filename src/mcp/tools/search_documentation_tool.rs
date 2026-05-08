@@ -7,10 +7,11 @@ use rmcp::ErrorData;
 use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
-use crate::configs::app::IndexType;
+use crate::mcp::params::search_documentation_params::SearchDocumentationParams;
+use crate::mcp::responses::McpResponse;
+use crate::mcp::responses::search_documentation_response::SearchDocumentationMetaResponse;
+use crate::mcp::responses::search_documentation_response::SearchDocumentationResponse;
 use crate::mcp::server::AppState;
-use crate::mcp::tools::data::params::mcp_search_documentation_params::McpSearchDocumentationParams;
-use crate::mcp::tools::data::responses::mcp_search_documentation_response::McpSearchDocumentationResponse;
 use crate::utils::mcp_normalize::number_normalize;
 use crate::utils::mcp_normalize::query_normalize;
 
@@ -26,28 +27,48 @@ impl SearchDocumentationTool {
         Self { state }
     }
 
-    /// Executes the search.
+    /// Executes the search for documentation.
     pub async fn execute(
         &self,
-        params: McpSearchDocumentationParams,
+        params: SearchDocumentationParams,
     ) -> Result<CallToolResult, ErrorData> {
-        let indexes = self.state.config.get_indexes(IndexType::Analysis);
+        // Normalize parameters
         let query = query_normalize(&params.query);
-        let limit = number_normalize(params.limit, McpSearchDocumentationParams::default_limit());
+        let limit = number_normalize(
+            params.limit,
+            SearchDocumentationParams::default_limit(),
+            None,
+        );
 
-        let results = self
+        // Create tools client (search across all projects)
+        let client = self
             .state
-            .search_client
-            .search_documentation(&indexes, query, limit)
+            .open_search_client
+            .client_tool_files_meta(None)
             .await
             .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
 
+        // Query OpenSearch
+        let files = client
+            .search_documentation(query.clone(), limit)
+            .await
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        // Convert results
+        let results: Vec<SearchDocumentationMetaResponse> = files
+            .iter()
+            .map(SearchDocumentationMetaResponse::try_from)
+            .collect::<Result<Vec<_>, _>>()
+            .map_err(|e| ErrorData::internal_error(e.to_string(), None))?;
+
+        // Build response
+        let response = SearchDocumentationResponse {
+            query: query.unwrap_or(params.query),
+            results,
+        };
+
         Ok(CallToolResult::success(vec![Content::text(
-            McpSearchDocumentationResponse {
-                query: params.query,
-                results: results.into_iter().map(|r| r.into()).collect(),
-            }
-            .format(),
+            response.format(),
         )]))
     }
 }

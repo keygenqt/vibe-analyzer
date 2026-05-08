@@ -1,7 +1,8 @@
 //! AST function model.
 //! Represents a function or method declaration extracted from source code.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::function_node::FunctionNode;
 
 use crate::models::ast_model::AstModel;
@@ -16,6 +17,7 @@ pub struct AstFunctionModel {
     pub comments: Vec<String>,
 }
 
+/// Converts a parsed function node into the AST function model.
 impl From<FunctionNode> for AstFunctionModel {
     fn from(node: FunctionNode) -> Self {
         AstFunctionModel {
@@ -25,6 +27,7 @@ impl From<FunctionNode> for AstFunctionModel {
     }
 }
 
+/// AST model implementation for function declarations.
 impl AstModel for AstFunctionModel {
     fn format_ast(&self) -> Self {
         self.clone()

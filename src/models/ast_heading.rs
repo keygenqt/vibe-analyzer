@@ -1,7 +1,8 @@
 //! AST heading model.
 //! Represents a Markdown heading extracted from documentation.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::heading_node::HeadingNode;
 
 use crate::models::ast_model::AstModel;
@@ -17,6 +18,7 @@ pub struct AstHeadingModel {
     pub preview: String,
 }
 
+/// Converts a parsed heading node into the AST heading model.
 impl From<HeadingNode> for AstHeadingModel {
     fn from(node: HeadingNode) -> Self {
         AstHeadingModel {
@@ -27,6 +29,7 @@ impl From<HeadingNode> for AstHeadingModel {
     }
 }
 
+/// AST model implementation for heading declarations.
 impl AstModel for AstHeadingModel {
     fn format_ast(&self) -> Self {
         self.clone()

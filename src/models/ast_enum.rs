@@ -1,7 +1,8 @@
 //! AST enum model.
 //! Represents an enum declaration extracted from source code.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::enum_node::EnumNode;
 
 use crate::models::ast_model::AstModel;
@@ -16,6 +17,7 @@ pub struct AstEnumModel {
     pub comments: Vec<String>,
 }
 
+/// Converts a parsed enum node into the AST enum model.
 impl From<EnumNode> for AstEnumModel {
     fn from(node: EnumNode) -> Self {
         AstEnumModel {
@@ -25,6 +27,7 @@ impl From<EnumNode> for AstEnumModel {
     }
 }
 
+/// AST model implementation for enum declarations.
 impl AstModel for AstEnumModel {
     fn format_ast(&self) -> Self {
         self.clone()

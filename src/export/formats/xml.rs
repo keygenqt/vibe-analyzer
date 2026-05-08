@@ -7,7 +7,8 @@ use std::path::Path;
 use xml::reader::ParserConfig;
 use xml::writer::EmitterConfig;
 
-use crate::export::writer::{ExportModel, ExportWriter};
+use crate::export::writer::ExportModel;
+use crate::export::writer::ExportWriter;
 
 /// XML export writer implementing the ExportWriter trait.
 pub struct XmlWriter;

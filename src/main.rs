@@ -31,9 +31,9 @@ mod utils;
 #[command(styles = utils::app::app_styles())]
 #[command(version = utils::app::app_version())]
 struct App {
-    /// Path to config directory (overrides default ~/.vibe-analyzer)
+    /// Path to config file (default: ~/.vibe-analyzer/config.json5).
     #[arg(long, global = true)]
-    config_dir: Option<PathBuf>,
+    config: Option<PathBuf>,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -71,7 +71,7 @@ async fn main() {
     let app = App::parse();
 
     // Load config with override
-    AppConfig::set_global_config_dir(app.config_dir.clone());
+    AppConfig::set_global_config(app.config.clone());
 
     match app.command {
         Some(Commands::Source { action }) => cli::source::run(action),

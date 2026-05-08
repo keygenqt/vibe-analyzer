@@ -5,13 +5,11 @@ use std::convert::TryFrom;
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{
-    mcp::responses::McpResponse,
-    models::{
-        ast_enum::AstEnumModel, ast_model::AstModel, ast_variable::AstVariableModel,
-        file_models::FileModels,
-    },
-};
+use crate::mcp::responses::McpResponse;
+use crate::models::ast_enum::AstEnumModel;
+use crate::models::ast_model::AstModel;
+use crate::models::ast_variable::AstVariableModel;
+use crate::models::file_models::FileModels;
 
 /// Response from search_by_code_variables tool.
 #[derive(Debug, Serialize)]
@@ -56,6 +54,7 @@ impl TryFrom<&FileModels> for SearchByCodeVariablesMetaResponse {
 }
 
 impl McpResponse for SearchByCodeVariablesResponse {
+    /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
         format!(
             "[{} variable(s)/enum(s) found for '{}']\nUse this data to respond to the user.\n\n{}",

@@ -4,23 +4,30 @@ use std::collections::HashMap;
 
 use anyhow::Result;
 
-use crate::{
-    models::file_models::FileModels, opensearch::tools::tool_client::OpenSearchToolClient,
-};
+use crate::models::file_models::FileModels;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
 /// Statistics output.
 pub struct ShowStatsOutput {
+    /// Per-language statistics.
     pub languages: Vec<LanguageStatsOutput>,
+    /// Total across all languages.
     pub total: LanguageStatsOutput,
 }
 
 /// Per-language statistics output.
 pub struct LanguageStatsOutput {
+    /// Language name.
     pub language: String,
+    /// Number of files.
     pub files: usize,
+    /// Total lines of code.
     pub lines: usize,
+    /// AST objects count.
     pub ast_objects: usize,
+    /// Total size in bytes.
     pub size_bytes: u64,
+    /// Human-readable size.
     pub size_human: String,
 }
 

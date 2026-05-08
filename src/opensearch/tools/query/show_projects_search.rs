@@ -3,7 +3,8 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::{models::project::ProjectModel, opensearch::tools::tool_client::OpenSearchToolClient};
+use crate::models::project::ProjectModel;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
 impl OpenSearchToolClient {
     /// Returns metadata for all indexed projects.

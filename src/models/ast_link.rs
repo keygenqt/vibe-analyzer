@@ -1,7 +1,8 @@
 //! AST link model.
 //! Represents a Markdown link extracted from documentation.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::link_node::LinkNode;
 
 use crate::models::ast_model::AstModel;
@@ -15,6 +16,7 @@ pub struct AstLinkModel {
     pub url: String,
 }
 
+/// Converts a parsed link node into the AST link model.
 impl From<LinkNode> for AstLinkModel {
     fn from(node: LinkNode) -> Self {
         AstLinkModel {
@@ -24,6 +26,7 @@ impl From<LinkNode> for AstLinkModel {
     }
 }
 
+/// AST model implementation for link declarations.
 impl AstModel for AstLinkModel {
     fn format_ast(&self) -> Self {
         self.clone()

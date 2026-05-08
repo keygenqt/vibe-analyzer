@@ -3,9 +3,8 @@
 use anyhow::Result;
 use serde_json::json;
 
-use crate::{
-    models::file_models::FileModels, opensearch::tools::tool_client::OpenSearchToolClient,
-};
+use crate::models::file_models::FileModels;
+use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
 impl OpenSearchToolClient {
     /// Get file AST by path from analysis indexes.

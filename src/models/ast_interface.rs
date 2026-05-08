@@ -1,7 +1,8 @@
 //! AST interface model.
 //! Represents an interface or trait declaration extracted from source code.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::interface_node::InterfaceNode;
 
 use crate::models::ast_model::AstModel;
@@ -16,6 +17,7 @@ pub struct AstInterfaceModel {
     pub comments: Vec<String>,
 }
 
+/// Converts a parsed interface node into the AST interface model.
 impl From<InterfaceNode> for AstInterfaceModel {
     fn from(node: InterfaceNode) -> Self {
         AstInterfaceModel {
@@ -25,6 +27,7 @@ impl From<InterfaceNode> for AstInterfaceModel {
     }
 }
 
+/// AST model implementation for interface declarations.
 impl AstModel for AstInterfaceModel {
     fn format_ast(&self) -> Self {
         self.clone()

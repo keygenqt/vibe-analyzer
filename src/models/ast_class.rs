@@ -1,7 +1,8 @@
 //! AST class model.
 //! Represents a class declaration extracted from source code.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::class_node::ClassNode;
 
 use crate::models::ast_model::AstModel;
@@ -16,6 +17,7 @@ pub struct AstClassModel {
     pub comments: Vec<String>,
 }
 
+/// Converts a parsed class node into the AST class model.
 impl From<ClassNode> for AstClassModel {
     fn from(node: ClassNode) -> Self {
         AstClassModel {
@@ -25,6 +27,7 @@ impl From<ClassNode> for AstClassModel {
     }
 }
 
+/// AST model implementation for class declarations.
 impl AstModel for AstClassModel {
     fn format_ast(&self) -> Self {
         self.clone()

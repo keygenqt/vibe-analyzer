@@ -15,7 +15,7 @@ use rmcp::service::RequestContext;
 use rmcp::service::RoleServer;
 
 /// Resolves hallucinated tool names to real ones.
-fn resolve_tool_alias(name: &str) -> &str {
+pub fn resolve_tool_alias(name: &str) -> &str {
     match name {
         // === admin_sync ===
         "sync_index" => "admin_sync",
@@ -206,10 +206,12 @@ fn resolve_tool_alias(name: &str) -> &str {
 pub struct AliasHandler<H>(pub H);
 
 impl<H: ServerHandler> ServerHandler for AliasHandler<H> {
+    /// Returns server info from the inner handler.
     fn get_info(&self) -> ServerInfo {
         self.0.get_info()
     }
 
+    /// Resolves tool name aliases before lookup.
     fn get_tool(&self, name: &str) -> Option<Tool> {
         let resolved = resolve_tool_alias(name);
         if resolved != name {
@@ -219,6 +221,7 @@ impl<H: ServerHandler> ServerHandler for AliasHandler<H> {
         }
     }
 
+    /// Lists available tools from the inner handler.
     fn list_tools(
         &self,
         request: Option<rmcp::model::PaginatedRequestParams>,
@@ -228,6 +231,7 @@ impl<H: ServerHandler> ServerHandler for AliasHandler<H> {
         self.0.list_tools(request, context)
     }
 
+    /// Resolves tool name aliases before calling the tool.
     fn call_tool(
         &self,
         mut request: CallToolRequestParams,

@@ -126,7 +126,7 @@ pub async fn run(action: ScanAction) {
             }
         }
         ScanAction::Index { target, force } => {
-            match scan_index(&config, target, true /* @todo */).await {
+            match scan_index(&config, target, force).await {
                 Ok(result) => {
                     let elapsed = start_time.elapsed();
                     if result.index_files > 0 {

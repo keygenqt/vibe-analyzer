@@ -9,44 +9,30 @@ use serde::Serialize;
 pub struct OllamaConfig {
     /// Ollama API endpoint URL.
     pub host: String,
-
     /// Model name to use for inference.
     pub model: String,
-
     /// Maximum chunk size in characters for LLM context.
     pub max_chunk_chars: usize,
-
     /// Maximum number of files per batch.
     pub max_chunk_files: usize,
-
     /// Request timeout in seconds.
     pub timeout_secs: u64,
-
     /// Temperature for generation (0.0-2.0, lower = more deterministic).
     pub temperature: f32,
-
     /// Seed for reproducible outputs.
     pub seed: u64,
-
     /// Context window size in tokens.
     pub num_ctx: usize,
-
     /// Maximum tokens to predict/generate.
     pub num_predict: usize,
-
-    // AST inclusion flags
     /// Include imports in LLM prompt.
     pub ast_imports: bool,
-
     /// Include variables in LLM prompt.
     pub ast_variables: bool,
-
     /// Include functions in LLM prompt.
     pub ast_functions: bool,
-
     /// Include enums in LLM prompt.
     pub ast_enums: bool,
-
     /// Include interfaces in LLM prompt.
     pub ast_interfaces: bool,
 }

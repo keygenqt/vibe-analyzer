@@ -1,7 +1,8 @@
 //! AST struct model.
 //! Represents a struct or record declaration extracted from source code.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::struct_node::StructNode;
 
 use crate::models::ast_model::AstModel;
@@ -16,6 +17,7 @@ pub struct AstStructModel {
     pub comments: Vec<String>,
 }
 
+/// Converts a parsed struct node into the AST struct model.
 impl From<StructNode> for AstStructModel {
     fn from(node: StructNode) -> Self {
         AstStructModel {
@@ -25,6 +27,7 @@ impl From<StructNode> for AstStructModel {
     }
 }
 
+/// AST model implementation for struct declarations.
 impl AstModel for AstStructModel {
     fn format_ast(&self) -> Self {
         self.clone()

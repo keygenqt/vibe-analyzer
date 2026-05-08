@@ -1,7 +1,8 @@
 //! AST variable model.
 //! Represents a global variable or constant declaration extracted from source code.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::variable_node::VariableNode;
 
 use crate::models::ast_model::AstModel;
@@ -16,6 +17,7 @@ pub struct AstVariableModel {
     pub comments: Vec<String>,
 }
 
+/// Converts a parsed variable node into the AST variable model.
 impl From<VariableNode> for AstVariableModel {
     fn from(node: VariableNode) -> Self {
         AstVariableModel {
@@ -25,6 +27,7 @@ impl From<VariableNode> for AstVariableModel {
     }
 }
 
+/// AST model implementation for variable declarations.
 impl AstModel for AstVariableModel {
     fn format_ast(&self) -> Self {
         self.clone()

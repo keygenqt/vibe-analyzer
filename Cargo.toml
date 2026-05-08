@@ -69,4 +69,5 @@ vibe-ast = "0.0.5"
 vibe-fs = "0.0.3"
 
 [dev-dependencies]
-os_pipe = "1.2"
+vibe-tests = "0.0.1"
+ctor = "1.0.1"

@@ -2,19 +2,26 @@
 //! Coordinates file batching and parallel Ollama API calls.
 
 use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicUsize, Ordering};
+use std::sync::atomic::AtomicBool;
+use std::sync::atomic::AtomicUsize;
+use std::sync::atomic::Ordering;
 
 use anyhow::Result;
 use colored::Colorize;
 use futures::StreamExt;
-use tokio::sync::{Mutex, mpsc};
+use tokio::sync::Mutex;
+use tokio::sync::mpsc;
 
 use crate::configs::app::AppConfig;
-use crate::{
-    models::{file_language::FileLanguageModel, file_models::FileModels, project::ProjectModel},
-    ollama::cluster::OllamaCluster,
-};
-use crate::{print_info, print_newline, print_progress, print_success, scanner};
+use crate::models::file_language::FileLanguageModel;
+use crate::models::file_models::FileModels;
+use crate::models::project::ProjectModel;
+use crate::ollama::cluster::OllamaCluster;
+use crate::print_info;
+use crate::print_newline;
+use crate::print_progress;
+use crate::print_success;
+use crate::scanner;
 
 /// Debug info for worker statistics.
 struct WorkerStats {
@@ -53,7 +60,7 @@ pub async fn scan_analyze(
     let projects = scanner::scan_ast(config, target, force).await?;
     let total_files: usize = projects.iter().map(|p| p.files.len()).sum();
     if total_files == 0 {
-        print_info!("No files to scan");
+        print_info!("No files to analyze");
         return Ok(Vec::new());
     }
     print_success!("AST scanning completed: {} source(s)", projects.len());

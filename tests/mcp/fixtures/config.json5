@@ -1,17 +1,18 @@
 {
-  version: '0.0.1',
+  version: '0.0.2',
+  log_level: 'trace',
   opensearch: {
     host: 'http://localhost:9222',
   },
   mcp: {
     host: '0.0.0.0',
-    port: 9020,
+    port: 9021,
     protocol: 'latest',
   },
   ollama: [
     {
-      host: 'http://192.168.1.10:11434',
-      model: 'qwen2.5-coder:7b-instruct',
+      host: 'http://localhost:11434',
+      model: 'qwen2.5-coder:3b-instruct',
       max_chunk_chars: 3000,
       max_chunk_files: 3,
       timeout_secs: 60,
@@ -26,9 +27,6 @@
       ast_interfaces: true,
     },
   ],
+  // Knowledge sources to index
   sources: ['tests/mcp/fixtures/source/knowledge', 'tests/mcp/fixtures/source/samples'],
-  dev: {
-    log_level: 'trace',
-    spdx_data_path: 'tests/mcp/fixtures/config/spdx',
-  },
 }

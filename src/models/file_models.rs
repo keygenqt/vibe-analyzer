@@ -3,13 +3,14 @@
 
 use std::path::Path;
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 use vibe_ast::nodes::nodes::Nodes;
 
-use crate::models::{
-    file_binary::FileBinaryModel, file_language::FileLanguageModel, file_model::FileModel,
-    file_text::FileTextModel,
-};
+use crate::models::file_binary::FileBinaryModel;
+use crate::models::file_language::FileLanguageModel;
+use crate::models::file_model::FileModel;
+use crate::models::file_text::FileTextModel;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]

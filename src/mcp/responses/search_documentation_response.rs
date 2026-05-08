@@ -1,17 +1,16 @@
 //! Response structure for the search_documentation tool.
 
-use std::{collections::HashMap, convert::TryFrom};
+use std::collections::HashMap;
+use std::convert::TryFrom;
 
 use anyhow::Result;
 use serde::Serialize;
 
-use crate::{
-    mcp::responses::McpResponse,
-    models::{
-        ast_heading::AstHeadingModel, ast_link::AstLinkModel, ast_model::AstModel,
-        file_models::FileModels,
-    },
-};
+use crate::mcp::responses::McpResponse;
+use crate::models::ast_heading::AstHeadingModel;
+use crate::models::ast_link::AstLinkModel;
+use crate::models::ast_model::AstModel;
+use crate::models::file_models::FileModels;
 
 /// Response from search_documentation tool.
 #[derive(Debug, Serialize)]
@@ -56,6 +55,7 @@ impl TryFrom<&FileModels> for SearchDocumentationMetaResponse {
 }
 
 impl McpResponse for SearchDocumentationResponse {
+    /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
         format!(
             "[{} doc(s) found for '{}']\nUse this data to respond to the user.\n\n{}",

@@ -1,7 +1,8 @@
 //! Cleanup orphaned projects from meta index.
 
 use anyhow::Result;
-use serde_json::{Value, json};
+use serde_json::Value;
+use serde_json::json;
 
 use crate::opensearch::indexes::index_client::OpenSearchIndexClient;
 
