@@ -41,41 +41,41 @@ Vibe Analyzer returns structured results via tools, keeping context as clean as 
 ## Supported Languages
 
 | Language   | AST | Enrichment |
-| ---------- | --- | ---------- |
-| Rust       | ✅  | ✅         |
-| Python     | ✅  | ✅         |
-| JavaScript | ✅  | ✅         |
-| TypeScript | ✅  | ✅         |
-| Java       | ✅  | ✅         |
-| Go         | ✅  | ✅         |
-| C#         | ✅  | ✅         |
-| Kotlin     | ✅  | ✅         |
-| Swift      | ✅  | ✅         |
-| Dart       | ✅  | ✅         |
-| Bash       | ✅  | ✅         |
-| Batch      | ✅  | ✅         |
-| ArkTS      | ✅  | ✅         |
-| Markdown   | ✅  | ✅         |
+|------------|-----|------------|
+| Rust       | ✅   | ✅          |
+| Python     | ✅   | ✅          |
+| JavaScript | ✅   | ✅          |
+| TypeScript | ✅   | ✅          |
+| Java       | ✅   | ✅          |
+| Go         | ✅   | ✅          |
+| C#         | ✅   | ✅          |
+| Kotlin     | ✅   | ✅          |
+| Swift      | ✅   | ✅          |
+| Dart       | ✅   | ✅          |
+| Bash       | ✅   | ✅          |
+| Batch      | ✅   | ✅          |
+| ArkTS      | ✅   | ✅          |
+| Markdown   | ✅   | ✅          |
 
 ## MCP Tools
 
 ### Admin
 
 | Tool         | Description          |
-| ------------ | -------------------- |
+|--------------|----------------------|
 | `admin_sync` | Reindex all projects |
 
 ### Get
 
 | Tool               | Description                                                    |
-| ------------------ | -------------------------------------------------------------- |
+|--------------------|----------------------------------------------------------------|
 | `get_file_content` | Full file content by path (supports partial/wildcard matching) |
 | `get_file_ast`     | Full AST: imports, functions, classes, structs, enums, headers |
 
 ### Search — Code
 
 | Tool                       | Description                          |
-| -------------------------- | ------------------------------------ |
+|----------------------------|--------------------------------------|
 | `search_by_code_imports`   | Search by imports/dependencies       |
 | `search_by_code_functions` | Search by functions/methods          |
 | `search_by_code_classes`   | Search by classes/structs/interfaces |
@@ -84,14 +84,14 @@ Vibe Analyzer returns structured results via tools, keeping context as clean as 
 ### Search — Docs
 
 | Tool                   | Description                                                                |
-| ---------------------- | -------------------------------------------------------------------------- |
+|------------------------|----------------------------------------------------------------------------|
 | `search_documentation` | Search all markdown docs (legends, guides, rules). Multilingual (RU/EN/ZH) |
 | `search_knowledge`     | Alias for documentation search                                             |
 
 ### Show
 
 | Tool            | Description                             |
-| --------------- | --------------------------------------- |
+|-----------------|-----------------------------------------|
 | `show_projects` | List all indexed projects               |
 | `show_stats`    | Stats by language, files, lines of code |
 | `show_tree`     | Directory tree of files and folders     |
