@@ -38,7 +38,7 @@ Query → AI model selects an MCP tool → Tool returns a structured response
 
 - 🌳 AST parsing for 13 programming languages
 - 💡 LLM enrichment: descriptions and search tags for each file
-- 📄 Export AST and AST+LLM to JSON, JSON5, TOON, XML
+- 📄 Export AST and AST+LLM to JSON, JSON5, TOML, TOON, XML, YAML
 - 📝 Semantic and morphological search across code and documentation
 - ⚡ Incremental indexing (modified files only)
 - 📦 Self-contained tools (one call — complete response)

@@ -21,7 +21,7 @@ Vibe Analyzer returns structured results via tools, keeping context as clean as 
 
 - 🌳 AST parsing for 13 languages
 - 💡 AST enrichment via LLM (descriptions, tags)
-- 📄 Export AST and AST+LLM to JSON, JSON5, TOON, XML
+- 📄 Export AST and AST+LLM to JSON, JSON5, TOML, TOON, XML, YAML
 - 📝 Semantic and morphological search across code and knowledge base
 - ⚡ Incremental indexing
 - 📦 Self-contained tools (single call — complete response)

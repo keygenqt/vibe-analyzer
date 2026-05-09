@@ -76,9 +76,7 @@ Returns the full contents of a file.
 
 ```json
 {
-  "root": "/path/to/project",
   "path": "src/main.rs",
-  "language": "Rust",
   "content": "fn main() {\n println!(\"Hello\");\n}\n"
 }
 ```
@@ -99,31 +97,14 @@ Returns the full AST of a file: imports, functions, classes, structs, enums, hea
 
 ```json
 {
-  "root": "/path/to/project",
   "path": "src/main.rs",
   "language": "Rust",
-  "ast": {
-    "header_comments": ["Vibe Analyzer - Main entry point."],
-    "imports": ["clap::Parser", "crate::cli::scan::ScanAction"],
-    "functions": [{ "signature": "async fn main()", "comments": [] }],
-    "structs": [{ "signature": "struct App", "comments": [] }],
-    "enums": [{ "signature": "enum Commands", "comments": [] }],
-    "tags": [
-      "functions",
-      "функции",
-      "函数",
-      "structs",
-      "структуры",
-      "结构体",
-      "enums",
-      "перечисления",
-      "枚举",
-      "imports",
-      "импорты",
-      "导入",
-      "header_comments"
-    ]
-  }
+  "size_bytes": 2122,
+  "header_comments": ["Vibe Analyzer - Main entry point."],
+  "imports": ["clap::Parser", "crate::cli::scan::ScanAction"],
+  "functions": [{ "signature": "async fn main()", "comments": [] }],
+  "structs": [{ "signature": "struct App", "comments": [] }],
+  "enums": [{ "signature": "enum Commands", "comments": [] }]
 }
 ```
 
@@ -137,7 +118,11 @@ Shows all indexed projects with names and brief descriptions.
 
 **When to call:** the user asks "what projects are available", "list projects".
 
-**Parameters:** none.
+**Parameters:**
+
+| Parameter | Type    | Required | Default | Description      |
+| --------- | ------- | -------- | ------- | ---------------- |
+| `size`    | integer | no       | 10      | Maximum projects |
 
 **Response:**
 
@@ -170,7 +155,6 @@ Shows project statistics: language breakdown, file count, lines of code, AST obj
 
 ```json
 {
-  "target": null,
   "languages": [
     {
       "language": "Rust",
@@ -208,10 +192,9 @@ Shows the file and directory tree of a project.
 
 ```json
 {
-  "target": "vibe-analyzer",
-  "tree": "vibe-analyzer\n|-- Cargo.toml\n|-- src\n|   |-- main.rs\n|   |-- cli\n|   |   |-- mod.rs\n|   |   `-- scan.rs\n|   `-- utils\n|       `-- ...\n`-- tests\n    `-- ...",
-  "total_files": 74,
-  "total_dirs": 36
+  "tree": "vibe-analyzer\n|-- Cargo.toml\n|-- src\n|   |-- main.rs\n|   `-- utils\n|       `-- ...\n`-- tests\n    `-- ...",
+  "files": 74,
+  "directories": 36
 }
 ```
 
@@ -223,7 +206,7 @@ Shows the file and directory tree of a project.
 
 Finds imports and dependencies in code.
 
-**When to call:** the user asks about imports, dependencies, libraries used. For "all imports", use an empty query or `*`.
+**When to call:** the user asks about imports, dependencies, libraries used.
 
 **Parameters:**
 
@@ -240,7 +223,6 @@ Finds imports and dependencies in code.
   "query": "serde",
   "results": [
     {
-      "project": "/path/to/project",
       "path": "src/main.rs",
       "language": "Rust",
       "header_comments": ["Vibe Analyzer - Main entry point."],
@@ -271,7 +253,6 @@ Finds functions and methods in code.
   "query": "scan_source",
   "results": [
     {
-      "project": "/path/to/project",
       "path": "src/scanner/scanner.rs",
       "language": "Rust",
       "header_comments": ["Core scanning functionality for codebase analysis."],
@@ -290,7 +271,7 @@ Finds functions and methods in code.
 
 Finds classes, structs, interfaces, and traits.
 
-**When to call:** the user asks about classes, structs, interfaces, types, traits, abstract classes, implements, extends.
+**When to call:** the user asks about classes, structs, interfaces, types, traits.
 
 **Parameters:**
 
@@ -307,7 +288,6 @@ Finds classes, structs, interfaces, and traits.
   "query": "AppConfig",
   "results": [
     {
-      "project": "/path/to/project",
       "path": "src/configs/app.rs",
       "language": "Rust",
       "header_comments": ["Application configuration management for vibe-analyzer."],
@@ -328,7 +308,7 @@ Finds classes, structs, interfaces, and traits.
 
 Finds variables, constants, and enums.
 
-**When to call:** the user asks about variables, constants, enums, global variables, static fields.
+**When to call:** the user asks about variables, constants, enums, static fields.
 
 **Parameters:**
 
@@ -345,7 +325,6 @@ Finds variables, constants, and enums.
   "query": "MAX_SIZE",
   "results": [
     {
-      "project": "/path/to/project",
       "path": "src/utils/constants.rs",
       "language": "Rust",
       "header_comments": ["Application constants and configuration defaults."],
@@ -393,7 +372,6 @@ knowledge: true
   "query": "architecture",
   "results": [
     {
-      "project": "/path/to/project",
       "path": "docs/architecture.md",
       "frontmatter": { "title": "Vibe Analyzer Architecture" },
       "headings": [
@@ -409,8 +387,6 @@ knowledge: true
 ### search_knowledge
 
 Alias for `search_documentation`. Completely identical in parameters and response.
-
-**When to call:** the user asks about the knowledge base, guidelines, standards, characters.
 
 ---
 

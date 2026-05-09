@@ -45,10 +45,10 @@ Ranking priority:
 
 Each search type has its own strategy:
 
-- **Imports** — `match` on the `ast.imports` field + tags
+- **Imports** — `wildcard` on the `imports` keyword field + tags
 - **Functions** — `match_phrase_prefix` on signatures + `match` on comments (nested queries)
 - **Classes/structs/interfaces** — three nested queries in `should` with `minimum_should_match: 1`
-- **Variables/enums** — `match` on signatures and comments (nested queries)
+- **Variables/enums** — `match_phrase_prefix` on signatures + `match` on comments (nested queries)
 
 All code searches use `fuzziness: AUTO` for fuzzy matching and boost tags higher than specific fields.
 

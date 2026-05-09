@@ -68,21 +68,21 @@ Vibe Analyzer supports AST parsing and LLM enrichment for 13 programming languag
 
 ## Multilingual Search Tags
 
-Each extracted element receives tags in three languages. This allows searching for elements in Russian, English, or Chinese — regardless of the source code language.
+Each extracted element receives tags in three languages with synonyms for better searchability.
+This allows searching for elements in Russian, English, or Chinese — regardless of the source code language.
 
-| Element Type     | EN                | RU             | ZH       |
-| ---------------- | ----------------- | -------------- | -------- |
-| Functions        | `functions`       | `функции`      | `函数`   |
-| Classes          | `classes`         | `классы`       | `类`     |
-| Structs          | `structs`         | `структуры`    | `结构体` |
-| Enums            | `enums`           | `перечисления` | `枚举`   |
-| Interfaces       | `interfaces`      | `интерфейсы`   | `接口`   |
-| Variables        | `variables`       | `переменные`   | `变量`   |
-| Imports          | `imports`         | `импорты`      | `导入`   |
-| Headings (MD)    | `headings`        | `заголовки`    | `标题`   |
-| Code blocks (MD) | `code_blocks`     | `блоки_кода`   | `代码块` |
-| Links (MD)       | `links`           | `ссылки`       | `链接`   |
-| Module comments  | `header_comments` | —              | —        |
+| Element Type     | EN                           | RU                        | ZH               |
+| ---------------- | ---------------------------- | ------------------------- | ---------------- |
+| Functions        | `functions`, `methods`       | `функции`, `методы`       | `函数`, `方法`   |
+| Classes          | `classes`, `types`           | `классы`, `типы`          | `类`, `类型`     |
+| Structs          | `structs`, `records`         | `структуры`, `записи`     | `结构体`, `记录` |
+| Enums            | `enums`                      | `перечисления`            | `枚举`           |
+| Interfaces       | `interfaces`                 | `интерфейсы`              | `接口`           |
+| Variables        | `variables`, `constants`     | `переменные`, `константы` | `变量`, `常量`   |
+| Imports          | `imports`, `dependencies`    | `импорты`, `зависимости`  | `导入`, `依赖`   |
+| Headings (MD)    | `headings`                   | `заголовки`               | `标题`           |
+| Code blocks (MD) | `code_blocks`, `code blocks` | `блоки кода`              | `代码块`         |
+| Links (MD)       | `links`                      | `ссылки`                  | `链接`           |
 
 ## Doc Comment Formats
 
@@ -218,17 +218,29 @@ APP_NAME: str = "vibe-analyzer"
   "tags": [
     "header_comments",
     "imports",
+    "dependencies",
     "импорты",
+    "зависимости",
     "导入",
+    "依赖",
     "variables",
+    "constants",
     "переменные",
+    "константы",
     "变量",
+    "常量",
     "functions",
+    "methods",
     "функции",
+    "методы",
     "函数",
+    "方法",
     "classes",
+    "types",
     "классы",
-    "类"
+    "типы",
+    "类",
+    "类型"
   ]
 }
 ```

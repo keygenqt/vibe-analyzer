@@ -24,7 +24,7 @@ impl OpenSearchToolClient {
                         "should": [
                             { "match": { "tags": { "query": q, "boost": 4.0 } } },
                             { "match": { "ast.tags": { "query": q, "boost": 3.0 } } },
-                            { "match": { "imports": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } }
+                            { "wildcard": { "imports": { "value": format!("*{}*", q), "boost": 2.0 } } }
                         ],
                         "minimum_should_match": 1
                     }

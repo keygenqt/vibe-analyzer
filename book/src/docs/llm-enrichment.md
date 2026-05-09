@@ -5,7 +5,7 @@ After AST parsing, Vibe Analyzer can enrich results via Ollama: adding a descrip
 ## How It Works
 
 ```
-AST data → batching → Ollama request → description + tags for each file
+AST data → batching → Ollama request → description + 5 tags for each file
 ```
 
 ### 1. Project Summarization
@@ -14,12 +14,12 @@ The README (if present) is sent to Ollama with the prompt "write 2-3 sentences a
 
 ### 2. File Enrichment
 
-**Batching.** Files are grouped into batches based on two config limits:
+**Batching.** Files are grouped into batches based on two config limits from the `analyze` section:
 
-- `max_chunk_chars` — maximum characters per request (default 4000)
+- `max_chunk_chars` — maximum characters per request (default 3000)
 - `max_chunk_files` — maximum files per request (default 3)
 
-The prompt does not contain the files themselves, but their AST: functions, classes, structs, and other elements. Which elements to include is controlled by the flags `ast_imports`, `ast_variables`, `ast_functions`, `ast_enums`, `ast_interfaces`.
+The prompt does not contain the files themselves, but their AST: functions, classes, structs, and other elements. Which elements to include is controlled by the `scan` section in config.
 
 **Prompt.** Ollama receives a JSON template:
 
@@ -29,13 +29,13 @@ The prompt does not contain the files themselves, but their AST: functions, clas
     {
       "path": "src/main.rs",
       "description": "FILL_DESCRIPTION",
-      "tags": ["TAG1", "TAG2", "TAG3"]
+      "tags": ["TAG1", "TAG2", "TAG3", "TAG4", "TAG5"]
     }
   ]
 }
 ```
 
-The model must fill in `description` and `tags` while preserving the structure. The prompt strictly requires: don't skip files, don't change paths, copy the JSON as-is.
+The model must fill in `description` and exactly 5 tags while preserving the structure. The prompt strictly requires: don't skip files, don't change paths, copy the JSON as-is.
 
 **Response.** Ollama returns the completed JSON:
 
@@ -45,7 +45,7 @@ The model must fill in `description` and `tags` while preserving the structure. 
     {
       "path": "src/main.rs",
       "description": "Main entry point for the CLI application",
-      "tags": ["entry-point", "cli", "argument-parsing"]
+      "tags": ["entry-point", "cli", "argument-parsing", "rust", "binary"]
     }
   ]
 }
@@ -57,14 +57,14 @@ If multiple Ollama hosts are configured, files are distributed among them:
 
 - All hosts read from a single channel
 - The fastest one processes the most
-- If any host errors — all stop (`error_flag`)
+- If any host errors — all stop
 - At the end, per-host statistics are reported: how many files each processed
 
 ### 4. JSON Repair
 
 LLMs often corrupt JSON: add comments, wrap in markdown blocks, drop quotes. `clean_llm_json` fixes this:
 
-- Extracts JSON from ``` blocks
+- Extracts JSON from blocks
 - Adds missing key quotes
 - Removes trailing commas
 - Balances unclosed braces
@@ -75,13 +75,15 @@ If Ollama returns fewer files than were in the batch — up to 5 retries with de
 
 ## Generation Parameters
 
-The following are passed from config to the Ollama request:
+The following are passed from each Ollama host config to the API request:
 
 - `temperature: 0.1` — low temperature for stable results
 - `seed: 42` — fixed seed for reproducibility
 - `num_ctx: 4096` — context window size
 - `num_predict: 2048` — maximum tokens in response
 - `timeout_secs: 60` — request timeout
+
+Batch limits (`max_chunk_chars`, `max_chunk_files`) are configured in the `analyze` section — see Batching above.
 
 ## Model Warm-Up
 
@@ -93,7 +95,7 @@ Before enrichment begins, for each Ollama host:
 
 ## Enrichment Result
 
-After processing, each file receives `description` and `tags` from the LLM, and the project receives a `summary` based on the README.
+After processing, each file receives `description` and 5 tags from the LLM, and the project receives a `summary` based on the README.
 
 ### Exporting Results
 
@@ -104,5 +106,7 @@ AST parsing and LLM enrichment results can be exported to a file for analysis, d
 vibe-analyzer scan analyze --target my-app
 
 # With format and path specified
-vibe-analyzer scan ast --target my-app --format json5 --output analysis.json5
+vibe-analyzer scan analyze --target my-app --format json5 --output analysis.json5
 ```
+
+Supported export formats: JSON, JSON5, TOML, TOON, XML, YAML.

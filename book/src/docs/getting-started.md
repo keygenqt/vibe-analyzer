@@ -22,13 +22,8 @@ cargo install vibe-analyzer
 ### Build from Source
 
 ```bash
-# 1. Clone the repository
 git clone https://gitcode.com/keygenqt_vz/vibe-analyzer.git
-
-# 2. Enter the directory
 cd vibe-analyzer
-
-# 3. Build
 cargo build --release
 ```
 
@@ -76,87 +71,84 @@ The configuration file is located at `~/.vibe-analyzer/config.json5`. It is crea
 
 ### Example Working Configuration
 
-```json
+```json5
 {
   // Configuration version (do not modify)
-  "version": "0.0.1",
+  version: '0.0.2',
+
+  // Log level: cli, error, warn, info, debug, trace
+  log_level: 'cli',
 
   // OpenSearch connection
-  "opensearch": {
-    "host": "http://192.168.1.10:9200"
+  opensearch: {
+    host: 'http://localhost:9200',
   },
 
   // MCP server
-  //
-  // host — bind address (0.0.0.0 for all interfaces, 127.0.0.1 local only)
-  // port — server port (default: 9020)
-  // protocol — MCP protocol version (2024-11-05, 2025-03-26, 2025-06-18, or 'latest')
-  "mcp": {
-    "host": "0.0.0.0",
-    "port": 9020,
-    "protocol": "latest"
+  mcp: {
+    host: '0.0.0.0',
+    port: 9020,
+    protocol: 'latest',
+  },
+
+  // AST elements to include in exports
+  scan: {
+    imports: true,
+    functions: true,
+    variables: true,
+    enums: true,
+    interfaces: true,
+    classes: true,
+    structs: true,
+    comments: true,
+    header_comments: true,
+    headings: true,
+    links: true,
+    code_blocks: true,
+  },
+
+  // LLM enrichment batch settings
+  analyze: {
+    max_chunk_chars: 4000,
+    max_chunk_files: 3,
+  },
+
+  // Default export settings
+  export: {
+    format: 'json5',
+    output_dir: '/Users/keygenqt/Downloads',
   },
 
   // Ollama LLM servers
-  //
-  // host — API endpoint
-  // model — model name
-  // max_chunk_chars — maximum characters per request
-  // max_chunk_files — maximum files per request
-  // timeout_secs — request timeout in seconds
-  // temperature — generation temperature (0.0 – 1.0)
-  // seed — seed for reproducibility
-  // num_ctx — context window size
-  // num_predict — maximum tokens in response
-  // ast_imports — include imports in analysis
-  // ast_variables — include variables in analysis
-  // ast_functions — include functions in analysis
-  // ast_enums — include enums in analysis
-  // ast_interfaces — include interfaces in analysis
-  "ollama": [
+  ollama: [
     {
-      "host": "http://192.168.1.10:11434",
-      "model": "qwen2.5-coder:3b-instruct",
-      "max_chunk_chars": 4000,
-      "max_chunk_files": 3,
-      "timeout_secs": 60,
-      "temperature": 0.1,
-      "seed": 42,
-      "num_ctx": 4096,
-      "num_predict": 2048,
-      "ast_imports": false,
-      "ast_variables": false,
-      "ast_functions": true,
-      "ast_enums": true,
-      "ast_interfaces": true
+      host: 'http://localhost:11434',
+      model: 'qwen2.5-coder:3b-instruct',
+      timeout_secs: 60,
+      temperature: 0.1,
+      seed: 42,
+      num_ctx: 4096,
+      num_predict: 2048,
     },
     {
-      "host": "http://localhost:11434",
-      "model": "qwen2.5-coder:3b-instruct",
-      "max_chunk_chars": 4000,
-      "max_chunk_files": 3,
-      "timeout_secs": 60,
-      "temperature": 0.1,
-      "seed": 42,
-      "num_ctx": 4096,
-      "num_predict": 2048,
-      "ast_imports": false,
-      "ast_variables": false,
-      "ast_functions": true,
-      "ast_enums": true,
-      "ast_interfaces": true
-    }
+      host: 'http://192.168.1.10:11434',
+      model: 'qwen2.5-coder:3b-instruct',
+      timeout_secs: 60,
+      temperature: 0.1,
+      seed: 42,
+      num_ctx: 4096,
+      num_predict: 2048,
+    },
   ],
 
   // Knowledge sources for indexing
-  "sources": ["/Users/keygenqt/Documents/Gitcode/Projects/vibe-analyzer"]
+  sources: ['/Users/keygenqt/Documents/Gitcode/Projects/vibe-analyzer'],
 }
 ```
 
 ### Checking Configuration
 
 ```bash
-# View current settings
 cat ~/.vibe-analyzer/config.json5
 ```
 
@@ -181,7 +173,7 @@ Vibe Analyzer provides three commands for different tasks:
 
 ### Export AST to File
 
-Code structure extraction only, without LLM. The result is saved in JSON/JSON5/TOON/XML:
+Code structure extraction only, without LLM. The result can be saved in JSON, JSON5, TOML, TOON, XML, or YAML:
 
 ```bash
 # All sources
@@ -250,7 +242,6 @@ vibe-analyzer stats info
 Vibe Analyzer uses BLAKE3 hashes to track changes. When running `scan index` again, only modified files are processed:
 
 ```bash
-# Reindexing — only changed files are affected
 vibe-analyzer scan index --target /path/to/your/project
 ```
 
@@ -267,21 +258,18 @@ The same can be done via the `admin_sync` MCP tool without restarting the server
 ### OpenSearch Unreachable
 
 ```bash
-# Check Docker container status
 docker ps | grep opensearch
 ```
 
 ### Ollama Not Responding
 
 ```bash
-# Check if Ollama is running
 curl http://localhost:11434/api/tags
 ```
 
 ### Model Not Installed
 
 ```bash
-# Download the model
 ollama pull qwen2.5-coder:3b-instruct
 ```
 

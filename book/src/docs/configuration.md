@@ -14,97 +14,81 @@ The file is created automatically with default settings the first time any CLI c
 
 ## Configuration Structure
 
-The configuration consists of four sections: `version`, `opensearch`, `mcp`, `ollama`, and `sources`.
+The configuration consists of these sections: `version`, `log_level`, `opensearch`, `mcp`, `scan`, `analyze`, `export`, `ollama`, and `sources`.
 
 ### Full Example with Comments
 
 ```json
 {
   // Configuration version — do not modify manually
-  "version": "0.0.1",
+  "version": "0.0.2",
+
+  // Log level: cli, error, warn, info, debug, trace
+  "log_level": "cli",
 
   // OpenSearch connection
   "opensearch": {
-    // OpenSearch server URL
-    "host": "http://192.168.1.10:9200"
+    "host": "http://localhost:9200"
   },
 
   // MCP server
   "mcp": {
-    // Bind address:
-    // 0.0.0.0 — accessible from all interfaces (for Docker, remote connections)
-    // 127.0.0.1 — local only
     "host": "0.0.0.0",
-
-    // Server port (default: 9020)
     "port": 9020,
-
-    // MCP protocol version:
-    // '2024-11-05' — stable
-    // '2025-03-26' — improved streaming
-    // '2025-06-18' — latest
-    // 'latest' — auto-detect
     "protocol": "latest"
+  },
+
+  // AST extraction filters
+  "scan": {
+    "imports": true,
+    "functions": true,
+    "variables": true,
+    "enums": true,
+    "interfaces": true,
+    "classes": true,
+    "structs": true,
+    "comments": true,
+    "header_comments": true,
+    "headings": true,
+    "links": true,
+    "code_blocks": true
+  },
+
+  // LLM enrichment batch settings
+  "analyze": {
+    "max_chunk_chars": 4000,
+    "max_chunk_files": 3
+  },
+
+  // Default export settings
+  "export": {
+    "format": "json5",
+    "output_dir": "/Users/keygenqt/Downloads"
   },
 
   // Ollama LLM servers — specify multiple for load distribution
   "ollama": [
     {
-      // Ollama API endpoint
-      "host": "http://192.168.1.10:11434",
-
-      // Model for enrichment
-      "model": "qwen2.5-coder:3b-instruct",
-
-      // Maximum characters per LLM request
-      // Files are grouped into batches until the total size exceeds this limit
-      "max_chunk_chars": 4000,
-
-      // Maximum files per LLM request
-      "max_chunk_files": 3,
-
-      // Request timeout in seconds
-      "timeout_secs": 60,
-
-      // Generation temperature (0.0 — deterministic, 1.0 — creative)
-      "temperature": 0.1,
-
-      // Seed for reproducible results (same seed → same output)
-      "seed": 42,
-
-      // Model context window size
-      "num_ctx": 4096,
-
-      // Maximum tokens in response
-      "num_predict": 2048,
-
-      // Which AST elements to include in the prompt
-      "ast_imports": false,
-      "ast_variables": false,
-      "ast_functions": true,
-      "ast_enums": true,
-      "ast_interfaces": true
-    },
-    {
-      // Second host for load distribution
       "host": "http://localhost:11434",
       "model": "qwen2.5-coder:3b-instruct",
-      "max_chunk_chars": 4000,
-      "max_chunk_files": 3,
       "timeout_secs": 60,
       "temperature": 0.1,
       "seed": 42,
       "num_ctx": 4096,
-      "num_predict": 2048,
-      "ast_imports": false,
-      "ast_variables": false,
-      "ast_functions": true,
-      "ast_enums": true,
-      "ast_interfaces": true
+      "num_predict": 2048
+    },
+    {
+      "host": "http://192.168.1.10:11434",
+      "model": "qwen2.5-coder:3b-instruct",
+      "timeout_secs": 60,
+      "temperature": 0.1,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 2048
     }
   ],
 
-  // Knowledge sources for indexing — absolute project paths
+  // Knowledge sources for indexing
   "sources": ["/Users/keygenqt/Documents/Gitcode/Projects/vibe-analyzer"]
 }
 ```
@@ -114,16 +98,24 @@ The configuration consists of four sections: `version`, `opensearch`, `mcp`, `ol
 ### version
 
 ```json
-"version": "0.0.1"
+"version": "0.0.2"
 ```
 
 Configuration file version. **Do not modify manually** — updated automatically during config migration between versions.
+
+### log_level
+
+```json
+"log_level": "cli"
+```
+
+Application log level. Supported values: `cli`, `error`, `warn`, `info`, `debug`, `trace`. The `cli` level disables tracing output for clean command-line output.
 
 ### opensearch
 
 ```json
 "opensearch": {
-  "host": "http://192.168.1.10:9200"
+  "host": "http://localhost:9200"
 }
 ```
 
@@ -147,6 +139,71 @@ Configuration file version. **Do not modify manually** — updated automatically
 | `port`     | integer | `9020`      | MCP server port                                                                                           |
 | `protocol` | string  | `latest`    | MCP protocol version: `2024-11-05`, `2025-03-26`, `2025-06-18`, or `latest`                               |
 
+### scan
+
+Controls which AST elements are included in the output of `scan ast` and `scan analyze` exports.
+Useful for reducing export file size by excluding unneeded element types.
+
+```json
+"scan": {
+  "imports": true,
+  "functions": true,
+  "variables": true,
+  "enums": true,
+  "interfaces": true,
+  "classes": true,
+  "structs": true,
+  "comments": true,
+  "header_comments": true,
+  "headings": true,
+  "links": true,
+  "code_blocks": true
+}
+```
+
+| Parameter         | Type    | Default | Description                          |
+| ----------------- | ------- | ------- | ------------------------------------ |
+| `imports`         | boolean | `true`  | Include import statements            |
+| `functions`       | boolean | `true`  | Include function signatures          |
+| `variables`       | boolean | `true`  | Include variable declarations        |
+| `enums`           | boolean | `true`  | Include enum declarations            |
+| `interfaces`      | boolean | `true`  | Include interface/trait declarations |
+| `classes`         | boolean | `true`  | Include class declarations           |
+| `structs`         | boolean | `true`  | Include struct declarations          |
+| `comments`        | boolean | `true`  | Include doc comments                 |
+| `header_comments` | boolean | `true`  | Include file header comments         |
+| `headings`        | boolean | `true`  | Include Markdown headings            |
+| `links`           | boolean | `true`  | Include Markdown links               |
+| `code_blocks`     | boolean | `true`  | Include code blocks                  |
+
+### analyze
+
+```json
+"analyze": {
+  "max_chunk_chars": 4000,
+  "max_chunk_files": 3
+}
+```
+
+| Parameter         | Type    | Default | Description                                                                                                                 |
+| ----------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
+| `max_chunk_chars` | integer | `4000`  | Maximum characters per LLM request. Files are grouped into batches until the total size exceeds the limit                   |
+| `max_chunk_files` | integer | `3`     | Maximum files per request. Even if the character limit is not reached, no more than this number of files will be in a batch |
+
+### export
+
+```json
+"export": {
+  "format": "json5",
+  "output_dir": "/Users/keygenqt/Downloads"
+}
+```
+
+| Parameter    | Type   | Default       | Description                                                           |
+| ------------ | ------ | ------------- | --------------------------------------------------------------------- |
+| `format`     | string | `json5`       | Default export format: `json`, `json5`, `toml`, `toon`, `xml`, `yaml` |
+| `output_dir` | string | `~/Downloads` | Default output directory for exported files                           |
+
 ### ollama
 
 The `ollama` section is an **array** of Ollama server configurations. One or more hosts can be specified for load distribution.
@@ -154,59 +211,26 @@ The `ollama` section is an **array** of Ollama server configurations. One or mor
 ```json
 "ollama": [
   {
-    "host": "http://192.168.1.10:11434",
+    "host": "http://localhost:11434",
     "model": "qwen2.5-coder:3b-instruct",
-    "max_chunk_chars": 4000,
-    "max_chunk_files": 3,
     "timeout_secs": 60,
     "temperature": 0.1,
     "seed": 42,
     "num_ctx": 4096,
-    "num_predict": 2048,
-    "ast_imports": false,
-    "ast_variables": false,
-    "ast_functions": true,
-    "ast_enums": true,
-    "ast_interfaces": true
+    "num_predict": 2048
   }
 ]
 ```
 
-#### Main Parameters
-
-| Parameter | Type   | Default                     | Description                                                     |
-| --------- | ------ | --------------------------- | --------------------------------------------------------------- |
-| `host`    | string | `http://localhost:11434`    | Ollama API endpoint                                             |
-| `model`   | string | `qwen2.5-coder:3b-instruct` | Model name for enrichment. Must be pre-loaded via `ollama pull` |
-
-#### Batch Processing Parameters
-
-| Parameter         | Type    | Default | Description                                                                                                                 |
-| ----------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
-| `max_chunk_chars` | integer | `4000`  | Maximum characters per LLM request. Files are grouped into batches until the total size exceeds the limit                   |
-| `max_chunk_files` | integer | `3`     | Maximum files per request. Even if the character limit is not reached, no more than this number of files will be in a batch |
-
-#### Generation Parameters
-
-| Parameter      | Type    | Default | Description                                                                                                                         |
-| -------------- | ------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `timeout_secs` | integer | `60`    | Ollama request timeout in seconds                                                                                                   |
-| `temperature`  | float   | `0.1`   | Generation temperature. `0.0` — maximally deterministic, `1.0` — maximally creative. Low values are recommended for code enrichment |
-| `seed`         | integer | `42`    | Random generator seed. Same seed guarantees reproducible results                                                                    |
-| `num_ctx`      | integer | `4096`  | Model context window size in tokens                                                                                                 |
-| `num_predict`  | integer | `2048`  | Maximum tokens in response                                                                                                          |
-
-#### AST Element Filters
-
-Determines which AST elements are included in the LLM prompt. Disabling unnecessary elements reduces request size and speeds up processing.
-
-| Parameter        | Type    | Default | Description                      |
-| ---------------- | ------- | ------- | -------------------------------- |
-| `ast_imports`    | boolean | `false` | Include imports in the prompt    |
-| `ast_variables`  | boolean | `false` | Include variables in the prompt  |
-| `ast_functions`  | boolean | `true`  | Include functions in the prompt  |
-| `ast_enums`      | boolean | `true`  | Include enums in the prompt      |
-| `ast_interfaces` | boolean | `true`  | Include interfaces in the prompt |
+| Parameter      | Type    | Default                     | Description                                                                                                                         |
+| -------------- | ------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `host`         | string  | `http://localhost:11434`    | Ollama API endpoint                                                                                                                 |
+| `model`        | string  | `qwen2.5-coder:3b-instruct` | Model name for enrichment. Must be pre-loaded via `ollama pull`                                                                     |
+| `timeout_secs` | integer | `60`                        | Ollama request timeout in seconds                                                                                                   |
+| `temperature`  | float   | `0.1`                       | Generation temperature. `0.0` — maximally deterministic, `1.0` — maximally creative. Low values are recommended for code enrichment |
+| `seed`         | integer | `42`                        | Random generator seed. Same seed guarantees reproducible results                                                                    |
+| `num_ctx`      | integer | `4096`                      | Model context window size in tokens                                                                                                 |
+| `num_predict`  | integer | `2048`                      | Maximum tokens in response                                                                                                          |
 
 ### sources
 
@@ -263,31 +287,13 @@ Vibe Analyzer validates the configuration at startup and applies safe defaults i
 
 When updating Vibe Analyzer, the configuration may automatically migrate to a new format. The configuration version (`version`) tracks the current format and applies migrations when necessary.
 
-## Overriding the Configuration Directory
+## Overriding the Configuration File
 
-For testing or custom scenarios, the configuration directory can be overridden:
+For testing or custom scenarios, the config file path can be overridden:
 
 ```bash
-# Set a custom directory
-vibe-analyzer --config-dir /custom/path source list
+# Use a custom config file
+vibe-analyzer --config /custom/path/config.json5 source list
 ```
 
-The default is `~/.vibe-analyzer/`.
-
-## Dev Section
-
-An optional section for debugging. Usually absent in production config — added only when needed:
-
-```json
-{
-  "dev": {
-    "log_level": "trace",
-    "spdx_data_path": "tests/mcp/fixtures/config/spdx"
-  }
-}
-```
-
-| Parameter        | Type   | Default                 | Description                                                                             |
-| ---------------- | ------ | ----------------------- | --------------------------------------------------------------------------------------- |
-| `log_level`      | string | `default`               | Log level: `default`, `trace`, `debug`, `info`, `warn`, `error`. `default` means `info` |
-| `spdx_data_path` | string | `~/.vibe-analyzer/spdx` | Path to SPDX data for license detection. Downloaded automatically on first run          |
+The default is `~/.vibe-analyzer/config.json5`.

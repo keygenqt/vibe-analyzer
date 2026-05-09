@@ -3242,7 +3242,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vibe-analyzer"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "anyhow",
  "askalono",
@@ -3292,9 +3292,9 @@ dependencies = [
 
 [[package]]
 name = "vibe-ast"
-version = "0.0.5"
+version = "0.0.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "750c7b61f41967845c5d97601b221c03d12d5ccd9fb38edbdbab8b7ed96809ac"
+checksum = "4010d7bd15628cdb7b11cbab8355c6a1744e0a8620d8c397ad2b812220aea9ba"
 dependencies = [
  "dunce",
  "regex",

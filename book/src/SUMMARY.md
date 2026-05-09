@@ -17,7 +17,6 @@
 
 # Internals
 
-- [AST Parsing](./docs/ast-parsing.md)
 - [LLM Enrichment](./docs/llm-enrichment.md)
 - [Search and Indexing](./docs/search-and-indexing.md)
 

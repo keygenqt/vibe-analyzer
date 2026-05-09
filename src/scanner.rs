@@ -53,7 +53,6 @@ pub async fn scan_ast(
         for (i, path) in files_full.iter().enumerate() {
             let percent = (i + 1) as f64 / total as f64 * 100.0;
             print_progress!("Processing... {:.1}% ({}/{})", percent, i + 1, total);
-
             let model = match detect_file_type(path) {
                 FileType::Binary => FileModels::new_binary(path),
                 FileType::Source(_) => {

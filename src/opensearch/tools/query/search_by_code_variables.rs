@@ -29,7 +29,7 @@ impl OpenSearchToolClient {
                                 "query": {
                                     "bool": {
                                         "should": [
-                                            { "match": { "variables.signature": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } },
+                                            { "match_phrase_prefix": { "variables.signature": { "query": q, "boost": 2.0 } } },
                                             { "match": { "variables.comments": { "query": q, "boost": 1.5 } } }
                                         ]
                                     }
@@ -40,8 +40,8 @@ impl OpenSearchToolClient {
                                 "query": {
                                     "bool": {
                                         "should": [
-                                            { "match": { "enums.signature": { "query": q, "boost": 2.0, "fuzziness": "AUTO" } } },
-                                            { "match": { "enums.comments": { "query": q, "boost": 1.5 } } }
+                                            { "match_phrase_prefix": { "enums.signature": { "query": q, "boost": 1.0 } } },
+                                            { "match": { "enums.comments": { "query": q, "boost": 0.5 } } }
                                         ]
                                     }
                                 }

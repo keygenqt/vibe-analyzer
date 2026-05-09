@@ -1,46 +1,42 @@
 # Recipes
 
-Practical examples of using Vibe Analyzer through an AI assistant.
+Practical examples of using Vibe Analyzer through an AI assistant. Based on the test fixtures: `samples` (code) and `knowledge` (documentation).
 
 ## Exploring an Unfamiliar Project
 
 **Goal:** you're seeing a project for the first time and want to quickly understand its structure.
 
-**Assistant dialog:**
-
 ```
-You: What projects are in the database?
-AI: [show_projects] Project "backend" available — payment processing service.
+You: What projects are available?
+AI: [show_projects]
+- knowledge — guidelines and processes for code writing
+- samples — sample code in Rust and Python
 
-You: Show the structure of backend
-AI: [show_tree] backend/
-├── src/
-│   ├── main.rs
-│   ├── api/
-│   │   ├── mod.rs
-│   │   ├── payments.rs
-│   │   └── refunds.rs
-│   ├── db/
-│   │   ├── mod.rs
-│   │   └── models.rs
-│   └── config.rs
-├── migrations/
-├── tests/
-└── Cargo.toml
+You: Show the tree of samples
+AI: [show_tree]
+samples/
+├── python_sample/
+│   ├── main.py
+│   ├── models.py
+│   └── utils.py
+├── rust_lib/
+│   ├── Cargo.toml
+│   └── src/
+│       └── lib.rs
+└── rust_sample/
+    ├── Cargo.toml
+    └── src/
+        └── main.rs
 
-You: Show statistics for backend
+You: Show statistics for knowledge
 AI: [show_stats]
-Rust        45 files    8,200 lines    420 AST objects
-SQL         12 files    1,500 lines      —
-Markdown     5 files      300 lines     25 AST objects
-Total       62 files   10,000 lines    445 AST objects
+Markdown    15 files    663 lines    112 AST objects
 
-You: What are the main functions in api/payments.rs?
-AI: [get_file_ast for api/payments.rs]
-- process_payment(amount, currency)
-- validate_card(card_number)
-- create_transaction(order_id)
-- refund_payment(transaction_id)
+You: What functions are in utils.py?
+AI: [get_file_ast for utils.py]
+- add(a: int, b: int) -> int — Returns sum of two numbers
+- multiply(a: int, b: int) -> int — Returns product of two numbers
+- divide(a: int, b: int) -> float — Divides two numbers safely
 ```
 
 ## Finding Dependencies
@@ -48,19 +44,13 @@ AI: [get_file_ast for api/payments.rs]
 **Goal:** find out what libraries are used in a project.
 
 ```
-You: What libraries are used in backend?
+You: What libraries are used in samples?
 AI: [search_by_code_imports]
-- serde (serialization)
-- tokio (async runtime)
-- sqlx (PostgreSQL)
-- reqwest (HTTP client)
-- stripe (payment API)
-
-You: Where is stripe used?
-AI: [search_by_code_imports with query="stripe"]
-- src/api/payments.rs
-- src/api/refunds.rs
-- src/api/webhooks.rs
+- thiserror::Error (Rust)
+- super::* (Rust)
+- dataclasses (Python)
+- typing (Python)
+- utils, models (Python)
 ```
 
 ## Finding an Implementation
@@ -68,11 +58,11 @@ AI: [search_by_code_imports with query="stripe"]
 **Goal:** find where a specific function is implemented.
 
 ```
-You: Find the calculate_total function
-AI: [search_by_code_functions with query="calculate_total"]
-Found in src/orders.rs:
-  pub fn calculate_total(items: &[OrderItem]) -> f64
-  "Calculates total order amount with discounts applied"
+You: Find the multiply function
+AI: [search_by_code_functions with query="multiply"]
+Found in 2 files:
+- python_sample/utils.py: def multiply(a: int, b: int) -> int
+- rust_lib/src/lib.rs: pub fn multiply(a: i32, b: i32) -> i32
 ```
 
 ## Documentation Search
@@ -81,18 +71,18 @@ Found in src/orders.rs:
 
 ```
 You: Find Python coding guidelines
-AI: [search_documentation with query="Python coding guidelines"]
-Found in docs/guidelines/python.md:
+AI: [search_documentation with query="Python coding rules"]
+Found in knowledge/gidelines/code/python.md:
   # Python Coding Guidelines
   Follow PEP 8. Use snake_case, type annotations, docstrings.
 
 You: What is the release process?
 AI: [search_documentation with query="release process"]
-Found in docs/process/release.md:
+Found in knowledge/gidelines/process/release.md:
   # Release Process
   1. All milestone tasks closed
   2. Create a release branch from develop
-  3. Update version in Cargo.toml
+  3. Update version in Cargo.toml/package.json
   4. Merge into main
   5. Notify the team
 ```
@@ -102,35 +92,17 @@ Found in docs/process/release.md:
 **Goal:** find information about project characters or legends.
 
 ```
-You: Who is Kirikur?
-AI: [search_documentation with query="Kirikur"]
-Found in knowledge/legends/kirikur_programmer.md:
-  # Kirikur - Programmer
-  Backend developer, stack: Rust, Python, PostgreSQL.
-  Works at a food delivery startup.
-  Rewrote legacy code in Rust in 3 months.
-  Favorite phrase: "It works on my machine"
+You: Who is Zizikosh?
+AI: [search_documentation with query="Zizikosh"]
+Found in knowledge/legends/zizikosh_blogger.md:
+  # Zizikosh - Blogger
+  Video blogger, unpacks packages from AliExpress.
+  150K subscribers.
 
 You: What is Bakobur's dream?
 AI: [search_documentation with query="Bakobur's dream"]
 Found in knowledge/legends/bakobur_homeless.md:
   Dream: Warm socks and a doghouse for Sharik
-```
-
-## Incremental Update
-
-**Goal:** update the index after code changes.
-
-```
-You: Update the index
-AI: [admin_sync]
-Indexing started. Projects are updating.
-
-# After some time, you can check:
-You: Show backend statistics
-AI: [show_stats]
-Rust        47 files    8,500 lines    445 AST objects
-...
 ```
 
 ## Inspecting a Specific File
@@ -141,20 +113,28 @@ Rust        47 files    8,500 lines    445 AST objects
 You: Show the contents of Cargo.toml
 AI: [get_file_content]
 [package]
-name = "backend"
+name = "rust_lib"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-tokio = { version = "1", features = ["full"] }
-sqlx = { version = "0.7", features = ["postgres", "runtime-tokio"] }
+anyhow = "1.0"
+thiserror = "1.0"
 
-You: What structs are in db/models.rs?
+You: What structs are in lib.rs?
 AI: [get_file_ast]
-- struct Order { id, user_id, status, total, created_at }
-- struct OrderItem { id, order_id, product_id, quantity, price }
-- enum OrderStatus { Pending, Confirmed, Shipped, Delivered, Cancelled }
+- struct User { name, age }
+- struct Calculator { value }
+- enum MathError { DivisionByZero, OutOfRange }
+- enum Operation { Add, Multiply, Divide }
+```
+
+## Incremental Update
+
+```
+You: Update the index
+AI: [admin_sync]
+Indexing started. Projects are updating.
 ```
 
 ## Tips

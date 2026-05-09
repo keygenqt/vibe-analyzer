@@ -10,11 +10,11 @@ vibe-analyzer [global options] <command> [subcommand] [options]
 
 ## Global Options
 
-| Option                | Description                                                  |
-| --------------------- | ------------------------------------------------------------ |
-| `--config-dir <path>` | Use a custom config directory instead of `~/.vibe-analyzer/` |
-| `--help`              | Show help                                                    |
-| `--version`           | Show version                                                 |
+| Option            | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| `--config <path>` | Path to config file (default: `~/.vibe-analyzer/config.json5`) |
+| `--help`          | Show help                                                      |
+| `--version`       | Show version                                                   |
 
 ## Commands
 
@@ -82,8 +82,9 @@ vibe-analyzer scan ast [options]
 | Option                  | Description                                                             |
 | ----------------------- | ----------------------------------------------------------------------- |
 | `--target <path>`       | Process a specific source. If not specified — all sources are processed |
-| `--format <format>`     | Export format: `json` (default), `json5`, `toon`, `xml`                 |
-| `-o`, `--output <path>` | Export path. If not specified — file is created in `~/Downloads/`       |
+| `-f, --format <format>` | Export format: `json` (default), `json5`, `toml`, `toon`, `xml`, `yaml` |
+| `-p, --path <path>`     | Source path for direct file/directory scanning                          |
+| `-o, --output <path>`   | Export path. If not specified — file is created in `~/Downloads/`       |
 
 **Examples:**
 
@@ -110,8 +111,9 @@ vibe-analyzer scan analyze [options]
 | Option                  | Description                                                             |
 | ----------------------- | ----------------------------------------------------------------------- |
 | `--target <path>`       | Process a specific source. If not specified — all sources are processed |
-| `--format <format>`     | Export format: `json` (default), `json5`, `toon`, `xml`                 |
-| `-o`, `--output <path>` | Export path. If not specified — file is created in `~/Downloads/`       |
+| `-f, --format <format>` | Export format: `json` (default), `json5`, `toml`, `toon`, `xml`, `yaml` |
+| `-p, --path <path>`     | Source path for direct file/directory scanning                          |
+| `-o, --output <path>`   | Export path. If not specified — file is created in `~/Downloads/`       |
 
 Before enrichment, it checks:
 
@@ -159,13 +161,13 @@ vibe-analyzer scan index [options]
 **Example `scan index` output:**
 
 ```
-Indexing completed. Sources: 1, Files: 287, Analysis: 242 (took 45.3s)
+Indexing completed. Files: 287 (took 45.3s)
 ```
 
 Or, if all files are already indexed:
 
 ```
-Index is up to date — all files are already indexed and database is in sync
+Index is up to date — all files are already in sync
 ```
 
 **Examples:**
@@ -210,17 +212,7 @@ Language                  Files           Lines     AST Objects            Size
 Rust                        194           15146            1631       498.26 KB
 Markdown                     33            2884             296       102.64 KB
 Python                        4             163              23         2.85 KB
-TypeScript                    1             125              14         1.90 KB
-Java                          1             115              14         1.71 KB
-Swift                         1              99              13         1.35 KB
-Kotlin                        1              98              14         1.38 KB
-C#                            1              97              13         1.58 KB
-ArkTs                         1              83               9         1.11 KB
-JavaScript                    1              73              12         1.07 KB
-Dart                          1              68              13         1.09 KB
-Go                            1              63              12           895 B
-Bash                          1              55               9           882 B
-Batch                         1              48               9           748 B
+...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Other                        45            5776                       137.72 KB
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -259,47 +251,22 @@ vibe-analyzer
 |-- Cargo.lock
 |-- Cargo.toml
 |-- LICENSE
-|-- README.crates.md
 |-- README.md
 |-- book
 |   |-- book.toml
 |   `-- src
 |       |-- SUMMARY.md
 |       `-- index.html
-|-- data
-|   |-- other
-|   |   `-- logo.png
-|   |-- preview
-|   |   `-- preview-webui.png
-|   `-- prompts
-|       `-- comment-rules.md
-|-- docker
-|   |-- open-webui
-|   |   `-- docker-compose.yml
-|   `-- opensearch
-|       `-- docker-compose.yml
 |-- src
-|   |-- analyzer
-|   |   |-- analyzer.rs
-|   |   |-- mod.rs
-|   |   |-- ollama_client.rs
-|   |   `-- ollama_cluster.rs
+|   |-- main.rs
 |   |-- cli
 |   |   |-- mod.rs
 |   |   |-- scan.rs
-|   |   |-- serve.rs
-|   |   |-- source.rs
-|   |   `-- stats.rs
-|   |-- configs
-|   |   `-- ...
-|   |-- main.rs
+|   |   `-- serve.rs
 |   `-- utils
 |       `-- ...
 `-- tests
-    |-- mcp
-    |   `-- ...
-    `-- parsers
-        `-- ...
+    `-- ...
 
 36 directories, 74 files
 ```
@@ -359,20 +326,15 @@ vibe-analyzer serve status
 
 ## Export Formats
 
-When using the `--format` option with `scan ast` and `scan analyze`, four formats are available:
+When using the `--format` option with `scan ast` and `scan analyze`, six formats are available:
 
 | Format | Key     | Extension | Description                                               |
 | ------ | ------- | --------- | --------------------------------------------------------- |
 | JSON   | `json`  | `.json`   | Compact JSON without extra whitespace — minimal file size |
 | JSON5  | `json5` | `.json5`  | JSON5 with comments and trailing commas — human-readable  |
+| TOML   | `toml`  | `.toml`   | TOML format                                               |
 | TOON   | `toon`  | `.toon`   | TOON format — token-efficient output, optimized for LLMs  |
 | XML    | `xml`   | `.xml`    | XML with pretty-print formatting                          |
+| YAML   | `yaml`  | `.yaml`   | YAML format                                               |
 
 If the export path is not specified via `--output`, the file is saved to `~/Downloads/` with an auto-generated name.
-
-## Exit Codes
-
-| Code | Description                                                    |
-| ---- | -------------------------------------------------------------- |
-| `0`  | Successful execution                                           |
-| `1`  | Error (invalid parameters, service unavailable, parsing error) |
