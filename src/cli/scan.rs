@@ -16,6 +16,7 @@ use crate::print_info;
 use crate::print_success;
 use crate::print_warning;
 use crate::scanner::scan_ast;
+use crate::utils::path;
 
 /// Scan actions for different analysis types.
 #[derive(Subcommand)]
@@ -27,8 +28,12 @@ pub enum ScanAction {
         target: Option<String>,
 
         /// Export format
-        #[arg(long, default_value = "json")]
-        format: ExportFormat,
+        #[arg(long, short = 'f')]
+        format: Option<ExportFormat>,
+
+        /// Source path
+        #[arg(long, short = 'p')]
+        path: Option<PathBuf>,
 
         /// Output file path
         #[arg(long, short = 'o')]
@@ -42,8 +47,12 @@ pub enum ScanAction {
         target: Option<String>,
 
         /// Export format
-        #[arg(long, default_value = "json")]
-        format: ExportFormat,
+        #[arg(long, short = 'f')]
+        format: Option<ExportFormat>,
+
+        /// Source path
+        #[arg(long, short = 'p')]
+        path: Option<PathBuf>,
 
         /// Output file path
         #[arg(long, short = 'o')]
@@ -74,16 +83,29 @@ pub async fn run(action: ScanAction) {
         ScanAction::Ast {
             target,
             format,
+            path,
             output,
         } => {
-            let projects = match scan_ast(&config, target, true).await {
+            let output = match path::resolve_file_path(output) {
+                Ok(o) => o,
+                Err(e) => exit_error!("{}", e),
+            };
+            let path = match path::resolve_dir_path(path) {
+                Ok(o) => o,
+                Err(e) => exit_error!("{}", e),
+            };
+            let projects = match scan_ast(&config, target, true, path).await {
                 Ok(result) => result,
                 Err(e) => exit_error!("{}", e),
             };
             if !projects.is_empty() {
                 print_info!("Saving file...");
                 let options = ExportOptions::new(format, output);
-                match writer::export(ExportModel::new_ast(projects), &options) {
+                match writer::export(
+                    ExportModel::new_ast(&config.scan, projects),
+                    &options,
+                    &config.export,
+                ) {
                     Ok(path) => {
                         let elapsed = start_time.elapsed();
                         print_success!(
@@ -101,16 +123,29 @@ pub async fn run(action: ScanAction) {
         ScanAction::Analyze {
             target,
             format,
+            path,
             output,
         } => {
-            let projects = match scan_analyze(&config, target, true).await {
+            let output = match path::resolve_file_path(output) {
+                Ok(o) => o,
+                Err(e) => exit_error!("{}", e),
+            };
+            let path = match path::resolve_dir_path(path) {
+                Ok(o) => o,
+                Err(e) => exit_error!("{}", e),
+            };
+            let projects = match scan_analyze(&config, target, true, path).await {
                 Ok(result) => result,
                 Err(e) => exit_error!("{}", e),
             };
             if !projects.is_empty() {
                 print_info!("Saving file...");
                 let options = ExportOptions::new(format, output);
-                match writer::export(ExportModel::new_analyze(projects), &options) {
+                match writer::export(
+                    ExportModel::new_analyze(&config.scan, projects),
+                    &options,
+                    &config.export,
+                ) {
                     Ok(path) => {
                         let elapsed = start_time.elapsed();
                         print_success!(

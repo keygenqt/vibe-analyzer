@@ -38,34 +38,36 @@ impl OllamaClient {
             }
         });
 
-        let response = self.client
-        .post(&url)
-        .json(&request)
-        .timeout(Duration::from_secs(timeout_secs.unwrap_or(self.config.timeout_secs)))
-        .send()
-        .await
-        .map_err(|e| {
-            if e.is_timeout() {
-                tracing::debug!(
-                    prompt_preview = %&prompt[..prompt.len().min(100)],
-                    model = %self.config.model,
-                    "Ollama request timed out"
-                );
-                anyhow::anyhow!(
-                    "Ollama request timed out ({}s). Try reducing max_chunk_chars in config (current: {})",
-                    self.config.timeout_secs,
-                    self.config.max_chunk_chars
-                )
-            } else {
-                tracing::debug!(
-                    prompt_preview = %&prompt[..prompt.len().min(100)],
-                    error = %e,
-                    model = %self.config.model,
-                    "Ollama request failed"
-                );
-                anyhow::anyhow!("Ollama request failed: {}", e)
-            }
-        })?;
+        let response = self
+            .client
+            .post(&url)
+            .json(&request)
+            .timeout(Duration::from_secs(
+                timeout_secs.unwrap_or(self.config.timeout_secs),
+            ))
+            .send()
+            .await
+            .map_err(|e| {
+                if e.is_timeout() {
+                    tracing::debug!(
+                        prompt_preview = %&prompt[..prompt.len().min(100)],
+                        model = %self.config.model,
+                        "Ollama request timed out"
+                    );
+                    anyhow::anyhow!(
+                        "Ollama request timed out ({}s). Try reducing batch size.",
+                        self.config.timeout_secs,
+                    )
+                } else {
+                    tracing::debug!(
+                        prompt_preview = %&prompt[..prompt.len().min(100)],
+                        error = %e,
+                        model = %self.config.model,
+                        "Ollama request failed"
+                    );
+                    anyhow::anyhow!("Ollama request failed: {}", e)
+                }
+            })?;
 
         if !response.status().is_success() {
             let status = response.status();

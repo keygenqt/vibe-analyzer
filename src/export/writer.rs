@@ -1,6 +1,8 @@
 //! Core export functionality with pluggable format writers and registry.
 //! Provides centralized export coordination and format selection.
 
+use crate::configs::export::ExportConfig;
+use crate::configs::scan::ScanConfig;
 use crate::export::formats::json::JsonWriter;
 use crate::export::formats::json5::Json5Writer;
 use crate::export::formats::toml::TomlWriter;
@@ -12,6 +14,7 @@ use crate::export::options::ExportOptions;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
 use crate::utils::app;
+use crate::utils::path;
 use anyhow::Result;
 use chrono::Local;
 use once_cell::sync::Lazy;
@@ -23,19 +26,21 @@ use std::path::PathBuf;
 /// Container for multiple source analyses (batch JSON export)
 #[derive(Serialize)]
 pub struct ExportModel {
-    /// ISO 8601 timestamp of the batch export
+    /// ISO 8601 timestamp of the batch export.
     pub indexed_at: String,
-    /// Collection of individual source analyses
+    /// Collection of individual source analyses.
     pub projects: Vec<ProjectModel>,
 }
 
 impl ExportModel {
-    /// Creates export with AST-only formatting.
-    pub fn new_ast(projects: Vec<ProjectModel>) -> Self {
+    /// Creates export with AST-only formatting, filtered by scan config.
+    pub fn new_ast(config: &ScanConfig, projects: Vec<ProjectModel>) -> Self {
+        let scan = config.clone();
         ExportModel {
             indexed_at: Local::now().to_rfc3339(),
             projects: projects
                 .into_iter()
+                .map(|p| Self::filter_by_config(&scan, p))
                 .map(|p| ProjectModel {
                     files: FileModels::format_ast(p.files),
                     ..p
@@ -44,17 +49,69 @@ impl ExportModel {
         }
     }
 
-    /// Creates export with AST + enrichment formatting.
-    pub fn new_analyze(projects: Vec<ProjectModel>) -> Self {
+    /// Creates export with AST + enrichment formatting, filtered by scan config.
+    pub fn new_analyze(config: &ScanConfig, projects: Vec<ProjectModel>) -> Self {
+        let scan = config.clone();
         ExportModel {
             indexed_at: Local::now().to_rfc3339(),
             projects: projects
                 .into_iter()
+                .map(|p| Self::filter_by_config(&scan, p))
                 .map(|p| ProjectModel {
                     files: FileModels::format_analyze(p.files),
                     ..p
                 })
                 .collect(),
+        }
+    }
+
+    /// Filter project files based on scan config.
+    fn filter_by_config(scan: &ScanConfig, project: ProjectModel) -> ProjectModel {
+        ProjectModel {
+            files: project
+                .files
+                .into_iter()
+                .map(|f| match f {
+                    FileModels::Language(mut lang) => {
+                        if !scan.imports {
+                            lang.imports = vec![];
+                        }
+                        if !scan.functions {
+                            lang.functions = vec![];
+                        }
+                        if !scan.variables {
+                            lang.variables = vec![];
+                        }
+                        if !scan.enums {
+                            lang.enums = vec![];
+                        }
+                        if !scan.interfaces {
+                            lang.interfaces = vec![];
+                        }
+                        if !scan.classes {
+                            lang.classes = vec![];
+                        }
+                        if !scan.structs {
+                            lang.structs = vec![];
+                        }
+                        if !scan.header_comments {
+                            lang.header_comments = vec![];
+                        }
+                        if !scan.headings {
+                            lang.headings = vec![];
+                        }
+                        if !scan.links {
+                            lang.links = vec![];
+                        }
+                        if !scan.code_blocks {
+                            lang.code_blocks = vec![];
+                        }
+                        FileModels::Language(lang)
+                    }
+                    other => other,
+                })
+                .collect(),
+            ..project
         }
     }
 }
@@ -83,22 +140,35 @@ fn get_writer(format: ExportFormat) -> Option<&'static dyn ExportWriter> {
     WRITERS.get(&format).map(|w| w.as_ref())
 }
 
-/// Generates the default export file path in the Downloads directory.
-fn get_default_export(format: ExportFormat) -> PathBuf {
+/// Generates the default export file path using config output directory.
+fn get_default_export(format: &ExportFormat, output_dir: &PathBuf) -> Result<PathBuf> {
     let timestamp = Local::now().format("%d-%m-%Y_%H-%M-%S");
     let filename = format!("{}-{}.{}", app::app_name(), timestamp, format.extension());
-    let downloads_dir = dirs::download_dir().expect("Failed to get downloads directory");
-    downloads_dir.join(filename)
+    let dir = path::resolve_dir_path(Some(output_dir.clone()))?
+        .ok_or_else(|| anyhow::anyhow!("Output directory not configured"))?;
+    Ok(dir.join(filename))
 }
 
 /// Export project model to file in specified format.
-pub fn export(model: ExportModel, options: &ExportOptions) -> Result<PathBuf> {
+pub fn export(
+    model: ExportModel,
+    options: &ExportOptions,
+    config: &ExportConfig,
+) -> Result<PathBuf> {
+    let format = match options.format {
+        Some(f) => f,
+        None => ExportFormat::from_str(&config.format)
+            .ok_or_else(|| anyhow::anyhow!(
+                "Invalid export format in config: '{}'. Valid formats: json, json5, toon, xml, yaml, toml",
+                config.format
+            ))?,
+    };
     let writer =
-        get_writer(options.format).ok_or_else(|| anyhow::anyhow!("Exporter is not registered."))?;
+        get_writer(format).ok_or_else(|| anyhow::anyhow!("Exporter is not registered."))?;
     let output_path = match options.output.clone() {
         Some(path) => vibe_fs::resolve(&path)
             .map_err(|e| anyhow::anyhow!("Error path for save output: {}", e))?,
-        None => get_default_export(options.format),
+        None => get_default_export(&format, &config.output_dir)?,
     };
     writer.export(&model, &output_path)?;
     Ok(output_path)

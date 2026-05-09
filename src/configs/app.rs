@@ -8,8 +8,11 @@ use std::fs;
 use std::path::PathBuf;
 use std::sync::OnceLock;
 
+use crate::configs::analyze::AnalyzeConfig;
+use crate::configs::export::ExportConfig;
 use crate::configs::log_level::LogLevel;
 use crate::configs::mcp::McpConfig;
+use crate::configs::scan::ScanConfig;
 use crate::exit_error;
 use crate::print_info;
 use crate::utils;
@@ -34,6 +37,12 @@ pub struct AppConfig {
     pub opensearch: OpenSearchConfig,
     /// MCP server settings.
     pub mcp: McpConfig,
+    /// AST extraction settings.
+    pub scan: ScanConfig,
+    /// LLM enrichment settings.
+    pub analyze: AnalyzeConfig,
+    /// Export settings.
+    pub export: ExportConfig,
     /// Ollama LLM servers.
     pub ollama: Vec<OllamaConfig>,
     /// Knowledge sources to index.
@@ -48,6 +57,9 @@ impl Default for AppConfig {
             log_level: LogLevel::default(),
             opensearch: OpenSearchConfig::default(),
             mcp: McpConfig::default(),
+            scan: ScanConfig::default(),
+            analyze: AnalyzeConfig::default(),
+            export: ExportConfig::default(),
             ollama: vec![OllamaConfig::default()],
             sources: vec![],
         }
@@ -166,24 +178,54 @@ impl AppConfig {
                 ],
             ),
             Json5::Commit(
+                "scan",
+                vec![
+                    "AST extraction filters for scan ast and scan analyze.",
+                    "",
+                    "imports - Include import statements",
+                    "functions - Include function signatures",
+                    "variables - Include variable declarations",
+                    "enums - Include enum declarations",
+                    "interfaces - Include interface/trait declarations",
+                    "classes - Include class declarations",
+                    "structs - Include struct declarations",
+                    "comments - Include doc comments on elements",
+                    "header_comments - Include file header comments",
+                    "headings - Include markdown headings",
+                    "links - Include markdown links",
+                    "code_blocks - Include code blocks",
+                ],
+            ),
+            Json5::Commit(
+                "analyze",
+                vec![
+                    "LLM enrichment batch settings for scan analyze.",
+                    "",
+                    "max_chunk_chars - Maximum characters per request batch",
+                    "max_chunk_files - Maximum files per request batch",
+                ],
+            ),
+            Json5::Commit(
+                "export",
+                vec![
+                    "Default export settings for scan ast and scan analyze.",
+                    "",
+                    "format - Default output format: json, json5, toml, toon, xml, yaml",
+                    "output_dir - Default output directory",
+                ],
+            ),
+            Json5::Commit(
                 "ollama",
                 vec![
                     "Ollama LLM servers",
                     "",
                     "host - API endpoint (default: http://localhost:11434)",
                     "model - LLM model name",
-                    "max_chunk_chars - Maximum characters per request batch",
-                    "max_chunk_files - Maximum files per request batch",
                     "timeout_secs - Request timeout in seconds",
                     "temperature - Sampling temperature (0.0 - 1.0)",
                     "seed - Random seed for reproducibility",
                     "num_ctx - Context window size",
                     "num_predict - Maximum tokens to generate",
-                    "ast_imports - Include imports in AST analysis",
-                    "ast_variables - Include variables in AST analysis",
-                    "ast_functions - Include functions in AST analysis",
-                    "ast_enums - Include enums in AST analysis",
-                    "ast_interfaces - Include interfaces in AST analysis",
                 ],
             ),
             Json5::Commit("sources", vec!["Knowledge sources to index"]),

@@ -32,7 +32,7 @@ pub async fn scan_index(
         anyhow::bail!("OpenSearch is not available at {}", config.opensearch.host);
     }
 
-    let projects = analyzer::scan_analyze(config, target, force).await?;
+    let projects = analyzer::scan_analyze(config, target, force, None).await?;
     if projects.is_empty() {
         print_info!("No files to index");
         return Ok(IndexReport { index_files: 0 });

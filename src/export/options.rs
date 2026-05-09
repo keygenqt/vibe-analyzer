@@ -34,13 +34,26 @@ impl ExportFormat {
             ExportFormat::Toml => "toml",
         }
     }
+
+    /// Parse format from string. Returns None if format is invalid.
+    pub fn from_str(s: &str) -> Option<Self> {
+        match s.to_lowercase().as_str() {
+            "json" => Some(Self::Json),
+            "json5" => Some(Self::Json5),
+            "toon" => Some(Self::Toon),
+            "xml" => Some(Self::Xml),
+            "yaml" => Some(Self::Yaml),
+            "toml" => Some(Self::Toml),
+            _ => None,
+        }
+    }
 }
 
 /// User-controllable options for the export operation.
 #[derive(Debug, Clone)]
 pub struct ExportOptions {
     /// Output format (JSON, JSON5, TOON, XML, YAML, TOML).
-    pub format: ExportFormat,
+    pub format: Option<ExportFormat>,
 
     /// Custom output path. If None, uses default Downloads directory.
     pub output: Option<PathBuf>,
@@ -48,7 +61,7 @@ pub struct ExportOptions {
 
 impl ExportOptions {
     /// Creates a new ExportOptions instance with the specified format and output path.
-    pub fn new(format: ExportFormat, output: Option<PathBuf>) -> Self {
+    pub fn new(format: Option<ExportFormat>, output: Option<PathBuf>) -> Self {
         Self { format, output }
     }
 }

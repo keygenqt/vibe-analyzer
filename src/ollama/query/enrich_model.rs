@@ -51,11 +51,9 @@ impl OllamaClient {
                         continue;
                     }
                     anyhow::bail!(
-                        "LLM returned {} files, expected {}. Reduce max_chunk_chars ({}) or max_chunk_files ({})",
+                        "LLM returned {} files, expected {}. Try reducing batch size (chunk_chars or chunk_files).",
                         enriched.len(),
                         files.len(),
-                        self.config.max_chunk_chars,
-                        self.config.max_chunk_files,
                     );
                 }
                 Err(_) if attempt < MAX_RETRIES => {
@@ -63,10 +61,9 @@ impl OllamaClient {
                 }
                 Err(e) => {
                     anyhow::bail!(
-                        "LLM JSON parse failed after {} attempts: {}. Reduce max_chunk_chars ({})",
+                        "LLM JSON parse failed after {} attempts: {}. Try reducing batch size (analyze.max_chunk_chars).",
                         MAX_RETRIES,
                         e,
-                        self.config.max_chunk_chars,
                     );
                 }
             }

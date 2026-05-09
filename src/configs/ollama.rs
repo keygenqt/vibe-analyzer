@@ -11,10 +11,6 @@ pub struct OllamaConfig {
     pub host: String,
     /// Model name to use for inference.
     pub model: String,
-    /// Maximum chunk size in characters for LLM context.
-    pub max_chunk_chars: usize,
-    /// Maximum number of files per batch.
-    pub max_chunk_files: usize,
     /// Request timeout in seconds.
     pub timeout_secs: u64,
     /// Temperature for generation (0.0-2.0, lower = more deterministic).
@@ -25,16 +21,6 @@ pub struct OllamaConfig {
     pub num_ctx: usize,
     /// Maximum tokens to predict/generate.
     pub num_predict: usize,
-    /// Include imports in LLM prompt.
-    pub ast_imports: bool,
-    /// Include variables in LLM prompt.
-    pub ast_variables: bool,
-    /// Include functions in LLM prompt.
-    pub ast_functions: bool,
-    /// Include enums in LLM prompt.
-    pub ast_enums: bool,
-    /// Include interfaces in LLM prompt.
-    pub ast_interfaces: bool,
 }
 
 impl Default for OllamaConfig {
@@ -43,18 +29,11 @@ impl Default for OllamaConfig {
         Self {
             host: "http://localhost:11434".to_string(),
             model: "qwen2.5-coder:3b-instruct".to_string(),
-            max_chunk_chars: 3_000,
-            max_chunk_files: 3,
             timeout_secs: 60,
             temperature: 0.1,
             seed: 42,
             num_ctx: 4096,
             num_predict: 2048,
-            ast_imports: false,
-            ast_variables: true,
-            ast_functions: true,
-            ast_enums: true,
-            ast_interfaces: true,
         }
     }
 }

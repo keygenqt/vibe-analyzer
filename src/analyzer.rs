@@ -1,6 +1,7 @@
 //! Core analyzer that orchestrates scanning and LLM enrichment.
 //! Coordinates file batching and parallel Ollama API calls.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 use std::sync::atomic::AtomicBool;
 use std::sync::atomic::AtomicUsize;
@@ -35,6 +36,7 @@ pub async fn scan_analyze(
     config: &AppConfig,
     target: Option<String>,
     force: bool,
+    path: Option<PathBuf>,
 ) -> Result<Vec<ProjectModel>> {
     let cluster = OllamaCluster::new(&config.ollama);
     if cluster.is_empty() {
@@ -57,7 +59,7 @@ pub async fn scan_analyze(
     print_success!("All {} Ollama servers ready", cluster.len());
 
     // Scan sources
-    let projects = scanner::scan_ast(config, target, force).await?;
+    let projects = scanner::scan_ast(config, target, force, path).await?;
     let total_files: usize = projects.iter().map(|p| p.files.len()).sum();
     if total_files == 0 {
         print_info!("No files to analyze");
@@ -73,6 +75,8 @@ pub async fn scan_analyze(
         match analyze_project(
             &project,
             &cluster,
+            config.analyze.max_chunk_chars,
+            config.analyze.max_chunk_files,
             |percent, current, total| {
                 print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
                 if total == current {
@@ -97,6 +101,8 @@ pub async fn scan_analyze(
 async fn analyze_project(
     project: &ProjectModel,
     cluster: &OllamaCluster,
+    max_chunk_chars: usize,
+    max_chunk_files: usize,
     on_progress: fn(usize, usize, usize),
     on_done: fn(String),
 ) -> Result<ProjectModel> {
@@ -166,8 +172,8 @@ async fn analyze_project(
 
                 let is_last = file_opt.is_none();
                 let is_full = !is_last
-                    && (batch_chars + file_size > config.max_chunk_chars
-                        || batch.len() >= config.max_chunk_files);
+                    && (batch_chars + file_size > max_chunk_chars
+                        || batch.len() >= max_chunk_files);
                 let should_flush = !batch.is_empty() && (is_last || is_full);
 
                 if should_flush {

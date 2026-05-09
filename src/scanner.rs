@@ -1,6 +1,8 @@
 //! Core scanning functionality for codebase analysis.
 //! Coordinates file discovery, AST parsing, license detection, and statistics aggregation.
 
+use std::path::PathBuf;
+
 use anyhow::Result;
 use colored::Colorize;
 use vibe_ast::FileType;
@@ -20,10 +22,15 @@ pub async fn scan_ast(
     config: &AppConfig,
     target: Option<String>,
     force: bool,
+    path: Option<PathBuf>,
 ) -> Result<Vec<ProjectModel>> {
-    let sources = match target {
-        Some(tg) => vec![config.get_source(&tg)?],
-        None => config.get_sources(),
+    let sources = if let Some(p) = path {
+        vec![p]
+    } else {
+        match target {
+            Some(tg) => vec![config.get_source(&tg)?],
+            None => config.get_sources(),
+        }
     };
 
     let mut projects = Vec::new();
