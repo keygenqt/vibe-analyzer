@@ -7,7 +7,7 @@ use clap::CommandFactory;
 use clap::Parser;
 use clap::Subcommand;
 
-use crate::cli::scan::ScanAction;
+use crate::cli::analyze::AnalyzeAction;
 use crate::cli::serve::ServeAction;
 use crate::cli::source::SourceAction;
 use crate::cli::stats::StatsAction;
@@ -41,22 +41,22 @@ struct App {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Scan and extract structure from knowledge sources.
-    Scan {
+    /// Scan, enrich, export, and index sources.
+    Analyze {
         #[command(subcommand)]
-        action: ScanAction,
+        action: AnalyzeAction,
     },
 
-    /// Show project information and verify indexed data.
-    Stats {
-        #[command(subcommand)]
-        action: StatsAction,
-    },
-
-    /// Manage knowledge sources (add, remove, list, update)
+    /// Manage sources (add, remove, list, update)
     Source {
         #[command(subcommand)]
         action: SourceAction,
+    },
+
+    /// Show sources information and verify indexed data.
+    Stats {
+        #[command(subcommand)]
+        action: StatsAction,
     },
 
     /// Start MCP server for AI assistants integration
@@ -75,7 +75,7 @@ async fn main() {
 
     match app.command {
         Some(Commands::Source { action }) => cli::source::run(action),
-        Some(Commands::Scan { action }) => cli::scan::run(action).await,
+        Some(Commands::Analyze { action }) => cli::analyze::run(action).await,
         Some(Commands::Stats { action }) => cli::stats::run(action).await,
         Some(Commands::Serve { action }) => cli::serve::run(action).await,
         None => {
