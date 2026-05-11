@@ -1,34 +1,34 @@
-//! AST variable model.
-//! Represents a global variable or constant declaration extracted from source code.
+//! AST enum model.
+//! Represents an enum declaration extracted from source code.
 
 use serde::Deserialize;
 use serde::Serialize;
-use vibe_ast::nodes::variable_node::VariableNode;
+use vibe_ast::nodes::enum_node::EnumNode;
 
-use crate::models::ast_model::AstModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
-/// Global variable or constant with documentation.
+/// Enum declaration with documentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AstVariableModel {
-    /// Full variable signature.
+pub struct LangEnumModel {
+    /// Full enum signature.
     pub signature: String,
     /// Documentation comments.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub comments: Vec<String>,
 }
 
-/// Converts a parsed variable node into the AST variable model.
-impl From<VariableNode> for AstVariableModel {
-    fn from(node: VariableNode) -> Self {
-        AstVariableModel {
+/// Converts a parsed enum node into the AST enum model.
+impl From<EnumNode> for LangEnumModel {
+    fn from(node: EnumNode) -> Self {
+        LangEnumModel {
             signature: node.signature,
             comments: node.comments,
         }
     }
 }
 
-/// AST model implementation for variable declarations.
-impl AstModel for AstVariableModel {
+/// AST model implementation for enum declarations.
+impl TraitFormatModel for LangEnumModel {
     fn format_ast(&self) -> Self {
         self.clone()
     }

@@ -1,34 +1,34 @@
-//! AST interface model.
-//! Represents an interface or trait declaration extracted from source code.
+//! AST function model.
+//! Represents a function or method declaration extracted from source code.
 
 use serde::Deserialize;
 use serde::Serialize;
-use vibe_ast::nodes::interface_node::InterfaceNode;
+use vibe_ast::nodes::function_node::FunctionNode;
 
-use crate::models::ast_model::AstModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
-/// Interface or trait declaration with documentation.
+/// Function or method signature with documentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AstInterfaceModel {
-    /// Full interface signature.
+pub struct LangFunctionModel {
+    /// Full function signature.
     pub signature: String,
     /// Documentation comments.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub comments: Vec<String>,
 }
 
-/// Converts a parsed interface node into the AST interface model.
-impl From<InterfaceNode> for AstInterfaceModel {
-    fn from(node: InterfaceNode) -> Self {
-        AstInterfaceModel {
+/// Converts a parsed function node into the AST function model.
+impl From<FunctionNode> for LangFunctionModel {
+    fn from(node: FunctionNode) -> Self {
+        LangFunctionModel {
             signature: node.signature,
             comments: node.comments,
         }
     }
 }
 
-/// AST model implementation for interface declarations.
-impl AstModel for AstInterfaceModel {
+/// AST model implementation for function declarations.
+impl TraitFormatModel for LangFunctionModel {
     fn format_ast(&self) -> Self {
         self.clone()
     }

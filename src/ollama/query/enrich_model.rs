@@ -6,6 +6,8 @@ use std::time::Duration;
 use anyhow::Result;
 
 use crate::models::file_language::FileLanguageModel;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
 use crate::ollama::client::OllamaClient;
 
 /// Maximum retry attempts for failed enrichment requests.
@@ -28,9 +30,11 @@ impl OllamaClient {
                     let mut enriched: Vec<FileLanguageModel> = Vec::new();
                     for item in items {
                         let path = item["path"].as_str().unwrap_or("").to_string();
-                        if let Some(original) = files.iter().find(|f| f.path == path) {
+                        if let Some(original) = files.iter().find(|f| f.base_model().path() == path)
+                        {
                             let mut model = original.clone();
-                            model.summary = item["description"].as_str().map(|s| s.to_string());
+                            model.analyze.summary =
+                                item["description"].as_str().map(|s| s.to_string());
                             let llm_tags: Vec<String> = item["tags"]
                                 .as_array()
                                 .map(|a| {
@@ -39,7 +43,7 @@ impl OllamaClient {
                                         .collect()
                                 })
                                 .unwrap_or_default();
-                            model.tags.extend(llm_tags);
+                            model.analyze.tags.extend(llm_tags);
                             enriched.push(model);
                         }
                     }
@@ -82,7 +86,7 @@ impl OllamaClient {
       "description": "FILL_DESCRIPTION",
       "tags": ["TAG1", "TAG2", "TAG3", "TAG4", "TAG5"]
     }}"#,
-                    f.path
+                    f.base_model().path()
                 )
             })
             .collect();

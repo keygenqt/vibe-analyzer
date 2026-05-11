@@ -3,394 +3,201 @@
 
 use serde::Deserialize;
 use serde::Serialize;
-use std::collections::HashMap;
-use std::path::Path;
 use vibe_ast::Language;
 use vibe_ast::nodes::nodes::Nodes;
 use vibe_ast::traits::LanguageNode;
 
-use crate::models::ast_class::AstClassModel;
-use crate::models::ast_enum::AstEnumModel;
-use crate::models::ast_function::AstFunctionModel;
-use crate::models::ast_heading::AstHeadingModel;
-use crate::models::ast_interface::AstInterfaceModel;
-use crate::models::ast_link::AstLinkModel;
-use crate::models::ast_model::AstModel;
-use crate::models::ast_struct::AstStructModel;
-use crate::models::ast_variable::AstVariableModel;
-use crate::models::file_model::FileModel;
-use crate::models::file_models::FileModels;
+use crate::models::file_base::FileBaseModel;
+use crate::models::file_language_analyze::FileLanguageAnalyzeModel;
+use crate::models::file_language_code::FileLanguageCodeModel;
+use crate::models::file_language_knowledge::FileLanguageKnowledgeModel;
+use crate::models::trait_file_model::TraitFileModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Parsed source code or Markdown file.
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct FileLanguageModel {
-    /// Absolute path to file.
-    pub path: String,
     /// Detected programming or markup language.
     pub language: String,
-    /// LLM-generated file summary.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub summary: Option<String>,
-    /// File size in bytes.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub size_bytes: Option<u64>,
-    /// Number of lines.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub lines_of_code: Option<usize>,
-    /// Top-level functions and methods.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub functions: Vec<AstFunctionModel>,
-    /// Class declarations.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub classes: Vec<AstClassModel>,
-    /// Struct declarations.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub structs: Vec<AstStructModel>,
-    /// Enum declarations.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub enums: Vec<AstEnumModel>,
-    /// Interface or trait declarations.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub interfaces: Vec<AstInterfaceModel>,
-    /// Global variables and constants.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub variables: Vec<AstVariableModel>,
-    /// Import declarations.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub imports: Vec<String>,
-    /// Module-level documentation comments.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub header_comments: Vec<String>,
-    /// Markdown headings with previews.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub headings: Vec<AstHeadingModel>,
-    /// Markdown links.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub links: Vec<AstLinkModel>,
-    /// Code block languages used in the file.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub code_blocks: Vec<String>,
-    /// YAML frontmatter key-value pairs.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub frontmatter: Option<HashMap<String, String>>,
-    /// Search tags (structural + LLM-generated).
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub tags: Vec<String>,
-    /// BLAKE3 hash.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub hash: Option<String>,
-    /// Full file content.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub content: Option<String>,
+    /// Base file information (path, hash, content, bytes, lines).
+    #[serde(flatten)]
+    pub base: FileBaseModel,
+    /// LLM enrichment data.
+    #[serde(flatten)]
+    pub analyze: FileLanguageAnalyzeModel,
+    /// Code structures extracted from source files.
+    #[serde(flatten)]
+    pub code: FileLanguageCodeModel,
+    /// Knowledge base structures.
+    #[serde(flatten)]
+    pub knowledge: FileLanguageKnowledgeModel,
     /// Detected programming or markup language.
     #[serde(skip)]
     pub node_language: Option<Language>,
 }
 
 impl FileLanguageModel {
-    /// Set absolute file path.
-    pub fn with_path(mut self, path: impl AsRef<Path>) -> Self {
-        self.path = path.as_ref().to_string_lossy().to_string();
-        self
-    }
-
-    /// Set full file content.
-    pub fn with_content(mut self, content: Option<String>) -> Self {
-        self.content = content;
+    /// Set base file information.
+    pub fn set_base(mut self, base: FileBaseModel) -> Self {
+        self.base = base;
         self
     }
 }
 
 /// File model implementation for language files.
-impl FileModel for FileLanguageModel {
-    fn path(&self) -> &str {
-        &self.path
-    }
-
-    fn content(&self) -> Option<&str> {
-        self.content.as_deref()
-    }
-
-    fn format_ast(&self) -> FileModels {
-        FileModels::Language(FileLanguageModel {
-            path: self.path.clone(),
-            language: self.language.clone(),
-            summary: None,
-            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
-            lines_of_code: self.lines_of_code.or_else(|| self.lines_of_code()),
-            functions: self.functions.iter().map(|f| f.format_ast()).collect(),
-            classes: self.classes.iter().map(|c| c.format_ast()).collect(),
-            structs: self.structs.iter().map(|s| s.format_ast()).collect(),
-            enums: self.enums.iter().map(|e| e.format_ast()).collect(),
-            interfaces: self.interfaces.iter().map(|i| i.format_ast()).collect(),
-            variables: self.variables.iter().map(|v| v.format_ast()).collect(),
-            imports: self.imports.clone(),
-            header_comments: self.header_comments.clone(),
-            headings: self.headings.iter().map(|h| h.format_ast()).collect(),
-            links: self.links.iter().map(|l| l.format_ast()).collect(),
-            code_blocks: self.code_blocks.clone(),
-            frontmatter: self.frontmatter.clone(),
-            tags: Vec::new(),
-            hash: None,
-            content: None,
-            node_language: None,
-        })
-    }
-
-    fn format_analyze(&self) -> FileModels {
-        FileModels::Language(FileLanguageModel {
-            path: self.path.clone(),
-            language: self.language.clone(),
-            summary: self.summary.clone(),
-            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
-            lines_of_code: self.lines_of_code.or_else(|| self.lines_of_code()),
-            functions: self.functions.iter().map(|f| f.format_analyze()).collect(),
-            classes: self.classes.iter().map(|c| c.format_analyze()).collect(),
-            structs: self.structs.iter().map(|s| s.format_analyze()).collect(),
-            enums: self.enums.iter().map(|e| e.format_analyze()).collect(),
-            interfaces: self.interfaces.iter().map(|i| i.format_analyze()).collect(),
-            variables: self.variables.iter().map(|v| v.format_analyze()).collect(),
-            imports: self.imports.clone(),
-            header_comments: self.header_comments.clone(),
-            headings: self.headings.iter().map(|h| h.format_analyze()).collect(),
-            links: self.links.iter().map(|l| l.format_analyze()).collect(),
-            code_blocks: self.code_blocks.clone(),
-            frontmatter: self.frontmatter.clone(),
-            tags: self.tags.clone(),
-            hash: None,
-            content: None,
-            node_language: None,
-        })
-    }
-
-    fn format_index(&self) -> FileModels {
-        FileModels::Language(FileLanguageModel {
-            path: self.path.clone(),
-            language: self.language.clone(),
-            summary: self.summary.clone(),
-            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
-            lines_of_code: self.lines_of_code.or_else(|| self.lines_of_code()),
-            functions: self.functions.iter().map(|f| f.format_index()).collect(),
-            classes: self.classes.iter().map(|c| c.format_index()).collect(),
-            structs: self.structs.iter().map(|s| s.format_index()).collect(),
-            enums: self.enums.iter().map(|e| e.format_index()).collect(),
-            interfaces: self.interfaces.iter().map(|i| i.format_index()).collect(),
-            variables: self.variables.iter().map(|v| v.format_index()).collect(),
-            imports: self.imports.clone(),
-            header_comments: self.header_comments.clone(),
-            headings: self.headings.iter().map(|h| h.format_index()).collect(),
-            links: self.links.iter().map(|l| l.format_index()).collect(),
-            code_blocks: self.code_blocks.clone(),
-            frontmatter: self.frontmatter.clone(),
-            tags: self.tags.clone(),
-            hash: None,
-            content: None,
-            node_language: None,
-        })
-    }
-
-    fn format_tool(&self) -> FileModels {
-        FileModels::Language(FileLanguageModel {
-            path: self.path.clone(),
-            language: self.language.clone(),
-            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
-            functions: self.functions.iter().map(|f| f.format_tool()).collect(),
-            classes: self.classes.iter().map(|c| c.format_tool()).collect(),
-            structs: self.structs.iter().map(|s| s.format_tool()).collect(),
-            enums: self.enums.iter().map(|e| e.format_tool()).collect(),
-            interfaces: self.interfaces.iter().map(|i| i.format_tool()).collect(),
-            variables: self.variables.iter().map(|v| v.format_tool()).collect(),
-            imports: self.imports.clone(),
-            header_comments: self.header_comments.clone(),
-            headings: self.headings.iter().map(|h| h.format_tool()).collect(),
-            links: self.links.iter().map(|l| l.format_tool()).collect(),
-            code_blocks: self.code_blocks.clone(),
-            frontmatter: self.frontmatter.clone(),
-            tags: vec![],
-            summary: None,
-            lines_of_code: None,
-            hash: None,
-            content: None,
-            node_language: None,
-        })
+impl TraitFileModel for FileLanguageModel {
+    fn base_model(&self) -> &FileBaseModel {
+        &self.base
     }
 }
 
+/// Format implementation for language files.
+impl TraitFormatModel for FileLanguageModel {
+    fn format_ast(&self) -> Self {
+        FileLanguageModel {
+            language: self.language.clone(),
+            base: self.base.format_ast(),
+            analyze: self.analyze.format_ast(),
+            code: self.code.format_ast(),
+            knowledge: self.knowledge.format_ast(),
+            node_language: None,
+        }
+    }
+
+    fn format_analyze(&self) -> Self {
+        FileLanguageModel {
+            language: self.language.clone(),
+            base: self.base.format_analyze(),
+            analyze: self.analyze.format_analyze(),
+            code: self.code.format_analyze(),
+            knowledge: self.knowledge.format_analyze(),
+            node_language: None,
+        }
+    }
+
+    fn format_index(&self) -> Self {
+        FileLanguageModel {
+            language: self.language.clone(),
+            base: self.base.format_index(),
+            analyze: self.analyze.format_index(),
+            code: self.code.format_index(),
+            knowledge: self.knowledge.format_index(),
+            node_language: None,
+        }
+    }
+
+    fn format_tool(&self) -> Self {
+        FileLanguageModel {
+            language: self.language.clone(),
+            base: self.base.format_tool(),
+            analyze: self.analyze.format_tool(),
+            code: self.code.format_tool(),
+            knowledge: self.knowledge.format_tool(),
+            node_language: None,
+        }
+    }
+}
+
+/// Macro to build FileLanguageModel from AST nodes.
+macro_rules! from_code_nodes {
+    ($nodes:ident, $lang:ident, [$($field:ident),*]) => {
+        FileLanguageModel {
+            language: $nodes.language_name().into(),
+            code: FileLanguageCodeModel {
+                // Common fields for all code languages.
+                header_comments: $nodes.header_comments,
+                imports: $nodes.imports,
+                // Language-specific code structures.
+                $(
+                    $field: $nodes.$field.into_iter().map(Into::into).collect(),
+                )*
+                // Remaining code fields default to empty.
+                ..Default::default()
+            },
+            analyze: FileLanguageAnalyzeModel {
+                // Structural tags from AST parser.
+                tags: $nodes.tags,
+                // Summary filled later by LLM enrichment.
+                ..Default::default()
+            },
+            node_language: Some(Language::$lang),
+            // base, knowledge default to empty.
+            ..Default::default()
+        }
+    };
+}
+
 /// Converts parsed AST nodes into a language file model.
+#[rustfmt::skip]
 impl From<Nodes> for FileLanguageModel {
     fn from(nodes: Nodes) -> Self {
         match nodes {
-            Nodes::ArkTS(a) => FileLanguageModel {
-                language: a.language_name().into(),
-                functions: a.functions.into_iter().map(Into::into).collect(),
-                classes: a.classes.into_iter().map(Into::into).collect(),
-                structs: a.structs.into_iter().map(Into::into).collect(),
-                enums: a.enums.into_iter().map(Into::into).collect(),
-                interfaces: a.interfaces.into_iter().map(Into::into).collect(),
-                variables: a.variables.into_iter().map(Into::into).collect(),
-                imports: a.imports,
-                header_comments: a.header_comments,
-                tags: a.tags,
-                node_language: Some(Language::ArkTS),
-                ..Default::default()
-            },
-            Nodes::Bash(b) => FileLanguageModel {
-                language: b.language_name().into(),
-                functions: b.functions.into_iter().map(Into::into).collect(),
-                variables: b.variables.into_iter().map(Into::into).collect(),
-                imports: b.imports,
-                header_comments: b.header_comments,
-                tags: b.tags,
-                node_language: Some(Language::Bash),
-                ..Default::default()
-            },
-            Nodes::Batch(b) => FileLanguageModel {
-                language: b.language_name().into(),
-                functions: b.functions.into_iter().map(Into::into).collect(),
-                variables: b.variables.into_iter().map(Into::into).collect(),
-                imports: b.imports,
-                header_comments: b.header_comments,
-                tags: b.tags,
-                node_language: Some(Language::Batch),
-                ..Default::default()
-            },
-            Nodes::CSharp(cs) => FileLanguageModel {
-                language: cs.language_name().into(),
-                functions: cs.functions.into_iter().map(Into::into).collect(),
-                classes: cs.classes.into_iter().map(Into::into).collect(),
-                structs: cs.structs.into_iter().map(Into::into).collect(),
-                enums: cs.enums.into_iter().map(Into::into).collect(),
-                interfaces: cs.interfaces.into_iter().map(Into::into).collect(),
-                variables: cs.variables.into_iter().map(Into::into).collect(),
-                imports: cs.imports,
-                header_comments: cs.header_comments,
-                tags: cs.tags,
-                node_language: Some(Language::CSharp),
-                ..Default::default()
-            },
-            Nodes::Dart(d) => FileLanguageModel {
-                language: d.language_name().into(),
-                functions: d.functions.into_iter().map(Into::into).collect(),
-                classes: d.classes.into_iter().map(Into::into).collect(),
-                enums: d.enums.into_iter().map(Into::into).collect(),
-                interfaces: d.interfaces.into_iter().map(Into::into).collect(),
-                variables: d.variables.into_iter().map(Into::into).collect(),
-                imports: d.imports,
-                header_comments: d.header_comments,
-                tags: d.tags,
-                node_language: Some(Language::Dart),
-                ..Default::default()
-            },
-            Nodes::Go(g) => FileLanguageModel {
-                language: g.language_name().into(),
-                functions: g.functions.into_iter().map(Into::into).collect(),
-                structs: g.structs.into_iter().map(Into::into).collect(),
-                enums: g.enums.into_iter().map(Into::into).collect(),
-                variables: g.variables.into_iter().map(Into::into).collect(),
-                imports: g.imports,
-                header_comments: g.header_comments,
-                tags: g.tags,
-                node_language: Some(Language::Go),
-                ..Default::default()
-            },
-            Nodes::Java(j) => FileLanguageModel {
-                language: j.language_name().into(),
-                functions: j.functions.into_iter().map(Into::into).collect(),
-                classes: j.classes.into_iter().map(Into::into).collect(),
-                structs: j.structs.into_iter().map(Into::into).collect(),
-                enums: j.enums.into_iter().map(Into::into).collect(),
-                interfaces: j.interfaces.into_iter().map(Into::into).collect(),
-                variables: j.variables.into_iter().map(Into::into).collect(),
-                imports: j.imports,
-                header_comments: j.header_comments,
-                tags: j.tags,
-                node_language: Some(Language::Java),
-                ..Default::default()
-            },
-            Nodes::JavaScript(js) => FileLanguageModel {
-                language: js.language_name().into(),
-                functions: js.functions.into_iter().map(Into::into).collect(),
-                classes: js.classes.into_iter().map(Into::into).collect(),
-                variables: js.variables.into_iter().map(Into::into).collect(),
-                imports: js.imports,
-                header_comments: js.header_comments,
-                tags: js.tags,
-                node_language: Some(Language::JavaScript),
-                ..Default::default()
-            },
-            Nodes::Kotlin(k) => FileLanguageModel {
-                language: k.language_name().into(),
-                functions: k.functions.into_iter().map(Into::into).collect(),
-                classes: k.classes.into_iter().map(Into::into).collect(),
-                enums: k.enums.into_iter().map(Into::into).collect(),
-                interfaces: k.interfaces.into_iter().map(Into::into).collect(),
-                variables: k.variables.into_iter().map(Into::into).collect(),
-                imports: k.imports,
-                header_comments: k.header_comments,
-                tags: k.tags,
-                node_language: Some(Language::Kotlin),
-                ..Default::default()
-            },
-            Nodes::Markdown(m) => FileLanguageModel {
-                language: m.language_name().into(),
-                headings: m.headings.into_iter().map(Into::into).collect(),
-                links: m.links.into_iter().map(Into::into).collect(),
-                code_blocks: m.code_blocks,
-                frontmatter: m.frontmatter,
-                tags: m.tags,
+            // ArkTS: TypeScript-like with full OOP support.
+            Nodes::ArkTS(n) => from_code_nodes!(n, ArkTS,
+                [functions, classes, structs, enums, interfaces, variables]
+            ),
+            // Bash: scripting with functions and variables.
+            Nodes::Bash(n) => from_code_nodes!(n, Bash,
+                [functions, variables]
+            ),
+            // Batch: Windows scripting with functions and variables.
+            Nodes::Batch(n) => from_code_nodes!(n, Batch,
+                [functions, variables]
+            ),
+            // C#: full OOP with all structure types.
+            Nodes::CSharp(n) => from_code_nodes!(n, CSharp,
+                [functions, classes, structs, enums, interfaces, variables]
+            ),
+            // Dart: OOP with classes, enums, interfaces, no structs.
+            Nodes::Dart(n) => from_code_nodes!(n, Dart,
+                [functions, classes, enums, interfaces, variables]
+            ),
+            // Go: functions, structs, enums, variables, no classes.
+            Nodes::Go(n) => from_code_nodes!(n, Go,
+                [functions, structs, enums, variables]
+            ),
+            // Java: full OOP with all structure types.
+            Nodes::Java(n) => from_code_nodes!(n, Java,
+                [functions, classes, structs, enums, interfaces, variables]
+            ),
+            // JavaScript: dynamic with functions, classes, variables.
+            Nodes::JavaScript(n) => from_code_nodes!(n, JavaScript,
+                [functions, classes, variables]
+            ),
+            // Kotlin: OOP with classes, enums, interfaces, no structs.
+            Nodes::Kotlin(n) => from_code_nodes!(n, Kotlin,
+                [functions, classes, enums, interfaces, variables]
+            ),
+            // Python: dynamic with functions, classes, variables.
+            Nodes::Python(n) => from_code_nodes!(n, Python,
+                [functions, classes, variables]
+            ),
+            // Rust: functions, structs, enums, traits, variables, no classes.
+            Nodes::Rust(n) => from_code_nodes!(n, Rust,
+                [functions, structs, enums, interfaces, variables]
+            ),
+            // Swift: full OOP with all structure types.
+            Nodes::Swift(n) => from_code_nodes!(n, Swift,
+                [functions, classes, structs, enums, interfaces, variables]
+            ),
+            // TypeScript: typed JavaScript with full OOP support.
+            Nodes::TypeScript(n) => from_code_nodes!(n, TypeScript,
+                [functions, classes, structs, enums, interfaces, variables]
+            ),
+            // Markdown: documentation with headings, links, code blocks, frontmatter.
+            Nodes::Markdown(n) => FileLanguageModel {
+                language: n.language_name().into(),
+                knowledge: FileLanguageKnowledgeModel {
+                    headings: n.headings.into_iter().map(Into::into).collect(),
+                    links: n.links.into_iter().map(Into::into).collect(),
+                    code_blocks: n.code_blocks,
+                    frontmatter: n.frontmatter,
+                },
+                analyze: FileLanguageAnalyzeModel {
+                    tags: n.tags,
+                    ..Default::default()
+                },
                 node_language: Some(Language::Markdown),
-                ..Default::default()
-            },
-            Nodes::Python(p) => FileLanguageModel {
-                language: p.language_name().into(),
-                functions: p.functions.into_iter().map(Into::into).collect(),
-                classes: p.classes.into_iter().map(Into::into).collect(),
-                variables: p.variables.into_iter().map(Into::into).collect(),
-                imports: p.imports,
-                header_comments: p.header_comments,
-                tags: p.tags,
-                node_language: Some(Language::Python),
-                ..Default::default()
-            },
-            Nodes::Rust(r) => FileLanguageModel {
-                language: r.language_name().into(),
-                functions: r.functions.into_iter().map(Into::into).collect(),
-                structs: r.structs.into_iter().map(Into::into).collect(),
-                enums: r.enums.into_iter().map(Into::into).collect(),
-                interfaces: r.interfaces.into_iter().map(Into::into).collect(),
-                variables: r.variables.into_iter().map(Into::into).collect(),
-                imports: r.imports,
-                header_comments: r.header_comments,
-                tags: r.tags,
-                node_language: Some(Language::Rust),
-                ..Default::default()
-            },
-            Nodes::Swift(s) => FileLanguageModel {
-                language: s.language_name().into(),
-                functions: s.functions.into_iter().map(Into::into).collect(),
-                classes: s.classes.into_iter().map(Into::into).collect(),
-                structs: s.structs.into_iter().map(Into::into).collect(),
-                enums: s.enums.into_iter().map(Into::into).collect(),
-                interfaces: s.interfaces.into_iter().map(Into::into).collect(),
-                variables: s.variables.into_iter().map(Into::into).collect(),
-                imports: s.imports,
-                header_comments: s.header_comments,
-                tags: s.tags,
-                node_language: Some(Language::Swift),
-                ..Default::default()
-            },
-            Nodes::TypeScript(ts) => FileLanguageModel {
-                language: ts.language_name().into(),
-                functions: ts.functions.into_iter().map(Into::into).collect(),
-                classes: ts.classes.into_iter().map(Into::into).collect(),
-                structs: ts.structs.into_iter().map(Into::into).collect(),
-                enums: ts.enums.into_iter().map(Into::into).collect(),
-                interfaces: ts.interfaces.into_iter().map(Into::into).collect(),
-                variables: ts.variables.into_iter().map(Into::into).collect(),
-                imports: ts.imports,
-                header_comments: ts.header_comments,
-                tags: ts.tags,
-                node_language: Some(Language::TypeScript),
                 ..Default::default()
             },
         }

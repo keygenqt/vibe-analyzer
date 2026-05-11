@@ -33,7 +33,7 @@ impl OpenSearchIndexClient {
                             "chinese": { "type": "text", "analyzer": "chinese_analyzer" }
                         }
                     },
-                    "lines_of_code": { "type": "integer" },
+                    "size_lines": { "type": "integer" },
                     "tags": {
                         "type": "text",
                         "fields": {

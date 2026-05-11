@@ -1,7 +1,8 @@
 //! Analyze configuration.
 //! Controls LLM enrichment batching parameters.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// Batch settings for LLM-powered code enrichment.
 #[derive(Debug, Clone, Serialize, Deserialize)]

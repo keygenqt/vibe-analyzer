@@ -8,9 +8,11 @@ use serde_json::json;
 
 use crate::analyzer;
 use crate::configs::app::AppConfig;
-use crate::models::file_model::FileModel;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
+use crate::models::trait_format_model::TraitFormatModel;
 use crate::opensearch::client::OpenSearchClient;
 use crate::print_info;
 use crate::utils::app;
@@ -136,15 +138,15 @@ async fn index_update(client: &OpenSearchClient, project: &ProjectModel) -> Resu
         .files
         .iter()
         .map(|f| match f {
-            FileModels::Language(m) => m.format_index(),
-            FileModels::Text(m) => m.format_index(),
-            FileModels::Binary(m) => m.format_index(),
+            FileModels::Language(m) => FileModels::Language(m.format_index()),
+            FileModels::Text(m) => FileModels::Text(m.format_index()),
+            FileModels::Binary(m) => FileModels::Binary(m.format_index()),
         })
         .map(|f| {
             let path = match &f {
-                FileModels::Language(m) => m.path().to_string(),
-                FileModels::Text(m) => m.path().to_string(),
-                FileModels::Binary(m) => m.path().to_string(),
+                FileModels::Language(m) => m.base_model().path().to_string(),
+                FileModels::Text(m) => m.base_model().path().to_string(),
+                FileModels::Binary(m) => m.base_model().path().to_string(),
             };
             let json = serde_json::to_value(&f)?;
             Ok((path, json))
@@ -158,13 +160,13 @@ async fn index_update(client: &OpenSearchClient, project: &ProjectModel) -> Resu
         .iter()
         .filter_map(|f| {
             let path = match f {
-                FileModels::Language(m) => m.path(),
-                FileModels::Text(m) => m.path(),
+                FileModels::Language(m) => m.base_model().path(),
+                FileModels::Text(m) => m.base_model().path(),
                 FileModels::Binary(_) => return None,
             };
             let content = match f {
-                FileModels::Language(m) => m.content.clone(),
-                FileModels::Text(m) => m.content.clone(),
+                FileModels::Language(m) => m.base_model().content().clone(),
+                FileModels::Text(m) => m.base_model().content().clone(),
                 FileModels::Binary(_) => None,
             };
             content.map(|c| (path.to_string(), json!({"path": path, "content": c})))

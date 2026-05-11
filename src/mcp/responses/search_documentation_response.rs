@@ -7,10 +7,12 @@ use anyhow::Result;
 use serde::Serialize;
 
 use crate::mcp::responses::McpResponse;
-use crate::models::ast_heading::AstHeadingModel;
-use crate::models::ast_link::AstLinkModel;
-use crate::models::ast_model::AstModel;
 use crate::models::file_models::FileModels;
+use crate::models::lang_heading::LangHeadingModel;
+use crate::models::lang_link::LangLinkModel;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Response from search_documentation tool.
 #[derive(Debug, Serialize)]
@@ -29,9 +31,9 @@ pub struct SearchDocumentationMetaResponse {
     /// Markdown frontmatter metadata.
     pub frontmatter: Option<HashMap<String, String>>,
     /// Matching headings.
-    pub headings: Vec<AstHeadingModel>,
+    pub headings: Vec<LangHeadingModel>,
     /// Matching links.
-    pub links: Vec<AstLinkModel>,
+    pub links: Vec<LangLinkModel>,
     /// Code block languages found.
     pub code_blocks: Vec<String>,
 }
@@ -43,11 +45,16 @@ impl TryFrom<&FileModels> for SearchDocumentationMetaResponse {
     fn try_from(model: &FileModels) -> Result<Self> {
         match model {
             FileModels::Language(m) => Ok(SearchDocumentationMetaResponse {
-                path: m.path.clone(),
-                frontmatter: m.frontmatter.clone(),
-                headings: m.headings.iter().map(|h| h.format_tool()).collect(),
-                links: m.links.iter().map(|l| l.format_tool()).collect(),
-                code_blocks: m.code_blocks.clone(),
+                path: m.base_model().path().to_string(),
+                frontmatter: m.knowledge.frontmatter.clone(),
+                headings: m
+                    .knowledge
+                    .headings
+                    .iter()
+                    .map(|h| h.format_tool())
+                    .collect(),
+                links: m.knowledge.links.iter().map(|l| l.format_tool()).collect(),
+                code_blocks: m.knowledge.code_blocks.clone(),
             }),
             _ => anyhow::bail!("Not a documentation file"),
         }

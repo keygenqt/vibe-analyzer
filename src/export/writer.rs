@@ -74,37 +74,37 @@ impl ExportModel {
                 .map(|f| match f {
                     FileModels::Language(mut lang) => {
                         if !scan.imports {
-                            lang.imports = vec![];
+                            lang.code.imports = vec![];
                         }
                         if !scan.functions {
-                            lang.functions = vec![];
+                            lang.code.functions = vec![];
                         }
                         if !scan.variables {
-                            lang.variables = vec![];
+                            lang.code.variables = vec![];
                         }
                         if !scan.enums {
-                            lang.enums = vec![];
+                            lang.code.enums = vec![];
                         }
                         if !scan.interfaces {
-                            lang.interfaces = vec![];
+                            lang.code.interfaces = vec![];
                         }
                         if !scan.classes {
-                            lang.classes = vec![];
+                            lang.code.classes = vec![];
                         }
                         if !scan.structs {
-                            lang.structs = vec![];
+                            lang.code.structs = vec![];
                         }
                         if !scan.header_comments {
-                            lang.header_comments = vec![];
+                            lang.code.header_comments = vec![];
                         }
                         if !scan.headings {
-                            lang.headings = vec![];
+                            lang.knowledge.headings = vec![];
                         }
                         if !scan.links {
-                            lang.links = vec![];
+                            lang.knowledge.links = vec![];
                         }
                         if !scan.code_blocks {
-                            lang.code_blocks = vec![];
+                            lang.knowledge.code_blocks = vec![];
                         }
                         FileModels::Language(lang)
                     }

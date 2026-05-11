@@ -1,12 +1,12 @@
-//! AST model trait.
-//! Common interface for all AST element types.
+//! Format model trait.
+//! Common formatting interface for all models in the pipeline.
 
-/// Common interface for all AST elements.
-pub trait AstModel {
-    /// AST-only export: structure without enrichment.
+/// Common formatting interface for all models.
+pub trait TraitFormatModel {
+    /// Structure only export, without LLM enrichment.
     fn format_ast(&self) -> Self;
 
-    /// AST + enrichment export.
+    /// Structure with LLM enrichment export.
     fn format_analyze(&self) -> Self;
 
     /// Indexing export: structure + enrichment, no content/hash.

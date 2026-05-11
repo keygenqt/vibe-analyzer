@@ -1,34 +1,34 @@
-//! AST class model.
-//! Represents a class declaration extracted from source code.
+//! AST variable model.
+//! Represents a global variable or constant declaration extracted from source code.
 
 use serde::Deserialize;
 use serde::Serialize;
-use vibe_ast::nodes::class_node::ClassNode;
+use vibe_ast::nodes::variable_node::VariableNode;
 
-use crate::models::ast_model::AstModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
-/// Class declaration with documentation.
+/// Global variable or constant with documentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AstClassModel {
-    /// Full class signature.
+pub struct LangVariableModel {
+    /// Full variable signature.
     pub signature: String,
     /// Documentation comments.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub comments: Vec<String>,
 }
 
-/// Converts a parsed class node into the AST class model.
-impl From<ClassNode> for AstClassModel {
-    fn from(node: ClassNode) -> Self {
-        AstClassModel {
+/// Converts a parsed variable node into the AST variable model.
+impl From<VariableNode> for LangVariableModel {
+    fn from(node: VariableNode) -> Self {
+        LangVariableModel {
             signature: node.signature,
             comments: node.comments,
         }
     }
 }
 
-/// AST model implementation for class declarations.
-impl AstModel for AstClassModel {
+/// AST model implementation for variable declarations.
+impl TraitFormatModel for LangVariableModel {
     fn format_ast(&self) -> Self {
         self.clone()
     }

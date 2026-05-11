@@ -99,7 +99,7 @@ Returns the full AST of a file: imports, functions, classes, structs, enums, hea
 {
   "path": "src/main.rs",
   "language": "Rust",
-  "size_bytes": 2122,
+  "bytes": 2122,
   "header_comments": ["Vibe Analyzer - Main entry point."],
   "imports": ["clap::Parser", "crate::cli::scan::ScanAction"],
   "functions": [{ "signature": "async fn main()", "comments": [] }],

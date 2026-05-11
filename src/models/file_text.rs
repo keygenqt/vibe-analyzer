@@ -4,68 +4,62 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::models::file_model::FileModel;
-use crate::models::file_models::FileModels;
+use crate::models::file_base::FileBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Raw file with full content.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileTextModel {
-    /// Absolute path to file.
-    pub path: String,
+    /// Base file information (path, hash, content, bytes, lines).
+    #[serde(flatten)]
+    pub base: FileBaseModel,
     /// First N bytes of file content for preview.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub preview: Option<String>,
     /// Optional file extension without dot.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub extension: Option<String>,
-    /// File size in bytes.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub size_bytes: Option<u64>,
-    /// BLAKE3 hash.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub hash: Option<String>,
-    /// Full file content.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub content: Option<String>,
 }
 
 /// File model implementation for text files.
-impl FileModel for FileTextModel {
-    fn path(&self) -> &str {
-        &self.path
+impl TraitFileModel for FileTextModel {
+    fn base_model(&self) -> &FileBaseModel {
+        &self.base
     }
+}
 
-    fn content(&self) -> Option<&str> {
-        self.content.as_deref()
-    }
-
-    fn format_ast(&self) -> FileModels {
-        FileModels::Text(FileTextModel {
-            path: self.path.clone(),
+/// Format implementation for text files.
+impl TraitFormatModel for FileTextModel {
+    fn format_ast(&self) -> Self {
+        Self {
+            base: self.base.format_ast(),
             preview: self.preview.clone().or_else(|| self.preview(None)),
             extension: self.extension.clone().or_else(|| self.extension()),
-            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
-            hash: None,
-            content: None,
-        })
+        }
     }
 
-    fn format_analyze(&self) -> FileModels {
-        self.format_ast()
-    }
-
-    fn format_index(&self) -> FileModels {
-        self.format_ast()
-    }
-
-    fn format_tool(&self) -> FileModels {
-        FileModels::Text(FileTextModel {
-            path: self.path.clone(),
+    fn format_analyze(&self) -> Self {
+        Self {
+            base: self.base.format_analyze(),
             preview: self.preview.clone().or_else(|| self.preview(None)),
-            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
+            extension: self.extension.clone().or_else(|| self.extension()),
+        }
+    }
+
+    fn format_index(&self) -> Self {
+        Self {
+            base: self.base.format_index(),
+            preview: self.preview.clone().or_else(|| self.preview(None)),
+            extension: self.extension.clone().or_else(|| self.extension()),
+        }
+    }
+
+    fn format_tool(&self) -> Self {
+        Self {
+            base: self.base.format_tool(),
+            preview: self.preview.clone().or_else(|| self.preview(None)),
             extension: None,
-            hash: None,
-            content: None,
-        })
+        }
     }
 }

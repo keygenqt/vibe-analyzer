@@ -1,7 +1,8 @@
 //! Scan configuration.
 //! Controls which AST elements are extracted from source code.
 
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 /// AST element filters for code scanning.
 #[derive(Debug, Clone, Serialize, Deserialize)]

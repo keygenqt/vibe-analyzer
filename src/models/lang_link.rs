@@ -5,11 +5,11 @@ use serde::Deserialize;
 use serde::Serialize;
 use vibe_ast::nodes::link_node::LinkNode;
 
-use crate::models::ast_model::AstModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Markdown link with display text and URL.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AstLinkModel {
+pub struct LangLinkModel {
     /// Visible text of the link.
     pub text: String,
     /// Target URL.
@@ -17,9 +17,9 @@ pub struct AstLinkModel {
 }
 
 /// Converts a parsed link node into the AST link model.
-impl From<LinkNode> for AstLinkModel {
+impl From<LinkNode> for LangLinkModel {
     fn from(node: LinkNode) -> Self {
-        AstLinkModel {
+        LangLinkModel {
             text: node.text,
             url: node.url,
         }
@@ -27,7 +27,7 @@ impl From<LinkNode> for AstLinkModel {
 }
 
 /// AST model implementation for link declarations.
-impl AstModel for AstLinkModel {
+impl TraitFormatModel for LangLinkModel {
     fn format_ast(&self) -> Self {
         self.clone()
     }

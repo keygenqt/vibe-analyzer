@@ -6,11 +6,13 @@ use anyhow::Result;
 use serde::Serialize;
 
 use crate::mcp::responses::McpResponse;
-use crate::models::ast_class::AstClassModel;
-use crate::models::ast_interface::AstInterfaceModel;
-use crate::models::ast_model::AstModel;
-use crate::models::ast_struct::AstStructModel;
 use crate::models::file_models::FileModels;
+use crate::models::lang_class::LangClassModel;
+use crate::models::lang_interface::LangInterfaceModel;
+use crate::models::lang_struct::LangStructModel;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Response from search_by_code_classes tool.
 #[derive(Debug, Serialize)]
@@ -31,11 +33,11 @@ pub struct SearchByCodeClassesMetaResponse {
     /// Module-level documentation comments.
     pub header_comments: Vec<String>,
     /// Matching class declarations.
-    pub classes: Vec<AstClassModel>,
+    pub classes: Vec<LangClassModel>,
     /// Matching struct declarations.
-    pub structs: Vec<AstStructModel>,
+    pub structs: Vec<LangStructModel>,
     /// Matching interface declarations.
-    pub interfaces: Vec<AstInterfaceModel>,
+    pub interfaces: Vec<LangInterfaceModel>,
 }
 
 /// Converts file model to search result, filtering non-language files.
@@ -45,12 +47,12 @@ impl TryFrom<&FileModels> for SearchByCodeClassesMetaResponse {
     fn try_from(model: &FileModels) -> Result<Self> {
         match model {
             FileModels::Language(m) => Ok(SearchByCodeClassesMetaResponse {
-                path: m.path.clone(),
+                path: m.base_model().path().to_string(),
                 language: m.language.clone(),
-                header_comments: m.header_comments.clone(),
-                classes: m.classes.iter().map(|c| c.format_tool()).collect(),
-                structs: m.structs.iter().map(|s| s.format_tool()).collect(),
-                interfaces: m.interfaces.iter().map(|i| i.format_tool()).collect(),
+                header_comments: m.code.header_comments.clone(),
+                classes: m.code.classes.iter().map(|c| c.format_tool()).collect(),
+                structs: m.code.structs.iter().map(|s| s.format_tool()).collect(),
+                interfaces: m.code.interfaces.iter().map(|i| i.format_tool()).collect(),
             }),
             _ => anyhow::bail!("AST not available for this file type"),
         }

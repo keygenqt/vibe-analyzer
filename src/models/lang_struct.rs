@@ -1,34 +1,34 @@
-//! AST enum model.
-//! Represents an enum declaration extracted from source code.
+//! AST struct model.
+//! Represents a struct or record declaration extracted from source code.
 
 use serde::Deserialize;
 use serde::Serialize;
-use vibe_ast::nodes::enum_node::EnumNode;
+use vibe_ast::nodes::struct_node::StructNode;
 
-use crate::models::ast_model::AstModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
-/// Enum declaration with documentation.
+/// Struct or record declaration with documentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AstEnumModel {
-    /// Full enum signature.
+pub struct LangStructModel {
+    /// Full struct signature.
     pub signature: String,
     /// Documentation comments.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub comments: Vec<String>,
 }
 
-/// Converts a parsed enum node into the AST enum model.
-impl From<EnumNode> for AstEnumModel {
-    fn from(node: EnumNode) -> Self {
-        AstEnumModel {
+/// Converts a parsed struct node into the AST struct model.
+impl From<StructNode> for LangStructModel {
+    fn from(node: StructNode) -> Self {
+        LangStructModel {
             signature: node.signature,
             comments: node.comments,
         }
     }
 }
 
-/// AST model implementation for enum declarations.
-impl AstModel for AstEnumModel {
+/// AST model implementation for struct declarations.
+impl TraitFormatModel for LangStructModel {
     fn format_ast(&self) -> Self {
         self.clone()
     }

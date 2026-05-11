@@ -7,6 +7,8 @@ use serde::Serialize;
 
 use crate::mcp::responses::McpResponse;
 use crate::models::file_models::FileModels;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
 
 /// Response from search_by_code_imports tool.
 #[derive(Debug, Serialize)]
@@ -37,10 +39,10 @@ impl TryFrom<&FileModels> for SearchByCodeImportsMetaResponse {
     fn try_from(model: &FileModels) -> Result<Self> {
         match model {
             FileModels::Language(m) => Ok(SearchByCodeImportsMetaResponse {
-                path: m.path.clone(),
+                path: m.base_model().path().to_string(),
                 language: m.language.clone(),
-                header_comments: m.header_comments.clone(),
-                imports: m.imports.clone(),
+                header_comments: m.code.header_comments.clone(),
+                imports: m.code.imports.clone(),
             }),
             _ => anyhow::bail!("AST not available for this file type"),
         }

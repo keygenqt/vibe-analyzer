@@ -5,11 +5,11 @@ use serde::Deserialize;
 use serde::Serialize;
 use vibe_ast::nodes::heading_node::HeadingNode;
 
-use crate::models::ast_model::AstModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Markdown heading with level, title, and content preview.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AstHeadingModel {
+pub struct LangHeadingModel {
     /// Heading level (1-6).
     pub level: u8,
     /// Heading text.
@@ -19,9 +19,9 @@ pub struct AstHeadingModel {
 }
 
 /// Converts a parsed heading node into the AST heading model.
-impl From<HeadingNode> for AstHeadingModel {
+impl From<HeadingNode> for LangHeadingModel {
     fn from(node: HeadingNode) -> Self {
-        AstHeadingModel {
+        LangHeadingModel {
             level: node.level,
             title: node.title,
             preview: node.preview,
@@ -30,7 +30,7 @@ impl From<HeadingNode> for AstHeadingModel {
 }
 
 /// AST model implementation for heading declarations.
-impl AstModel for AstHeadingModel {
+impl TraitFormatModel for LangHeadingModel {
     fn format_ast(&self) -> Self {
         self.clone()
     }

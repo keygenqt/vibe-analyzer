@@ -1,34 +1,34 @@
-//! AST function model.
-//! Represents a function or method declaration extracted from source code.
+//! AST class model.
+//! Represents a class declaration extracted from source code.
 
 use serde::Deserialize;
 use serde::Serialize;
-use vibe_ast::nodes::function_node::FunctionNode;
+use vibe_ast::nodes::class_node::ClassNode;
 
-use crate::models::ast_model::AstModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
-/// Function or method signature with documentation.
+/// Class declaration with documentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AstFunctionModel {
-    /// Full function signature.
+pub struct LangClassModel {
+    /// Full class signature.
     pub signature: String,
     /// Documentation comments.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub comments: Vec<String>,
 }
 
-/// Converts a parsed function node into the AST function model.
-impl From<FunctionNode> for AstFunctionModel {
-    fn from(node: FunctionNode) -> Self {
-        AstFunctionModel {
+/// Converts a parsed class node into the AST class model.
+impl From<ClassNode> for LangClassModel {
+    fn from(node: ClassNode) -> Self {
+        LangClassModel {
             signature: node.signature,
             comments: node.comments,
         }
     }
 }
 
-/// AST model implementation for function declarations.
-impl AstModel for AstFunctionModel {
+/// AST model implementation for class declarations.
+impl TraitFormatModel for LangClassModel {
     fn format_ast(&self) -> Self {
         self.clone()
     }

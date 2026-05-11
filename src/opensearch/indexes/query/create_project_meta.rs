@@ -57,9 +57,9 @@ impl OpenSearchIndexClient {
                             "total_files": { "type": "integer" },
                             "text_files": { "type": "integer" },
                             "binary_files": { "type": "integer" },
-                            "total_lines_of_code": { "type": "integer" },
                             "total_chars": { "type": "integer" },
-                            "total_size_bytes": { "type": "long" }
+                            "total_size_bytes": { "type": "long" },
+                            "total_size_lines": { "type": "integer" }
                         }
                     }
                 }

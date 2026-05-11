@@ -5,6 +5,8 @@ use std::collections::HashMap;
 use anyhow::Result;
 
 use crate::models::file_models::FileModels;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
 use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 
 /// Statistics output.
@@ -21,12 +23,12 @@ pub struct LanguageStatsOutput {
     pub language: String,
     /// Number of files.
     pub files: usize,
-    /// Total lines of code.
-    pub lines: usize,
     /// AST objects count.
     pub ast_objects: usize,
     /// Total size in bytes.
     pub size_bytes: u64,
+    /// Number of lines in file.
+    pub size_lines: usize,
     /// Human-readable size.
     pub size_human: String,
 }
@@ -40,9 +42,9 @@ impl OpenSearchToolClient {
         let mut other = LanguageStatsOutput {
             language: "Other".to_string(),
             files: 0,
-            lines: 0,
             ast_objects: 0,
             size_bytes: 0,
+            size_lines: 0,
             size_human: String::new(),
         };
 
@@ -53,32 +55,33 @@ impl OpenSearchToolClient {
                     let entry = lang_map.entry(lang.clone()).or_insert(LanguageStatsOutput {
                         language: lang.clone(),
                         files: 0,
-                        lines: 0,
                         ast_objects: 0,
                         size_bytes: 0,
+                        size_lines: 0,
                         size_human: String::new(),
                     });
                     entry.files += 1;
-                    entry.lines += m.lines_of_code.unwrap_or(0);
-                    entry.size_bytes += m.size_bytes.unwrap_or(0);
-                    entry.ast_objects += m.functions.len()
-                        + m.classes.len()
-                        + m.structs.len()
-                        + m.enums.len()
-                        + m.interfaces.len()
-                        + m.variables.len()
-                        + m.imports.len()
-                        + m.headings.len()
-                        + m.links.len()
-                        + m.code_blocks.len();
+                    entry.size_bytes += m.base_model().size_bytes.unwrap_or(0);
+                    entry.size_lines += m.base_model().size_lines.unwrap_or(0);
+                    entry.ast_objects += m.code.functions.len()
+                        + m.code.classes.len()
+                        + m.code.structs.len()
+                        + m.code.enums.len()
+                        + m.code.interfaces.len()
+                        + m.code.variables.len()
+                        + m.code.imports.len()
+                        + m.knowledge.headings.len()
+                        + m.knowledge.links.len()
+                        + m.knowledge.code_blocks.len();
                 }
                 FileModels::Text(m) => {
                     other.files += 1;
-                    other.size_bytes += m.size_bytes.unwrap_or(0);
+                    other.size_bytes += m.base_model().size_bytes().unwrap_or(0);
+                    other.size_lines += m.base_model().size_lines.unwrap_or(0);
                 }
                 FileModels::Binary(m) => {
                     other.files += 1;
-                    other.size_bytes += m.size_bytes.unwrap_or(0);
+                    other.size_bytes += m.base_model().size_bytes().unwrap_or(0);
                 }
             }
         }
@@ -90,7 +93,7 @@ impl OpenSearchToolClient {
         other.size_human = Self::format_size(other.size_bytes);
 
         let mut languages: Vec<LanguageStatsOutput> = lang_map.into_values().collect();
-        languages.sort_by(|a, b| b.lines.cmp(&a.lines));
+        languages.sort_by(|a, b| b.size_lines.cmp(&a.size_lines));
 
         if other.files > 0 {
             languages.push(other);
@@ -100,9 +103,9 @@ impl OpenSearchToolClient {
         let total = LanguageStatsOutput {
             language: "Total".to_string(),
             files: languages.iter().map(|l| l.files).sum(),
-            lines: languages.iter().map(|l| l.lines).sum(),
             ast_objects: languages.iter().map(|l| l.ast_objects).sum(),
             size_bytes: total_size_bytes,
+            size_lines: languages.iter().map(|l| l.size_lines).sum(),
             size_human: Self::format_size(total_size_bytes),
         };
 

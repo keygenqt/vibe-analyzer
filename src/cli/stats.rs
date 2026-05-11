@@ -97,7 +97,11 @@ pub async fn run(action: StatsAction) {
                 if lang.language != "Other" {
                     println!(
                         "{:15} {:>15} {:>15} {:>15} {:>15}",
-                        lang.language, lang.files, lang.lines, lang.ast_objects, lang.size_human
+                        lang.language,
+                        lang.files,
+                        lang.size_lines,
+                        lang.ast_objects,
+                        lang.size_human
                     );
                 }
             }
@@ -105,7 +109,7 @@ pub async fn run(action: StatsAction) {
                 println!("{}", separator);
                 println!(
                     "{:15} {:>15} {:>15} {:>15} {:>15}",
-                    other.language, other.files, other.lines, "", other.size_human
+                    other.language, other.files, other.size_lines, "", other.size_human
                 );
             }
             println!("{}", separator);
@@ -113,7 +117,7 @@ pub async fn run(action: StatsAction) {
                 "{:15} {:>15} {:>15} {:>15} {:>15}",
                 stats.total.language,
                 stats.total.files,
-                stats.total.lines,
+                stats.total.size_lines,
                 stats.total.ast_objects,
                 stats.total.size_human
             );

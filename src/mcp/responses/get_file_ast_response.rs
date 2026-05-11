@@ -5,8 +5,8 @@ use anyhow::Result;
 
 use crate::mcp::responses::McpResponse;
 use crate::models::file_language::FileLanguageModel;
-use crate::models::file_model::FileModel;
 use crate::models::file_models::FileModels;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Response from get_file_ast tool.
 #[derive(Debug)]
@@ -29,12 +29,9 @@ impl TryFrom<FileModels> for FileLanguageModel {
 impl McpResponse for GetFileAstResponse {
     /// Returns a formatted tool result with JSON data.
     fn format(&self) -> String {
-        let mut json = serde_json::to_value(&self.ast.format_tool()).unwrap_or_default();
-        // format_tool returns FileModels with serde tag "type", but we want flat AST without it
-        json.as_object_mut().map(|obj| obj.remove("type"));
         format!(
             "[AST]\nUse this data to respond to the user.\n\n{}",
-            serde_json::to_string(&json).unwrap_or_default()
+            serde_json::to_string(&self.ast.format_tool()).unwrap_or_default()
         )
     }
 }

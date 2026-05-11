@@ -6,10 +6,12 @@ use anyhow::Result;
 use serde::Serialize;
 
 use crate::mcp::responses::McpResponse;
-use crate::models::ast_enum::AstEnumModel;
-use crate::models::ast_model::AstModel;
-use crate::models::ast_variable::AstVariableModel;
 use crate::models::file_models::FileModels;
+use crate::models::lang_enum::LangEnumModel;
+use crate::models::lang_variable::LangVariableModel;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel as _;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Response from search_by_code_variables tool.
 #[derive(Debug, Serialize)]
@@ -30,9 +32,9 @@ pub struct SearchByCodeVariablesMetaResponse {
     /// Module-level documentation comments.
     pub header_comments: Vec<String>,
     /// Matching variable declarations.
-    pub variables: Vec<AstVariableModel>,
+    pub variables: Vec<LangVariableModel>,
     /// Matching enum declarations.
-    pub enums: Vec<AstEnumModel>,
+    pub enums: Vec<LangEnumModel>,
 }
 
 /// Converts file model to search result, filtering non-language files.
@@ -42,11 +44,11 @@ impl TryFrom<&FileModels> for SearchByCodeVariablesMetaResponse {
     fn try_from(model: &FileModels) -> Result<Self> {
         match model {
             FileModels::Language(m) => Ok(SearchByCodeVariablesMetaResponse {
-                path: m.path.clone(),
+                path: m.base_model().path().to_string(),
                 language: m.language.clone(),
-                header_comments: m.header_comments.clone(),
-                variables: m.variables.iter().map(|v| v.format_tool()).collect(),
-                enums: m.enums.iter().map(|e| e.format_tool()).collect(),
+                header_comments: m.code.header_comments.clone(),
+                variables: m.code.variables.iter().map(|v| v.format_tool()).collect(),
+                enums: m.code.enums.iter().map(|e| e.format_tool()).collect(),
             }),
             _ => anyhow::bail!("AST not available for this file type"),
         }

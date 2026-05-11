@@ -17,6 +17,8 @@ use crate::configs::app::AppConfig;
 use crate::models::file_language::FileLanguageModel;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
 use crate::ollama::cluster::OllamaCluster;
 use crate::print_info;
 use crate::print_newline;
@@ -252,9 +254,12 @@ async fn analyze_project(
 
     for file in &mut result.files {
         if let FileModels::Language(lang) = file {
-            if let Some(enriched) = enriched_files.iter().find(|e| e.path == lang.path) {
-                lang.summary = enriched.summary.clone();
-                lang.tags = enriched.tags.clone();
+            if let Some(enriched) = enriched_files
+                .iter()
+                .find(|e| e.base_model().path() == lang.base_model().path())
+            {
+                lang.analyze.summary = enriched.analyze.summary.clone();
+                lang.analyze.tags = enriched.analyze.tags.clone();
             }
         }
     }

@@ -9,8 +9,9 @@ use serde::Serialize;
 use tokio::runtime::Handle;
 use vibe_ast::Language;
 
-use crate::models::file_model::FileModel;
 use crate::models::file_models::FileModels;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
 use crate::utils::spdx::LicenseDetector;
 
 /// Project-level metadata.
@@ -52,12 +53,12 @@ pub struct StatsModel {
     pub text_files: usize,
     /// Number of binary files.
     pub binary_files: usize,
-    /// Total lines of code.
-    pub total_lines_of_code: usize,
     /// Total characters.
     pub total_chars: usize,
     /// Total size in bytes.
     pub total_size_bytes: u64,
+    /// @todo
+    pub total_size_lines: usize,
 }
 
 /// Scanned project with all metadata and files.
@@ -115,30 +116,31 @@ impl ProjectModel {
         let total_files = files.len();
         let mut text_files = 0;
         let mut binary_files = 0;
-        let mut total_lines_of_code = 0;
-        let mut total_chars = 0;
         let mut total_size_bytes = 0u64;
+        let mut total_size_lines = 0;
+        let mut total_chars = 0;
         for file in files {
             match file {
                 FileModels::Language(lang) => {
                     text_files += 1;
-                    total_lines_of_code += lang
-                        .lines_of_code
-                        .or_else(|| lang.lines_of_code())
-                        .unwrap_or(0);
-                    let size = lang.size_bytes.or_else(|| lang.size_bytes()).unwrap_or(0);
+                    let base = lang.base_model();
+                    let size = base.size_bytes.or_else(|| base.size_bytes()).unwrap_or(0);
                     total_size_bytes += size;
+                    total_size_lines += base.size_lines.or_else(|| base.size_lines()).unwrap_or(0);
                     total_chars += size as usize;
                 }
                 FileModels::Text(text) => {
                     text_files += 1;
-                    let size = text.size_bytes.or_else(|| text.size_bytes()).unwrap_or(0);
+                    let base = text.base_model();
+                    let size = base.size_bytes.or_else(|| base.size_bytes()).unwrap_or(0);
                     total_size_bytes += size;
+                    total_size_lines += base.size_lines.or_else(|| base.size_lines()).unwrap_or(0);
                     total_chars += size as usize;
                 }
                 FileModels::Binary(bin) => {
                     binary_files += 1;
-                    total_size_bytes += bin.size_bytes.or_else(|| bin.size_bytes()).unwrap_or(0);
+                    let base = bin.base_model();
+                    total_size_bytes += base.size_bytes.or_else(|| base.size_bytes()).unwrap_or(0);
                 }
             }
         }
@@ -146,9 +148,9 @@ impl ProjectModel {
             total_files,
             text_files,
             binary_files,
-            total_lines_of_code,
             total_chars,
             total_size_bytes,
+            total_size_lines,
         }
     }
 
@@ -158,10 +160,10 @@ impl ProjectModel {
             .iter()
             .filter_map(|f| match f {
                 FileModels::Language(lang) if lang.node_language == Some(Language::Markdown) => {
-                    let name = lang.name().to_lowercase();
+                    let name = lang.base_model().name().to_lowercase();
                     if name.contains("readme") {
                         lang.preview(Some(500))
-                            .map(|preview| (lang.path().len(), preview, lang))
+                            .map(|preview| (lang.base_model().path().len(), preview, lang))
                     } else {
                         None
                     }
@@ -173,8 +175,12 @@ impl ProjectModel {
                 size_chars: Some(preview.chars().count()),
                 size_bytes: Some(preview.len()),
                 preview,
-                content: lang.content.clone().unwrap_or_default(),
-                frontmatter: lang.frontmatter.clone(),
+                content: lang
+                    .base_model()
+                    .content()
+                    .map(|c| c.to_string())
+                    .unwrap_or_default(),
+                frontmatter: lang.knowledge.frontmatter.clone(),
             })
     }
 
@@ -186,16 +192,20 @@ impl ProjectModel {
             // Filter files matching license names
             .filter(|f| match f {
                 FileModels::Language(m) if m.node_language == Some(Language::Markdown) => {
-                    license_names.contains(&m.name().to_lowercase().as_str())
+                    license_names.contains(&m.base_model().name().to_lowercase().as_str())
                 }
-                FileModels::Text(m) => license_names.contains(&m.name().to_lowercase().as_str()),
+                FileModels::Text(m) => {
+                    license_names.contains(&m.base_model().name().to_lowercase().as_str())
+                }
                 _ => false,
             })
             // Build license models with SPDX detection
             .filter_map(|model| {
                 let (path, content) = match model {
-                    FileModels::Language(m) => (m.path(), m.content.clone()),
-                    FileModels::Text(m) => (m.path(), m.content.clone()),
+                    FileModels::Language(m) => {
+                        (m.base_model().path(), m.base_model().content.clone())
+                    }
+                    FileModels::Text(m) => (m.base_model().path(), m.base_model().content.clone()),
                     _ => return None,
                 };
                 content

@@ -25,8 +25,8 @@ pub struct ShowStatLanguageResponse {
     pub language: String,
     /// File count.
     pub files: usize,
-    /// Total lines of code.
-    pub lines: usize,
+    /// Number of lines in file.
+    pub size_lines: usize,
     /// AST objects count.
     pub ast_objects: usize,
     /// Human-readable size.
@@ -38,8 +38,8 @@ pub struct ShowStatLanguageResponse {
 pub struct ShowStatTotalResponse {
     /// Total files.
     pub files: usize,
-    /// Total lines.
-    pub lines: usize,
+    /// Number of lines in file.
+    pub size_lines: usize,
     /// Total AST objects.
     pub ast_objects: usize,
     /// Total size.
@@ -52,7 +52,7 @@ impl From<LanguageStatsOutput> for ShowStatLanguageResponse {
         ShowStatLanguageResponse {
             language: l.language,
             files: l.files,
-            lines: l.lines,
+            size_lines: l.size_lines,
             ast_objects: l.ast_objects,
             size_human: l.size_human,
         }
@@ -64,7 +64,7 @@ impl From<LanguageStatsOutput> for ShowStatTotalResponse {
     fn from(l: LanguageStatsOutput) -> Self {
         ShowStatTotalResponse {
             files: l.files,
-            lines: l.lines,
+            size_lines: l.size_lines,
             ast_objects: l.ast_objects,
             size_human: l.size_human,
         }
@@ -90,7 +90,7 @@ impl McpResponse for ShowStatsResponse {
             "[{} language(s), {} file(s), {} line(s)]\nUse this data to respond to the user.\n\n{}",
             self.languages.len(),
             self.total.files,
-            self.total.lines,
+            self.total.size_lines,
             serde_json::to_string(self).unwrap_or_default()
         )
     }

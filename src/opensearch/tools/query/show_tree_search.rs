@@ -3,6 +3,8 @@
 use anyhow::Result;
 
 use crate::models::file_models::FileModels;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
 use crate::opensearch::tools::tool_client::OpenSearchToolClient;
 use crate::utils;
 
@@ -24,10 +26,11 @@ impl OpenSearchToolClient {
         let paths: Vec<String> = docs
             .iter()
             .map(|f| match f {
-                FileModels::Language(m) => m.path.clone(),
-                FileModels::Text(m) => m.path.clone(),
-                FileModels::Binary(m) => m.path.clone(),
+                FileModels::Language(m) => m.base_model(),
+                FileModels::Text(m) => m.base_model(),
+                FileModels::Binary(m) => m.base_model(),
             })
+            .map(|f| f.path().to_string())
             .collect();
 
         if paths.is_empty() {

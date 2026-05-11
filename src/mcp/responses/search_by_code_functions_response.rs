@@ -6,9 +6,11 @@ use anyhow::Result;
 use serde::Serialize;
 
 use crate::mcp::responses::McpResponse;
-use crate::models::ast_function::AstFunctionModel;
-use crate::models::ast_model::AstModel;
 use crate::models::file_models::FileModels;
+use crate::models::lang_function::LangFunctionModel;
+use crate::models::trait_base_model::TraitBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Response from search_by_code_functions tool.
 #[derive(Debug, Serialize)]
@@ -29,7 +31,7 @@ pub struct SearchByCodeFunctionsMetaResponse {
     /// Module-level documentation comments.
     pub header_comments: Vec<String>,
     /// Matching function declarations.
-    pub functions: Vec<AstFunctionModel>,
+    pub functions: Vec<LangFunctionModel>,
 }
 
 /// Converts file model to search result, filtering non-language files.
@@ -39,10 +41,10 @@ impl TryFrom<&FileModels> for SearchByCodeFunctionsMetaResponse {
     fn try_from(model: &FileModels) -> Result<Self> {
         match model {
             FileModels::Language(m) => Ok(SearchByCodeFunctionsMetaResponse {
-                path: m.path.clone(),
+                path: m.base_model().path().to_string(),
                 language: m.language.clone(),
-                header_comments: m.header_comments.clone(),
-                functions: m.functions.iter().map(|f| f.format_tool()).collect(),
+                header_comments: m.code.header_comments.clone(),
+                functions: m.code.functions.iter().map(|f| f.format_tool()).collect(),
             }),
             _ => anyhow::bail!("AST not available for this file type"),
         }

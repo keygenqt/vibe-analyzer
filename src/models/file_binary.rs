@@ -4,54 +4,55 @@
 use serde::Deserialize;
 use serde::Serialize;
 
-use crate::models::file_model::FileModel;
-use crate::models::file_models::FileModels;
+use crate::models::file_base::FileBaseModel;
+use crate::models::trait_file_model::TraitFileModel;
+use crate::models::trait_format_model::TraitFormatModel;
 
 /// Binary file detected by content analysis.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FileBinaryModel {
-    /// Absolute path to file.
-    pub path: String,
+    /// Base file information (path, hash, content, bytes, lines).
+    #[serde(flatten)]
+    pub base: FileBaseModel,
     /// Optional file extension without dot.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub extension: Option<String>,
-    /// File size in bytes.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub size_bytes: Option<u64>,
-    /// BLAKE3 hash.
-    #[serde(skip_serializing_if = "Option::is_none", default)]
-    pub hash: Option<String>,
 }
 
 /// File model implementation for binary files.
-impl FileModel for FileBinaryModel {
-    fn path(&self) -> &str {
-        &self.path
+impl TraitFileModel for FileBinaryModel {
+    fn base_model(&self) -> &FileBaseModel {
+        &self.base
     }
+}
 
-    fn format_ast(&self) -> FileModels {
-        FileModels::Binary(FileBinaryModel {
-            path: self.path.clone(),
+/// Format implementation for binary files.
+impl TraitFormatModel for FileBinaryModel {
+    fn format_ast(&self) -> Self {
+        Self {
+            base: self.base.format_ast(),
             extension: self.extension.clone().or_else(|| self.extension()),
-            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
-            hash: None,
-        })
+        }
     }
 
-    fn format_analyze(&self) -> FileModels {
-        self.format_ast()
+    fn format_analyze(&self) -> Self {
+        Self {
+            base: self.base.format_analyze(),
+            extension: self.extension.clone().or_else(|| self.extension()),
+        }
     }
 
-    fn format_index(&self) -> FileModels {
-        self.format_ast()
+    fn format_index(&self) -> Self {
+        Self {
+            base: self.base.format_index(),
+            extension: self.extension.clone().or_else(|| self.extension()),
+        }
     }
 
-    fn format_tool(&self) -> FileModels {
-        FileModels::Binary(FileBinaryModel {
-            path: self.path.clone(),
-            size_bytes: self.size_bytes.or_else(|| self.size_bytes()),
+    fn format_tool(&self) -> Self {
+        Self {
+            base: self.base.format_tool(),
             extension: None,
-            hash: None,
-        })
+        }
     }
 }
