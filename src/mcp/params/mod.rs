@@ -1,6 +1,7 @@
 //! Request parameters for MCP tools.
 //! Defines the input structures for all tool requests.
 
+pub mod admin_sync_params;
 pub mod get_file_ast_params;
 pub mod get_file_content_params;
 pub mod search_by_code_classes_params;

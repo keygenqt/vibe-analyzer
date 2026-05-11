@@ -12,6 +12,7 @@ use rmcp::tool_handler;
 use rmcp::tool_router;
 use std::sync::Arc;
 
+use crate::mcp::params::admin_sync_params::AdminSyncParams;
 use crate::mcp::params::get_file_ast_params::GetFileAstParams;
 use crate::mcp::params::get_file_content_params::GetFileContentParams;
 use crate::mcp::params::search_by_code_classes_params::SearchByCodeClassesParams;
@@ -93,8 +94,11 @@ RULES:
 3. Runs in background, no need to call other tools after this
 "#
     )]
-    async fn admin_sync(&self) -> Result<CallToolResult, ErrorData> {
-        AdminSyncTool::new(self.state.clone()).execute().await
+    async fn admin_sync(
+        &self,
+        Parameters(params): Parameters<AdminSyncParams>,
+    ) -> Result<CallToolResult, ErrorData> {
+        AdminSyncTool::new(self.state.clone()).execute(params).await
     }
 
     //     // -------------------------------------------------------------------------------

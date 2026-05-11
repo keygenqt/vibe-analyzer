@@ -10,6 +10,7 @@ use rmcp::model::CallToolResult;
 use rmcp::model::Content;
 
 use crate::indexer::scan_index;
+use crate::mcp::params::admin_sync_params::AdminSyncParams;
 use crate::mcp::responses::McpResponse;
 use crate::mcp::responses::admin_sync_response::AdminSyncResponse;
 use crate::mcp::server::AppState;
@@ -29,7 +30,7 @@ impl AdminSyncTool {
     }
 
     /// Executes the indexing process for all sources.
-    pub async fn execute(&self) -> Result<CallToolResult, ErrorData> {
+    pub async fn execute(&self, params: AdminSyncParams) -> Result<CallToolResult, ErrorData> {
         if INDEXING.swap(true, Ordering::SeqCst) {
             return Ok(CallToolResult::success(vec![Content::text(
                 AdminSyncResponse::already_running().format(),
@@ -37,7 +38,7 @@ impl AdminSyncTool {
         }
         let config = self.state.config.clone();
         tokio::spawn(async move {
-            let _ = scan_index(&config, None, false).await;
+            let _ = scan_index(&config, None, params.fast, false).await;
             INDEXING.store(false, Ordering::SeqCst);
         });
         Ok(CallToolResult::success(vec![Content::text(

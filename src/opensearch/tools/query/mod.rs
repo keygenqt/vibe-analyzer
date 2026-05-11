@@ -3,6 +3,7 @@
 
 pub mod get_file_ast;
 pub mod get_file_content;
+pub mod is_enrich;
 pub mod search_by_code_classes;
 pub mod search_by_code_functions;
 pub mod search_by_code_imports;

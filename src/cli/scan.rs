@@ -65,6 +65,10 @@ pub enum ScanAction {
         #[arg(long)]
         target: Option<String>,
 
+        /// Fast mode: skip LLM enrichment, index structure only
+        #[arg(long, default_value_t = false)]
+        fast: bool,
+
         /// Force reindex (ignore content hash)
         #[arg(long, default_value_t = false)]
         force: bool,
@@ -160,8 +164,12 @@ pub async fn run(action: ScanAction) {
                 print_warning!("No files to save");
             }
         }
-        ScanAction::Index { target, force } => {
-            match scan_index(&config, target, force).await {
+        ScanAction::Index {
+            target,
+            fast,
+            force,
+        } => {
+            match scan_index(&config, target, fast, force).await {
                 Ok(result) => {
                     let elapsed = start_time.elapsed();
                     if result.index_files > 0 {

@@ -177,6 +177,14 @@ impl OpenSearchClient {
             .collect())
     }
 
+    /// Check if enrichment data exists in analysis indices.
+    pub async fn is_enrich(&self, target: Option<String>) -> bool {
+        match self.client_tool_files_meta(target).await {
+            Ok(tool) => tool.is_enrich().await.unwrap_or(false),
+            Err(_) => false,
+        }
+    }
+
     /// Computes BLAKE3 hash from a string path for project identification.
     /// Returns first 8 characters of the hash.
     fn hash_from_path(&self, path: &Path) -> String {

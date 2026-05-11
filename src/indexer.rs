@@ -6,7 +6,6 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde_json::json;
 
-use crate::analyzer;
 use crate::configs::app::AppConfig;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
@@ -16,6 +15,7 @@ use crate::models::trait_format_model::TraitFormatModel;
 use crate::opensearch::client::OpenSearchClient;
 use crate::print_info;
 use crate::utils::app;
+use crate::{analyzer, scanner};
 
 pub struct IndexReport {
     pub index_files: usize,
@@ -25,6 +25,7 @@ pub struct IndexReport {
 pub async fn scan_index(
     config: &AppConfig,
     target: Option<String>,
+    fast: bool,
     force: bool,
 ) -> Result<IndexReport> {
     let mut index_files = 0;
@@ -34,7 +35,16 @@ pub async fn scan_index(
         anyhow::bail!("OpenSearch is not available at {}", config.opensearch.host);
     }
 
-    let projects = analyzer::scan_analyze(config, target, force, None).await?;
+    let projects = if fast {
+        scanner::scan_ast(config, target, force, None).await?
+    } else {
+        let effective_force = force || !client.is_enrich(target.clone()).await;
+        if effective_force && !force {
+            print_info!("Enrichment data missing, forcing full reindex...");
+        }
+        analyzer::scan_analyze(config, target, effective_force, None).await?
+    };
+
     if projects.is_empty() {
         print_info!("No files to index");
         return Ok(IndexReport { index_files: 0 });

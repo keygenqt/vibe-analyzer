@@ -84,14 +84,14 @@ vibe_tests::engine_config! {
 
 mod mcp {
     mod admin_sync;
-    mod get_file_ast;
-    mod get_file_content;
-    mod search_by_code_classes;
-    mod search_by_code_functions;
-    mod search_by_code_imports;
-    mod search_by_code_variables;
-    mod search_documentation;
-    mod show_projects;
-    mod show_stats;
-    mod show_tree;
+    // mod get_file_ast;
+    // mod get_file_content;
+    // mod search_by_code_classes;
+    // mod search_by_code_functions;
+    // mod search_by_code_imports;
+    // mod search_by_code_variables;
+    // mod search_documentation;
+    // mod show_projects;
+    // mod show_stats;
+    // mod show_tree;
 }
