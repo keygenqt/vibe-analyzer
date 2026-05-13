@@ -7,6 +7,7 @@ use vibe_ast::Language;
 use vibe_ast::nodes::nodes::Nodes;
 use vibe_ast::traits::LanguageNode;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::file_base::FileBaseModel;
 use crate::models::file_language_analyze::FileLanguageAnalyzeModel;
 use crate::models::file_language_code::FileLanguageCodeModel;
@@ -93,6 +94,17 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_tool(),
             code: self.code.format_tool(),
             knowledge: self.knowledge.format_tool(),
+            node_language: None,
+        }
+    }
+
+    fn format_batch(&self, mode: AnalyzeMode) -> Self {
+        Self {
+            language: self.language.clone(),
+            base: self.base.format_batch(mode),
+            analyze: self.analyze.format_batch(mode),
+            code: self.code.format_batch(mode),
+            knowledge: self.knowledge.format_batch(mode),
             node_language: None,
         }
     }

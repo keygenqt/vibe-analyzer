@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::lang_class::LangClassModel;
 use crate::models::lang_enum::LangEnumModel;
 use crate::models::lang_function::LangFunctionModel;
@@ -92,6 +93,55 @@ impl TraitFormatModel for FileLanguageCodeModel {
             enums: self.enums.iter().map(|e| e.format_tool()).collect(),
             interfaces: self.interfaces.iter().map(|i| i.format_tool()).collect(),
             variables: self.variables.iter().map(|v| v.format_tool()).collect(),
+        }
+    }
+
+    fn format_batch(&self, mode: AnalyzeMode) -> Self {
+        match mode {
+            AnalyzeMode::Meta => Self {
+                header_comments: self.header_comments.clone(),
+                imports: self.imports.clone(),
+                functions: self
+                    .functions
+                    .iter()
+                    .map(|f| f.format_batch(mode))
+                    .collect(),
+                classes: self.classes.iter().map(|c| c.format_batch(mode)).collect(),
+                structs: self.structs.iter().map(|s| s.format_batch(mode)).collect(),
+                enums: self.enums.iter().map(|e| e.format_batch(mode)).collect(),
+                interfaces: self
+                    .interfaces
+                    .iter()
+                    .map(|i| i.format_batch(mode))
+                    .collect(),
+                variables: self
+                    .variables
+                    .iter()
+                    .map(|v| v.format_batch(mode))
+                    .collect(),
+            },
+            _ => Self {
+                header_comments: vec![],
+                imports: vec![],
+                functions: self
+                    .functions
+                    .iter()
+                    .map(|f| f.format_batch(mode))
+                    .collect(),
+                classes: self.classes.iter().map(|c| c.format_batch(mode)).collect(),
+                structs: self.structs.iter().map(|s| s.format_batch(mode)).collect(),
+                enums: self.enums.iter().map(|e| e.format_batch(mode)).collect(),
+                interfaces: self
+                    .interfaces
+                    .iter()
+                    .map(|i| i.format_batch(mode))
+                    .collect(),
+                variables: self
+                    .variables
+                    .iter()
+                    .map(|v| v.format_batch(mode))
+                    .collect(),
+            },
         }
     }
 }

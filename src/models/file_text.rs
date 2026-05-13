@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::file_base::FileBaseModel;
 use crate::models::trait_file_model::TraitFileModel;
 use crate::models::trait_format_model::TraitFormatModel;
@@ -60,6 +61,17 @@ impl TraitFormatModel for FileTextModel {
             base: self.base.format_tool(),
             preview: self.preview.clone().or_else(|| self.preview(None)),
             extension: None,
+        }
+    }
+
+    fn format_batch(&self, mode: AnalyzeMode) -> Self {
+        match mode {
+            AnalyzeMode::Meta => Self {
+                base: self.base.format_batch(mode),
+                preview: None,
+                extension: self.extension.clone(),
+            },
+            _ => self.clone(),
         }
     }
 }

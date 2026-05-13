@@ -5,6 +5,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use vibe_ast::nodes::variable_node::VariableNode;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::trait_format_model::TraitFormatModel;
 
 /// Global variable or constant with documentation.
@@ -43,5 +44,15 @@ impl TraitFormatModel for LangVariableModel {
 
     fn format_tool(&self) -> Self {
         self.format_ast()
+    }
+
+    fn format_batch(&self, mode: AnalyzeMode) -> Self {
+        match mode {
+            AnalyzeMode::Advice => Self {
+                signature: self.signature.clone(),
+                comments: vec![],
+            },
+            _ => self.clone(),
+        }
     }
 }

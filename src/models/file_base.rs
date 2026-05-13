@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::trait_base_model::TraitBaseModel;
 use crate::models::trait_format_model::TraitFormatModel;
 
@@ -64,6 +65,16 @@ impl TraitFormatModel for FileBaseModel {
             size_lines: None,
             hash: None,
             content: None,
+        }
+    }
+
+    fn format_batch(&self, _mode: AnalyzeMode) -> Self {
+        Self {
+            path: self.path.clone(),
+            hash: None,
+            content: None,
+            size_bytes: None,
+            size_lines: None,
         }
     }
 }

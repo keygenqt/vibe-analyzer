@@ -12,7 +12,6 @@ use crate::configs::analyze::AnalyzeConfig;
 use crate::configs::export::ExportConfig;
 use crate::configs::log_level::LogLevel;
 use crate::configs::mcp::McpConfig;
-use crate::configs::scan::ScanConfig;
 use crate::exit_error;
 use crate::print_info;
 use crate::utils;
@@ -37,8 +36,6 @@ pub struct AppConfig {
     pub opensearch: OpenSearchConfig,
     /// MCP server settings.
     pub mcp: McpConfig,
-    /// AST extraction settings.
-    pub scan: ScanConfig,
     /// LLM enrichment settings.
     pub analyze: AnalyzeConfig,
     /// Export settings.
@@ -57,7 +54,6 @@ impl Default for AppConfig {
             log_level: LogLevel::default(),
             opensearch: OpenSearchConfig::default(),
             mcp: McpConfig::default(),
-            scan: ScanConfig::default(),
             analyze: AnalyzeConfig::default(),
             export: ExportConfig::default(),
             ollama: vec![OllamaConfig::default()],
@@ -75,6 +71,10 @@ impl AppConfig {
             }
             if p.extension().map_or(true, |ext| ext != "json5") {
                 exit_error!("Config file must be .json5: {}", p.display());
+            }
+        } else {
+            if let Err(err) = Self::load() {
+                exit_error!("{}", err);
             }
         }
         if GLOBAL_CONFIG_PATH.get().is_none() {
@@ -178,31 +178,18 @@ impl AppConfig {
                 ],
             ),
             Json5::Commit(
-                "scan",
-                vec![
-                    "AST extraction filters for scan ast and scan analyze.",
-                    "",
-                    "imports - Include import statements",
-                    "functions - Include function signatures",
-                    "variables - Include variable declarations",
-                    "enums - Include enum declarations",
-                    "interfaces - Include interface/trait declarations",
-                    "classes - Include class declarations",
-                    "structs - Include struct declarations",
-                    "comments - Include doc comments on elements",
-                    "header_comments - Include file header comments",
-                    "headings - Include markdown headings",
-                    "links - Include markdown links",
-                    "code_blocks - Include code blocks",
-                ],
-            ),
-            Json5::Commit(
                 "analyze",
                 vec![
                     "LLM enrichment batch settings for scan analyze.",
                     "",
                     "max_chunk_chars - Maximum characters per request batch",
                     "max_chunk_files - Maximum files per request batch",
+                    "",
+                    "Enrichment features:",
+                    "   meta   - Generate summary and tags for the file",
+                    "   debt   - Detect technical debt: TODO, magic numbers, commented-out code",
+                    "   advice - Suggest refactoring, naming, and test improvements",
+                    "   errors - Find bugs, spelling errors, and potential issues",
                 ],
             ),
             Json5::Commit(
@@ -212,6 +199,21 @@ impl AppConfig {
                     "",
                     "format - Default output format: json, json5, toml, toon, xml, yaml",
                     "output_dir - Default output directory",
+                    "",
+                    "AST elements to include:",
+                    "   imports - Import statements",
+                    "   functions - Function signatures",
+                    "   variables - Variable declarations",
+                    "   enums - Enum declarations",
+                    "   interfaces - Interface, trait declarations",
+                    "   classes - Class declarations",
+                    "   structs - Struct declarations",
+                    "   comments - Comments on elements",
+                    "   header_comments - File header comments",
+                    "   headings - Markdown headings",
+                    "   links - Markdown links",
+                    "   code_blocks - Markdown code blocks",
+                    "   body - Body content (functions, classes, headings, etc.)",
                 ],
             ),
             Json5::Commit(

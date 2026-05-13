@@ -8,7 +8,7 @@ pub const CONFIG_DIR_NAME: &str = ".vibe-analyzer";
 pub const CONFIG_FILE_NAME: &str = "config.json5";
 
 /// Config version
-pub const CONFIG_VERSION: &str = "0.0.2";
+pub const CONFIG_VERSION: &str = "0.0.3";
 
 /// Maximum file size for AST parsing (10 MB)
 pub const MAX_AST_FILE_SIZE: u64 = 10 * 1024 * 1024;

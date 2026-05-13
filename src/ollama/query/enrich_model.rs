@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use anyhow::Result;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::file_language::FileLanguageModel;
 use crate::models::trait_base_model::TraitBaseModel;
 use crate::models::trait_file_model::TraitFileModel;
@@ -14,12 +15,37 @@ use crate::ollama::client::OllamaClient;
 const MAX_RETRIES: usize = 3;
 
 impl OllamaClient {
-    /// Enrich a batch of files with LLM-generated descriptions and tags.
+    /// Enrich files with LLM based on analysis level.
     pub async fn enrich_model(
         &self,
+        mode: AnalyzeMode,
         files: &[FileLanguageModel],
     ) -> Result<Vec<FileLanguageModel>> {
-        let prompt = Self::build_enrich_prompt(files);
+        let enriched = files.to_vec();
+        let prompt = match mode {
+            AnalyzeMode::Meta => Self::enrich_meta_prompt(&enriched),
+            AnalyzeMode::Debt => Self::enrich_debt_prompt(&enriched),
+            AnalyzeMode::Advice => Self::enrich_advice_prompt(&enriched),
+            AnalyzeMode::Errors => Self::enrich_errors_prompt(&enriched),
+            AnalyzeMode::Ast => String::new(),
+        };
+        let parse_fn = match mode {
+            AnalyzeMode::Meta => Self::enrich_meta_parse,
+            AnalyzeMode::Debt => Self::enrich_debt_parse,
+            AnalyzeMode::Advice => Self::enrich_advice_parse,
+            AnalyzeMode::Errors => Self::enrich_errors_parse,
+            AnalyzeMode::Ast => return Ok(files.to_vec()),
+        };
+        self.execute(&prompt, &enriched, parse_fn).await
+    }
+
+    /// Execute prompt with retry logic.
+    async fn execute(
+        &self,
+        prompt: &str,
+        files: &[FileLanguageModel],
+        parse: fn(&FileLanguageModel, &serde_json::Value) -> FileLanguageModel,
+    ) -> Result<Vec<FileLanguageModel>> {
         for attempt in 1..=MAX_RETRIES {
             let response = self.call(&prompt, None).await?;
             match serde_json::from_str::<serde_json::Value>(&response) {
@@ -32,18 +58,7 @@ impl OllamaClient {
                         let path = item["path"].as_str().unwrap_or("").to_string();
                         if let Some(original) = files.iter().find(|f| f.base_model().path() == path)
                         {
-                            let mut model = original.clone();
-                            model.analyze.summary =
-                                item["description"].as_str().map(|s| s.to_string());
-                            let llm_tags: Vec<String> = item["tags"]
-                                .as_array()
-                                .map(|a| {
-                                    a.iter()
-                                        .filter_map(|v| v.as_str().map(String::from))
-                                        .collect()
-                                })
-                                .unwrap_or_default();
-                            model.analyze.tags.extend(llm_tags);
+                            let model = parse(original, item);
                             enriched.push(model);
                         }
                     }
@@ -73,43 +88,5 @@ impl OllamaClient {
             }
         }
         unreachable!()
-    }
-
-    /// Build enrichment prompt with JSON template for weak models.
-    fn build_enrich_prompt(files: &[FileLanguageModel]) -> String {
-        let template_files: Vec<String> = files
-            .iter()
-            .map(|f| {
-                format!(
-                    r#"    {{
-      "path": "{}",
-      "description": "FILL_DESCRIPTION",
-      "tags": ["TAG1", "TAG2", "TAG3", "TAG4", "TAG5"]
-    }}"#,
-                    f.base_model().path()
-                )
-            })
-            .collect();
-
-        let template = format!(r#"{{"files": [\n{}\n]}}"#, template_files.join(",\n"));
-
-        format!(
-            r#"COPY this JSON EXACTLY, replacing only the placeholders.
-
-Placeholders to replace:
-- "FILL_DESCRIPTION" → write 2-3 sentences about the file
-- "TAG1", "TAG2", "TAG3", "TAG4", "TAG5" → replace with 3-5 specific keywords
-
-STRICT RULES:
-- Keep ALL {} objects in the array
-- Keep ALL "path" values unchanged
-- Do NOT skip any object
-- Do NOT change JSON structure
-
-JSON TO COPY AND FILL:
-{}"#,
-            files.len(),
-            template
-        )
     }
 }

@@ -21,8 +21,8 @@ use crate::utils::constants::MAX_AST_FILE_SIZE;
 pub async fn scan_ast(
     config: &AppConfig,
     target: Option<String>,
-    force: bool,
     path: Option<PathBuf>,
+    force: bool,
 ) -> Result<Vec<ProjectModel>> {
     let sources = if let Some(p) = path {
         vec![p]

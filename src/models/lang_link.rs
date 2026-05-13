@@ -5,6 +5,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use vibe_ast::nodes::link_node::LinkNode;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::trait_format_model::TraitFormatModel;
 
 /// Markdown link with display text and URL.
@@ -42,5 +43,9 @@ impl TraitFormatModel for LangLinkModel {
 
     fn format_tool(&self) -> Self {
         self.format_ast()
+    }
+
+    fn format_batch(&self, _mode: AnalyzeMode) -> Self {
+        self.clone()
     }
 }

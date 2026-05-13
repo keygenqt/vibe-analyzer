@@ -5,6 +5,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use vibe_ast::nodes::struct_node::StructNode;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::trait_format_model::TraitFormatModel;
 
 /// Struct or record declaration with documentation.
@@ -15,6 +16,9 @@ pub struct LangStructModel {
     /// Documentation comments.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub comments: Vec<String>,
+    /// Struct body from opening `{` to closing `}`
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub body: Option<String>,
 }
 
 /// Converts a parsed struct node into the AST struct model.
@@ -23,6 +27,7 @@ impl From<StructNode> for LangStructModel {
         LangStructModel {
             signature: node.signature,
             comments: node.comments,
+            body: node.body,
         }
     }
 }
@@ -43,5 +48,26 @@ impl TraitFormatModel for LangStructModel {
 
     fn format_tool(&self) -> Self {
         self.format_ast()
+    }
+
+    fn format_batch(&self, mode: AnalyzeMode) -> Self {
+        match mode {
+            AnalyzeMode::Meta => Self {
+                signature: self.signature.clone(),
+                comments: self.comments.clone(),
+                body: None,
+            },
+            AnalyzeMode::Advice => Self {
+                signature: self.signature.clone(),
+                comments: vec![],
+                body: self.body.clone(),
+            },
+            AnalyzeMode::Debt | AnalyzeMode::Errors => Self {
+                signature: self.signature.clone(),
+                comments: self.comments.clone(),
+                body: self.body.clone(),
+            },
+            AnalyzeMode::Ast => self.clone(),
+        }
     }
 }

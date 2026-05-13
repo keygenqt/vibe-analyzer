@@ -8,4 +8,3 @@ pub mod log_level;
 pub mod mcp;
 pub mod ollama;
 pub mod opensearch;
-pub mod scan;

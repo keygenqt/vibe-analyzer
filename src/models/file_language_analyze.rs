@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::trait_format_model::TraitFormatModel;
 
 /// LLM enrichment — summary, search tags, and element analysis.
@@ -15,6 +16,18 @@ pub struct FileLanguageAnalyzeModel {
     /// Search tags (structural + LLM-generated).
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub tags: Vec<String>,
+}
+
+impl FileLanguageAnalyzeModel {
+    /// Merge enrichment data from another modelю
+    pub fn merge(&mut self, other: &Self) {
+        if other.summary.is_some() {
+            self.summary = other.summary.clone();
+        }
+        if !other.tags.is_empty() {
+            self.tags = other.tags.clone();
+        }
+    }
 }
 
 /// Format implementation for file language analyze model.
@@ -39,5 +52,9 @@ impl TraitFormatModel for FileLanguageAnalyzeModel {
 
     fn format_tool(&self) -> Self {
         self.format_ast()
+    }
+
+    fn format_batch(&self, _mode: AnalyzeMode) -> Self {
+        Self::default()
     }
 }

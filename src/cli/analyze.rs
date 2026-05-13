@@ -4,6 +4,7 @@
 use clap::Subcommand;
 use std::path::PathBuf;
 
+use crate::analyzer::AnalyzeMode;
 use crate::analyzer::scan_analyze;
 use crate::configs::app::AppConfig;
 use crate::exit_error;
@@ -17,20 +18,6 @@ use crate::print_success;
 use crate::print_warning;
 use crate::scanner::scan_ast;
 use crate::utils::path;
-use clap::ValueEnum;
-
-/// Analysis modes for export command — from lightweight to full exploration.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ValueEnum)]
-pub enum AnalyzeMode {
-    /// Generate summary and tags for search indexing.
-    Metadata,
-    /// Surface-level review: bugs, spelling, refactoring suggestions.
-    Review,
-    /// Deep audit: security flaws, performance issues, technical debt.
-    Audit,
-    /// Full exploration: logic analysis, design patterns, architecture recommendations.
-    Explore,
-}
 
 /// Scan, enrich, export, and index sources.
 #[derive(Subcommand)]
@@ -52,9 +39,9 @@ pub enum AnalyzeAction {
 
     /// Export analyze results to file.
     Export {
-        /// Analysis mode (default: none)
+        /// Analysis mode
         #[arg(long, short = 'm')]
-        mode: Option<AnalyzeMode>,
+        mode: Option<Vec<AnalyzeMode>>,
 
         /// Target source (all if not specified)
         #[arg(long, short = 't')]
@@ -119,24 +106,26 @@ pub async fn run(action: AnalyzeAction) {
                 Ok(o) => o,
                 Err(e) => exit_error!("{}", e),
             };
-
-            let projects = match mode {
-                None => scan_ast(&config, target, true, path).await,
-                Some(AnalyzeMode::Metadata) => scan_analyze(&config, target, true, path).await,
-                _ => exit_error!("This analysis mode is not yet implemented."), // @todo
+            let modes = match mode.clone() {
+                None => config.analyze.include.list(),
+                Some(modes) => modes,
             };
-
+            let projects = if modes == vec![AnalyzeMode::Ast] {
+                scan_ast(&config, target, path, true).await
+            } else {
+                scan_analyze(&config, target, path, &modes, true).await
+            };
             let projects = match projects {
                 Ok(result) => result,
                 Err(e) => exit_error!("{}", e),
             };
-
             if !projects.is_empty() {
                 print_info!("Saving file...");
                 let options = ExportOptions::new(format, output);
-                let export_model = match mode {
-                    None => ExportModel::new_ast(&config.scan, projects),
-                    _ => ExportModel::new_analyze(&config.scan, projects),
+                let export_model = if modes == vec![AnalyzeMode::Ast] {
+                    ExportModel::new_ast(&config.export, projects)
+                } else {
+                    ExportModel::new_analyze(&config.export, projects)
                 };
                 match writer::export(export_model, &options, &config.export) {
                     Ok(path) => {

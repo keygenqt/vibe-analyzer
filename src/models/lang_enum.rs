@@ -5,6 +5,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use vibe_ast::nodes::enum_node::EnumNode;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::trait_format_model::TraitFormatModel;
 
 /// Enum declaration with documentation.
@@ -15,6 +16,9 @@ pub struct LangEnumModel {
     /// Documentation comments.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub comments: Vec<String>,
+    /// Enum body from opening `{` to closing `}`
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub body: Option<String>,
 }
 
 /// Converts a parsed enum node into the AST enum model.
@@ -23,6 +27,7 @@ impl From<EnumNode> for LangEnumModel {
         LangEnumModel {
             signature: node.signature,
             comments: node.comments,
+            body: node.body,
         }
     }
 }
@@ -43,5 +48,26 @@ impl TraitFormatModel for LangEnumModel {
 
     fn format_tool(&self) -> Self {
         self.format_ast()
+    }
+
+    fn format_batch(&self, mode: AnalyzeMode) -> Self {
+        match mode {
+            AnalyzeMode::Meta => Self {
+                signature: self.signature.clone(),
+                comments: self.comments.clone(),
+                body: None,
+            },
+            AnalyzeMode::Advice => Self {
+                signature: self.signature.clone(),
+                comments: vec![],
+                body: self.body.clone(),
+            },
+            AnalyzeMode::Debt | AnalyzeMode::Errors => Self {
+                signature: self.signature.clone(),
+                comments: self.comments.clone(),
+                body: self.body.clone(),
+            },
+            AnalyzeMode::Ast => self.clone(),
+        }
     }
 }

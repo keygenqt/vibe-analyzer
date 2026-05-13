@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use anyhow::Result;
 use serde_json::json;
 
+use crate::analyzer::AnalyzeMode;
 use crate::configs::app::AppConfig;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
@@ -36,13 +37,20 @@ pub async fn scan_index(
     }
 
     let projects = if fast {
-        scanner::scan_ast(config, target, force, None).await?
+        scanner::scan_ast(config, target, None, force).await?
     } else {
         let effective_force = force || !client.is_enrich(target.clone()).await;
         if effective_force && !force {
             print_info!("Enrichment data missing, forcing full reindex...");
         }
-        analyzer::scan_analyze(config, target, effective_force, None).await?
+        analyzer::scan_analyze(
+            config,
+            target,
+            None,
+            &vec![AnalyzeMode::Meta],
+            effective_force,
+        )
+        .await?
     };
 
     if projects.is_empty() {

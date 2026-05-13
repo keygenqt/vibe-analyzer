@@ -2,7 +2,6 @@
 //! Provides centralized export coordination and format selection.
 
 use crate::configs::export::ExportConfig;
-use crate::configs::scan::ScanConfig;
 use crate::export::formats::json::JsonWriter;
 use crate::export::formats::json5::Json5Writer;
 use crate::export::formats::toml::TomlWriter;
@@ -34,7 +33,7 @@ pub struct ExportModel {
 
 impl ExportModel {
     /// Creates export with AST-only formatting, filtered by scan config.
-    pub fn new_ast(config: &ScanConfig, projects: Vec<ProjectModel>) -> Self {
+    pub fn new_ast(config: &ExportConfig, projects: Vec<ProjectModel>) -> Self {
         let scan = config.clone();
         ExportModel {
             indexed_at: Local::now().to_rfc3339(),
@@ -50,7 +49,7 @@ impl ExportModel {
     }
 
     /// Creates export with AST + enrichment formatting, filtered by scan config.
-    pub fn new_analyze(config: &ScanConfig, projects: Vec<ProjectModel>) -> Self {
+    pub fn new_analyze(config: &ExportConfig, projects: Vec<ProjectModel>) -> Self {
         let scan = config.clone();
         ExportModel {
             indexed_at: Local::now().to_rfc3339(),
@@ -66,45 +65,65 @@ impl ExportModel {
     }
 
     /// Filter project files based on scan config.
-    fn filter_by_config(scan: &ScanConfig, project: ProjectModel) -> ProjectModel {
+    fn filter_by_config(config: &ExportConfig, project: ProjectModel) -> ProjectModel {
         ProjectModel {
             files: project
                 .files
                 .into_iter()
                 .map(|f| match f {
                     FileModels::Language(mut lang) => {
-                        if !scan.imports {
+                        if !config.include.imports {
                             lang.code.imports = vec![];
                         }
-                        if !scan.functions {
+                        if !config.include.functions {
                             lang.code.functions = vec![];
                         }
-                        if !scan.variables {
+                        if !config.include.variables {
                             lang.code.variables = vec![];
                         }
-                        if !scan.enums {
+                        if !config.include.enums {
                             lang.code.enums = vec![];
                         }
-                        if !scan.interfaces {
+                        if !config.include.interfaces {
                             lang.code.interfaces = vec![];
                         }
-                        if !scan.classes {
+                        if !config.include.classes {
                             lang.code.classes = vec![];
                         }
-                        if !scan.structs {
+                        if !config.include.structs {
                             lang.code.structs = vec![];
                         }
-                        if !scan.header_comments {
+                        if !config.include.header_comments {
                             lang.code.header_comments = vec![];
                         }
-                        if !scan.headings {
+                        if !config.include.headings {
                             lang.knowledge.headings = vec![];
                         }
-                        if !scan.links {
+                        if !config.include.links {
                             lang.knowledge.links = vec![];
                         }
-                        if !scan.code_blocks {
+                        if !config.include.code_blocks {
                             lang.knowledge.code_blocks = vec![];
+                        }
+                        if !config.include.body {
+                            for func in &mut lang.code.functions {
+                                func.body = None;
+                            }
+                            for class in &mut lang.code.classes {
+                                class.body = None;
+                            }
+                            for struct_ in &mut lang.code.structs {
+                                struct_.body = None;
+                            }
+                            for enum_ in &mut lang.code.enums {
+                                enum_.body = None;
+                            }
+                            for interface in &mut lang.code.interfaces {
+                                interface.body = None;
+                            }
+                            for heading in &mut lang.knowledge.headings {
+                                heading.body = None;
+                            }
                         }
                         FileModels::Language(lang)
                     }

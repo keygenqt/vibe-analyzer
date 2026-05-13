@@ -8,6 +8,7 @@ use std::sync::atomic::AtomicUsize;
 use std::sync::atomic::Ordering;
 
 use anyhow::Result;
+use clap::ValueEnum;
 use colored::Colorize;
 use futures::StreamExt;
 use tokio::sync::Mutex;
@@ -19,12 +20,41 @@ use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
 use crate::models::trait_base_model::TraitBaseModel;
 use crate::models::trait_file_model::TraitFileModel;
+use crate::models::trait_format_model::TraitFormatModel;
 use crate::ollama::cluster::OllamaCluster;
 use crate::print_info;
 use crate::print_newline;
 use crate::print_progress;
 use crate::print_success;
 use crate::scanner;
+
+/// Enrichment mode determines what analysis to perform.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ValueEnum)]
+pub enum AnalyzeMode {
+    /// AST structure only, no LLM enrichment.
+    Ast,
+    /// File summary and search tags.
+    Meta,
+    /// Technical debt: TODO, magic numbers, commented-out code.
+    Debt,
+    /// Refactoring and test suggestions.
+    Advice,
+    /// Bugs and spelling errors.
+    Errors,
+}
+
+impl AnalyzeMode {
+    /// Human-readable mode name.
+    pub fn name(&self) -> &'static str {
+        match self {
+            AnalyzeMode::Ast => "AST",
+            AnalyzeMode::Meta => "Meta",
+            AnalyzeMode::Debt => "Debt",
+            AnalyzeMode::Advice => "Advice",
+            AnalyzeMode::Errors => "Errors",
+        }
+    }
+}
 
 /// Debug info for worker statistics.
 struct WorkerStats {
@@ -37,8 +67,9 @@ struct WorkerStats {
 pub async fn scan_analyze(
     config: &AppConfig,
     target: Option<String>,
-    force: bool,
     path: Option<PathBuf>,
+    modes: &Vec<AnalyzeMode>,
+    force: bool,
 ) -> Result<Vec<ProjectModel>> {
     let cluster = OllamaCluster::new(&config.ollama);
     if cluster.is_empty() {
@@ -53,15 +84,11 @@ pub async fn scan_analyze(
                 print_newline!();
             }
         })
-        .await
-        .map_err(|e| {
-            print_newline!();
-            e
-        })?;
+        .await?;
     print_success!("All {} Ollama servers ready", cluster.len());
 
     // Scan sources
-    let projects = scanner::scan_ast(config, target, force, path).await?;
+    let projects = scanner::scan_ast(config, target, path, force).await?;
     let total_files: usize = projects.iter().map(|p| p.files.len()).sum();
     if total_files == 0 {
         print_info!("No files to analyze");
@@ -73,26 +100,35 @@ pub async fn scan_analyze(
     let mut enriched = Vec::new();
     for project in projects {
         let name = project.path.split('/').last().unwrap_or(&project.path);
-        print_info!("Start enrichment: {}", name.bold().blue());
-        match analyze_project(
-            &project,
-            &cluster,
-            config.analyze.max_chunk_chars,
-            config.analyze.max_chunk_files,
-            |percent, current, total| {
-                print_progress!("Processing... {:.1}% ({}/{})", percent, current, total);
-                if total == current {
+        print_info!("Start enrichment source: {}", name.bold().blue());
+        for mode in modes {
+            match analyze_project(
+                &project,
+                &cluster,
+                mode.clone(),
+                config.analyze.max_chunk_chars,
+                config.analyze.max_chunk_files,
+                |mode, percent, current, total| {
+                    print_progress!(
+                        "Processing enrich {}... {:.1}% ({}/{})",
+                        mode.name(),
+                        percent,
+                        current,
+                        total
+                    );
+                    if total == current {
+                        print_newline!();
+                    }
+                },
+                |message| print_info!("{}", message),
+            )
+            .await
+            {
+                Ok(analysis) => enriched.push(analysis),
+                Err(e) => {
                     print_newline!();
+                    return Err(e);
                 }
-            },
-            |message| print_info!("{}", message),
-        )
-        .await
-        {
-            Ok(analysis) => enriched.push(analysis),
-            Err(e) => {
-                print_newline!();
-                return Err(e);
             }
         }
     }
@@ -103,9 +139,10 @@ pub async fn scan_analyze(
 async fn analyze_project(
     project: &ProjectModel,
     cluster: &OllamaCluster,
+    mode: AnalyzeMode,
     max_chunk_chars: usize,
     max_chunk_files: usize,
-    on_progress: fn(usize, usize, usize),
+    on_progress: fn(AnalyzeMode, usize, usize, usize),
     on_done: fn(String),
 ) -> Result<ProjectModel> {
     // Collect only language files for enrichment
@@ -154,8 +191,8 @@ async fn analyze_project(
         });
 
         let handle = tokio::spawn(async move {
-            let mut batch: Vec<FileLanguageModel> = Vec::new();
             let mut batch_chars = 0usize;
+            let mut batch: Vec<FileLanguageModel> = Vec::new();
             let mut results: Vec<FileLanguageModel> = Vec::new();
 
             loop {
@@ -179,7 +216,7 @@ async fn analyze_project(
                 let should_flush = !batch.is_empty() && (is_last || is_full);
 
                 if should_flush {
-                    match client.enrich_model(&batch).await {
+                    match client.enrich_model(mode, &batch).await {
                         Ok(enriched) => {
                             files_processed_clone.fetch_add(batch.len(), Ordering::Relaxed);
                             results.extend(enriched);
@@ -216,12 +253,12 @@ async fn analyze_project(
             if error_flag_send.load(Ordering::Relaxed) {
                 break;
             }
-            if tx.send(Arc::new(file)).await.is_err() {
+            if tx.send(Arc::new(file.format_batch(mode))).await.is_err() {
                 break;
             }
             sent += 1;
             let percent = sent as f64 / total as f64 * 100.0;
-            on_progress(percent as usize, sent, total);
+            on_progress(mode, percent as usize, sent, total);
         }
     });
 
@@ -258,8 +295,7 @@ async fn analyze_project(
                 .iter()
                 .find(|e| e.base_model().path() == lang.base_model().path())
             {
-                lang.analyze.summary = enriched.analyze.summary.clone();
-                lang.analyze.tags = enriched.analyze.tags.clone();
+                lang.analyze.merge(&enriched.analyze);
             }
         }
     }

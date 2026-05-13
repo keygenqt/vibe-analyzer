@@ -5,6 +5,7 @@ use serde::Deserialize;
 use serde::Serialize;
 use std::collections::HashMap;
 
+use crate::analyzer::AnalyzeMode;
 use crate::models::lang_heading::LangHeadingModel;
 use crate::models::lang_link::LangLinkModel;
 use crate::models::trait_format_model::TraitFormatModel;
@@ -61,6 +62,23 @@ impl TraitFormatModel for FileLanguageKnowledgeModel {
             links: self.links.iter().map(|l| l.format_tool()).collect(),
             code_blocks: self.code_blocks.clone(),
             frontmatter: self.frontmatter.clone(),
+        }
+    }
+
+    fn format_batch(&self, mode: AnalyzeMode) -> Self {
+        match mode {
+            AnalyzeMode::Meta => Self {
+                headings: self.headings.iter().map(|h| h.format_batch(mode)).collect(),
+                links: self.links.iter().map(|l| l.format_batch(mode)).collect(),
+                code_blocks: self.code_blocks.clone(),
+                frontmatter: self.frontmatter.clone(),
+            },
+            _ => Self {
+                headings: self.headings.iter().map(|h| h.format_batch(mode)).collect(),
+                links: self.links.iter().map(|l| l.format_batch(mode)).collect(),
+                code_blocks: vec![],
+                frontmatter: None,
+            },
         }
     }
 }

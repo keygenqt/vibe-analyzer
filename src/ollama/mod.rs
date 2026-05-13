@@ -3,4 +3,5 @@
 
 pub mod client;
 pub mod cluster;
+pub mod enrich;
 pub mod query;

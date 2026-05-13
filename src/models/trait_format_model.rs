@@ -1,6 +1,8 @@
 //! Format model trait.
 //! Common formatting interface for all models in the pipeline.
 
+use crate::analyzer::AnalyzeMode;
+
 /// Common formatting interface for all models.
 pub trait TraitFormatModel {
     /// Structure only export, without LLM enrichment.
@@ -14,4 +16,7 @@ pub trait TraitFormatModel {
 
     /// Tool export: minimal representation for MCP responses.
     fn format_tool(&self) -> Self;
+
+    /// Strip fields not needed for the given enrichment mode before sending to LLM.
+    fn format_batch(&self, mode: AnalyzeMode) -> Self;
 }
