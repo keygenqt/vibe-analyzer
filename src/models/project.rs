@@ -57,7 +57,7 @@ pub struct StatsModel {
     pub total_chars: usize,
     /// Total size in bytes.
     pub total_size_bytes: u64,
-    /// @todo
+    /// Total number of lines.
     pub total_size_lines: usize,
 }
 

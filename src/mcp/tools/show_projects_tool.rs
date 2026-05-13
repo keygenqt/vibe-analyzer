@@ -11,7 +11,7 @@ use crate::mcp::params::show_projects_params::ShowProjectsParams;
 use crate::mcp::responses::McpResponse;
 use crate::mcp::responses::show_projects_response::ShowProjectsResponse;
 use crate::mcp::server::AppState;
-use crate::utils::mcp_normalize::number_normalize;
+use crate::utils::normalize::number_normalize;
 
 /// Tool for listing all knowledge sources.
 #[derive(Clone)]

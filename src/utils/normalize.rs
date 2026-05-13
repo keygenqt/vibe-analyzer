@@ -6,7 +6,23 @@ use std::path::Path;
 use anyhow::Result;
 
 use crate::configs::app::AppConfig;
+use crate::utils::constants::MAX_LLM_BODY_CHARS;
 use crate::utils::constants::MCP_MAX_SEARCH_LIMIT;
+
+/// Truncate body to max chars for LLM enrichment.
+pub fn body_batch_normalize(body: &Option<String>) -> Option<String> {
+    body.as_ref().map(|text| {
+        if text.len() > MAX_LLM_BODY_CHARS {
+            let mut end = MAX_LLM_BODY_CHARS;
+            while !text.is_char_boundary(end) {
+                end -= 1;
+            }
+            format!("{} [truncated]", &text[..end])
+        } else {
+            text.clone()
+        }
+    })
+}
 
 /// Normalizes a file path.
 pub fn path_normalize(config: &AppConfig, path: &str) -> Result<String> {

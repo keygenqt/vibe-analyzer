@@ -7,6 +7,7 @@ use vibe_ast::nodes::interface_node::InterfaceNode;
 
 use crate::analyzer::AnalyzeMode;
 use crate::models::trait_format_model::TraitFormatModel;
+use crate::utils::normalize::body_batch_normalize;
 
 /// Interface or trait declaration with documentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,12 +61,12 @@ impl TraitFormatModel for LangInterfaceModel {
             AnalyzeMode::Advice => Self {
                 signature: self.signature.clone(),
                 comments: vec![],
-                body: self.body.clone(),
+                body: body_batch_normalize(&self.body),
             },
             AnalyzeMode::Debt | AnalyzeMode::Errors => Self {
                 signature: self.signature.clone(),
                 comments: self.comments.clone(),
-                body: self.body.clone(),
+                body: body_batch_normalize(&self.body),
             },
             AnalyzeMode::Ast => self.clone(),
         }

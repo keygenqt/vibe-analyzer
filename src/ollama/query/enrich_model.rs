@@ -4,6 +4,7 @@
 use std::time::Duration;
 
 use anyhow::Result;
+use colored::Colorize;
 
 use crate::analyzer::AnalyzeMode;
 use crate::models::file_language::FileLanguageModel;
@@ -69,10 +70,17 @@ impl OllamaClient {
                         tokio::time::sleep(Duration::from_millis(500 * attempt as u64)).await;
                         continue;
                     }
+                    let sent: Vec<&str> = files.iter().map(|f| f.base_model().path()).collect();
+                    let returned: Vec<&str> =
+                        items.iter().filter_map(|i| i["path"].as_str()).collect();
                     anyhow::bail!(
-                        "LLM returned {} files, expected {}. Try reducing batch size (chunk_chars or chunk_files).",
+                        "LLM returned {} files, expected {}.\n\nExpected paths: {:?}\nReturned paths: {:?}\n\n{}",
                         enriched.len(),
                         files.len(),
+                        sent,
+                        returned,
+                        "Try reducing batch size (analyze.max_chunk_chars) or fix errors in path."
+                            .italic()
                     );
                 }
                 Err(_) if attempt < MAX_RETRIES => {

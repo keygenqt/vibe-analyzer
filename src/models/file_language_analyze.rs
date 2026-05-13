@@ -16,16 +16,34 @@ pub struct FileLanguageAnalyzeModel {
     /// Search tags (structural + LLM-generated).
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub tags: Vec<String>,
+    /// Technical debt: TODO, magic numbers, commented-out code.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub debt: Vec<String>,
+    /// Refactoring and test suggestions.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub advice: Vec<String>,
+    /// Bugs and spelling errors.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub errors: Vec<String>,
 }
 
 impl FileLanguageAnalyzeModel {
-    /// Merge enrichment data from another modelю
+    /// Merge enrichment data from another model
     pub fn merge(&mut self, other: &Self) {
-        if other.summary.is_some() {
-            self.summary = other.summary.clone();
+        if let Some(summary) = &other.summary {
+            self.summary = Some(summary.clone());
         }
         if !other.tags.is_empty() {
             self.tags = other.tags.clone();
+        }
+        if !other.debt.is_empty() {
+            self.debt = other.debt.clone();
+        }
+        if !other.advice.is_empty() {
+            self.advice = other.advice.clone();
+        }
+        if !other.errors.is_empty() {
+            self.errors = other.errors.clone();
         }
     }
 }
@@ -33,25 +51,31 @@ impl FileLanguageAnalyzeModel {
 /// Format implementation for file language analyze model.
 impl TraitFormatModel for FileLanguageAnalyzeModel {
     fn format_ast(&self) -> Self {
-        Self {
-            summary: None,
-            tags: Vec::new(),
-        }
+        Self::default()
     }
 
     fn format_analyze(&self) -> Self {
         Self {
             summary: self.summary.clone(),
             tags: self.tags.clone(),
+            debt: self.debt.clone(),
+            advice: self.advice.clone(),
+            errors: self.errors.clone(),
         }
     }
 
     fn format_index(&self) -> Self {
-        self.format_analyze()
+        Self {
+            summary: self.summary.clone(),
+            tags: self.tags.clone(),
+            debt: vec![],
+            advice: vec![],
+            errors: vec![],
+        }
     }
 
     fn format_tool(&self) -> Self {
-        self.format_ast()
+        Self::default()
     }
 
     fn format_batch(&self, _mode: AnalyzeMode) -> Self {

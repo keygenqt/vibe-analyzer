@@ -28,7 +28,7 @@ impl GetFileContentTool {
     /// Executes the file content retrieval.
     pub async fn execute(&self, params: GetFileContentParams) -> Result<CallToolResult, ErrorData> {
         // Normalize path
-        let path = utils::mcp_normalize::path_normalize(&self.state.config, &params.path)
+        let path = utils::normalize::path_normalize(&self.state.config, &params.path)
             .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
 
         // Create tools client for files indices

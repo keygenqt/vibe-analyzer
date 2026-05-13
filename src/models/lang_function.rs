@@ -7,6 +7,7 @@ use vibe_ast::nodes::function_node::FunctionNode;
 
 use crate::analyzer::AnalyzeMode;
 use crate::models::trait_format_model::TraitFormatModel;
+use crate::utils::normalize::body_batch_normalize;
 
 /// Function or method signature with documentation.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -60,12 +61,12 @@ impl TraitFormatModel for LangFunctionModel {
             AnalyzeMode::Advice => Self {
                 signature: self.signature.clone(),
                 comments: vec![],
-                body: self.body.clone(),
+                body: body_batch_normalize(&self.body),
             },
             AnalyzeMode::Debt | AnalyzeMode::Errors => Self {
                 signature: self.signature.clone(),
                 comments: self.comments.clone(),
-                body: self.body.clone(),
+                body: body_batch_normalize(&self.body),
             },
             AnalyzeMode::Ast => self.clone(),
         }

@@ -7,6 +7,7 @@ use vibe_ast::nodes::heading_node::HeadingNode;
 
 use crate::analyzer::AnalyzeMode;
 use crate::models::trait_format_model::TraitFormatModel;
+use crate::utils::normalize::body_batch_normalize;
 
 /// Markdown heading with level, title, and content preview.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -73,7 +74,7 @@ impl TraitFormatModel for LangHeadingModel {
                 level: self.level,
                 title: self.title.clone(),
                 preview: self.preview.clone(),
-                body: self.body.clone(),
+                body: body_batch_normalize(&self.body),
             },
             AnalyzeMode::Ast => self.clone(),
         }

@@ -12,8 +12,8 @@ use crate::mcp::responses::McpResponse;
 use crate::mcp::responses::search_documentation_response::SearchDocumentationMetaResponse;
 use crate::mcp::responses::search_documentation_response::SearchDocumentationResponse;
 use crate::mcp::server::AppState;
-use crate::utils::mcp_normalize::number_normalize;
-use crate::utils::mcp_normalize::query_normalize;
+use crate::utils::normalize::number_normalize;
+use crate::utils::normalize::query_normalize;
 
 /// Tool for searching documentation.
 #[derive(Clone)]

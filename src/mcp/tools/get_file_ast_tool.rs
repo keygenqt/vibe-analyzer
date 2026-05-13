@@ -30,7 +30,7 @@ impl GetFileAstTool {
     /// Executes the AST retrieval.
     pub async fn execute(&self, params: GetFileAstParams) -> Result<CallToolResult, ErrorData> {
         // Normalize path
-        let path = utils::mcp_normalize::path_normalize(&self.state.config, &params.path)
+        let path = utils::normalize::path_normalize(&self.state.config, &params.path)
             .map_err(|e| ErrorData::invalid_params(e.to_string(), None))?;
 
         // Create tools client for files_meta indices

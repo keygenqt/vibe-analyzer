@@ -13,7 +13,7 @@ pub struct AnalyzeConfig {
     pub max_chunk_chars: usize,
     /// Maximum files per request batch.
     pub max_chunk_files: usize,
-    /// @todo
+    /// Enrichment features to include during analysis.
     pub include: AnalyzeIncludeConfig,
 }
 

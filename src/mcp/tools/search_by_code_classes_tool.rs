@@ -12,9 +12,9 @@ use crate::mcp::responses::McpResponse;
 use crate::mcp::responses::search_by_code_classes_response::SearchByCodeClassesMetaResponse;
 use crate::mcp::responses::search_by_code_classes_response::SearchByCodeClassesResponse;
 use crate::mcp::server::AppState;
-use crate::utils::mcp_normalize::number_normalize;
-use crate::utils::mcp_normalize::query_normalize;
-use crate::utils::mcp_normalize::target_normalize;
+use crate::utils::normalize::number_normalize;
+use crate::utils::normalize::query_normalize;
+use crate::utils::normalize::target_normalize;
 
 /// Tool for searching classes, structs, and interfaces.
 #[derive(Clone)]

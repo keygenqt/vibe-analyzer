@@ -72,13 +72,13 @@ Found in 2 files:
 ```
 You: Find Python coding guidelines
 AI: [search_documentation with query="Python coding rules"]
-Found in knowledge/gidelines/code/python.md:
+Found in knowledge/guidelines/code/python.md:
   # Python Coding Guidelines
   Follow PEP 8. Use snake_case, type annotations, docstrings.
 
 You: What is the release process?
 AI: [search_documentation with query="release process"]
-Found in knowledge/gidelines/process/release.md:
+Found in knowledge/guidelines/process/release.md:
   # Release Process
   1. All milestone tasks closed
   2. Create a release branch from develop

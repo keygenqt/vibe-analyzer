@@ -11,7 +11,7 @@ use crate::mcp::params::show_stats_params::ShowStatsParams;
 use crate::mcp::responses::McpResponse;
 use crate::mcp::responses::show_stats_response::ShowStatsResponse;
 use crate::mcp::server::AppState;
-use crate::utils::mcp_normalize::target_normalize;
+use crate::utils::normalize::target_normalize;
 
 /// Tool for retrieving project statistics.
 #[derive(Clone)]

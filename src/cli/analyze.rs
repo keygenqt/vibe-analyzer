@@ -40,7 +40,7 @@ pub enum AnalyzeAction {
     /// Export analyze results to file.
     Export {
         /// Analysis mode
-        #[arg(long, short = 'm')]
+        #[arg(long, short = 'm', value_delimiter = ',')]
         mode: Option<Vec<AnalyzeMode>>,
 
         /// Target source (all if not specified)
