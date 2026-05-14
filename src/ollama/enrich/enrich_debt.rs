@@ -1,53 +1,37 @@
 //! Review enrichment prompt.
 //! Surface-level review: bugs, spelling, refactoring suggestions.
 
+use anyhow::Result;
+
 use crate::models::file_language::FileLanguageModel;
-use crate::models::trait_base_model::TraitBaseModel;
-use crate::models::trait_file_model::TraitFileModel;
 use crate::ollama::client::OllamaClient;
 
-// @todo
 impl OllamaClient {
     /// Build prompt for technical debt detection.
-    pub fn enrich_debt_prompt(files: &[FileLanguageModel]) -> String {
-        let template_files: Vec<String> = files
-            .iter()
-            .map(|f| {
-                format!(
-                    r#"    {{
-      "path": "{}",
-      "debt": []
-    }}"#,
-                    f.base_model().path()
-                )
-            })
-            .collect();
+    pub fn enrich_debt_prompt(file: &FileLanguageModel) -> Result<String> {
+        let data = serde_json::to_string(file).unwrap_or_default();
 
-        let template = format!(r#"{{"files": [\n{}\n]}}"#, template_files.join(",\n"));
+        Ok(format!(
+            r#"Return a JSON ARRAY OF STRINGS with technical debt issues found. Example: ["issue 1", "issue 2"]
 
-        format!(
-            r#"COPY this JSON EXACTLY, replacing only the placeholders.
+Analyze this code and list technical debt:
+- Confusing or overly complex logic
+- Code duplication (same logic repeated in multiple places)
+- Magic numbers (unexplained numeric literals in logic, not named constants, not 0/1/-1)
+- Hardcoded strings used in business logic (not error messages or log texts)
+- Function is too long or does too many things
+- Unsafe calls: unwrap, expect, panic without error context
 
-Find TODO, FIXME, HACK, @todo in code or comments. Also magic numbers, commented-out code.
-Empty [] if none found — do NOT invent or guess.
+RULES:
+- Report ONLY real problems you see in the code
+- Do NOT report what you didn't find ("None found", "No issues")
+- Return [] if code is clean
 
-Also consider: missing error handling, deprecated API usage, hardcoded credentials, duplicate code blocks.
-
-Placeholders to replace:
-- "debt" array → list ONLY issues you can SEE in the provided code, or empty []
-
-STRICT RULES:
-- Keep ALL {} objects in the array
-- Keep ALL "path" values unchanged
-- Do NOT skip any object
-- Do NOT change JSON structure
-- Do NOT report issues you cannot see in the code
-
-JSON TO COPY AND FILL:
-{}"#,
-            files.len(),
-            template
-        )
+FILE CONTENTS:
+{}
+"#,
+            data,
+        ))
     }
 
     /// Parse technical debt response into model.
@@ -56,7 +40,7 @@ JSON TO COPY AND FILL:
         item: &serde_json::Value,
     ) -> FileLanguageModel {
         let mut model = original.clone();
-        model.analyze.debt = item["debt"]
+        model.analyze.debt = item
             .as_array()
             .map(|a| {
                 a.iter()

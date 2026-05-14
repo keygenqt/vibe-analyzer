@@ -16,15 +16,15 @@ pub struct FileLanguageAnalyzeModel {
     /// Search tags (structural + LLM-generated).
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub tags: Vec<String>,
-    /// Technical debt: TODO, magic numbers, commented-out code.
+    /// Technical debt issues found during analysis.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub debt: Vec<String>,
+    /// Bugs and errors found during analysis.
+    #[serde(skip_serializing_if = "Vec::is_empty", default)]
+    pub errors: Vec<String>,
     /// Refactoring and test suggestions.
     #[serde(skip_serializing_if = "Vec::is_empty", default)]
     pub advice: Vec<String>,
-    /// Bugs and spelling errors.
-    #[serde(skip_serializing_if = "Vec::is_empty", default)]
-    pub errors: Vec<String>,
 }
 
 impl FileLanguageAnalyzeModel {

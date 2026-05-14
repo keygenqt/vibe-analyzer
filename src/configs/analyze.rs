@@ -11,8 +11,6 @@ use crate::analyzer::AnalyzeMode;
 pub struct AnalyzeConfig {
     /// Maximum characters per request batch.
     pub max_chunk_chars: usize,
-    /// Maximum files per request batch.
-    pub max_chunk_files: usize,
     /// Enrichment features to include during analysis.
     pub include: AnalyzeIncludeConfig,
 }
@@ -22,7 +20,6 @@ impl Default for AnalyzeConfig {
     fn default() -> Self {
         Self {
             max_chunk_chars: 3_000,
-            max_chunk_files: 3,
             include: AnalyzeIncludeConfig::default(),
         }
     }

@@ -2,32 +2,32 @@
 knowledge: true
 ---
 
-# Агыр - Менеджер
+# Agyr - Manager
 
-## Профессия
+## Profession
 
-project-менеджер
+project-manager
 
-## Компания
+## Company
 
-IT-корпорация "Страж"
+IT-corporation "Strazh"
 
-## О персонаже
+## About the caracter
 
-Агыр управляет 15 разработчиками. Он знает Jira лучше, чем свою жену. Проводит 6 митингов в день.
+Agyr manages 15 developrs. He knows Jira better than his wife. Runs 6 meetins a day.
 
-## Достижения
+## Achievements
 
-- закрыл 4 спринта подряд без дедлайнов
-- ни одного увольнения за год
-- выбил бюджет на премии
+- closed 4 sprints in a row without deadline failurs
+- zero layoffs in a year
+- secured a budget for bonuses
 
-## Навыки
+## Skills
 
-- превращает "невозможно" в "сделаем"
-- переводит с русского на русский (менеджерский)
-- умеет говорить "нет" заказчику
+- turns "impossible" into "will be done"
+- translates from Russian to Russian (manager-speak)
+- knows how to say "no" to the custumer
 
-## Мечта
+## Dream
 
-Отпуск без уведомлений в Telegram.
+A vacation without Telegram notifications.

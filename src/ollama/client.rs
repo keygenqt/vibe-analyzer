@@ -6,6 +6,7 @@ use std::time::Duration;
 use crate::configs::ollama::OllamaConfig;
 use anyhow::Result;
 use reqwest::Client;
+use uuid::Uuid;
 
 /// Client for interacting with Ollama API.
 #[derive(Clone)]
@@ -30,6 +31,7 @@ impl OllamaClient {
             "model": self.config.model,
             "prompt": prompt,
             "stream": false,
+            "session_id": Uuid::new_v4().to_string(),
             "options": {
                 "temperature": self.config.temperature,
                 "seed": self.config.seed,
@@ -90,6 +92,11 @@ impl OllamaClient {
     pub fn response_normalize(&self, raw: &str) -> String {
         let mut content = raw.trim().to_string();
 
+        // Not JSON — return as-is
+        if !content.contains('{') && !content.contains('[') {
+            return content;
+        }
+
         // Extract content from markdown code block
         if let Some(start_md) = content.find("```") {
             let after_start = &content[start_md + 3..];
@@ -100,11 +107,6 @@ impl OllamaClient {
             } else {
                 content = body.trim().to_string();
             }
-        }
-
-        // Not JSON — return as-is
-        if !content.contains('{') && !content.contains('[') {
-            return content;
         }
 
         // Find JSON boundaries

@@ -1,48 +1,59 @@
 //! Metadata enrichment prompt.
 //! Generates summary and tags for search indexing.
 
+use anyhow::Result;
+use serde::Serialize;
+
 use crate::models::file_language::FileLanguageModel;
 use crate::models::trait_base_model::TraitBaseModel;
 use crate::models::trait_file_model::TraitFileModel;
 use crate::ollama::client::OllamaClient;
+use crate::utils::normalize::tags_normalize;
 
 impl OllamaClient {
     /// Build prompt for metadata enrichment: summary and tags.
-    pub fn enrich_meta_prompt(files: &[FileLanguageModel]) -> String {
-        let template_files: Vec<String> = files
-            .iter()
-            .map(|f| {
-                format!(
-                    r#"    {{
-      "path": "{}",
-      "description": "FILL_DESCRIPTION",
-      "tags": ["TAG1", "TAG2", "TAG3", "TAG4", "TAG5"]
-    }}"#,
-                    f.base_model().path()
-                )
-            })
-            .collect();
+    pub fn enrich_meta_prompt(files: &[FileLanguageModel]) -> Result<String> {
+        // Template for JSON structure that model must fill
+        #[derive(Serialize)]
+        struct DataPrompt<'a> {
+            #[serde(rename = "PATH")]
+            path: String,
+            #[serde(rename = "DESCRIPTION")]
+            description: &'a str,
+            #[serde(rename = "TAGS")]
+            tags: Vec<&'a str>,
+        }
 
-        let template = format!(r#"{{"files": [\n{}\n]}}"#, template_files.join(",\n"));
+        // Build template with placeholder values
+        let template_prompt = serde_json::to_string(
+            &files
+                .iter()
+                .map(|f| DataPrompt {
+                    path: f.base_model().path().to_string(),
+                    description: "FILL_DESCRIPTION",
+                    tags: vec!["TAG1", "TAG2", "TAG3", "TAG4", "TAG5"],
+                })
+                .collect::<Vec<_>>(),
+        )
+        .unwrap_or_default();
 
-        format!(
-            r#"COPY this JSON EXACTLY, replacing only the placeholders.
+        let data_prompt = serde_json::to_string(files).unwrap_or_default();
 
-Placeholders to replace:
-- "FILL_DESCRIPTION" → write 2-3 sentences about the file
-- "TAG1", "TAG2", "TAG3", "TAG4", "TAG5" → replace with 3-5 specific keywords
+        Ok(format!(
+            r#"Return JSON array with only PATH, DESCRIPTION, TAGS fields.
 
-STRICT RULES:
-- Keep ALL {} objects in the array
-- Keep ALL "path" values unchanged
-- Do NOT skip any object
-- Do NOT change JSON structure
+Use data field for analysis. Based on it fill:
+- DESCRIPTION — 2-3 sentences about the file
+- TAGS — 3-5 keywords (words only, not sentences)
 
 JSON TO COPY AND FILL:
-{}"#,
-            files.len(),
-            template
-        )
+{}
+
+FILE CONTENTS:
+{}
+"#,
+            template_prompt, data_prompt,
+        ))
     }
 
     /// Parse Metadata enrichment response into model.
@@ -51,8 +62,8 @@ JSON TO COPY AND FILL:
         item: &serde_json::Value,
     ) -> FileLanguageModel {
         let mut model = original.clone();
-        model.analyze.summary = item["description"].as_str().map(|s| s.to_string());
-        let llm_tags: Vec<String> = item["tags"]
+        model.analyze.summary = item["DESCRIPTION"].as_str().map(|s| s.to_string());
+        let llm_tags: Vec<String> = item["TAGS"]
             .as_array()
             .map(|a| {
                 a.iter()
@@ -60,7 +71,7 @@ JSON TO COPY AND FILL:
                     .collect()
             })
             .unwrap_or_default();
-        model.analyze.tags.extend(llm_tags);
+        model.analyze.tags.extend(tags_normalize(llm_tags));
         model
     }
 }

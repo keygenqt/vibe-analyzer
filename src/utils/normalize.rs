@@ -1,13 +1,49 @@
 //! MCP parameter normalization utilities.
 //! Fixes common LLM hallucinations in tool parameters.
 
-use std::path::Path;
-
 use anyhow::Result;
+use std::path::Path;
 
 use crate::configs::app::AppConfig;
 use crate::utils::constants::MAX_LLM_BODY_CHARS;
 use crate::utils::constants::MCP_MAX_SEARCH_LIMIT;
+
+/// Splits tags on boundaries and CamelCase with Unicode support, removing duplicates and short words.
+pub fn tags_normalize(tags: Vec<String>) -> Vec<String> {
+    let mut unique_tags = std::collections::HashSet::new();
+    let mut result = Vec::new();
+    let mut prepared = String::new();
+    let mut chars = Vec::new();
+    for tag in tags {
+        prepared.clear();
+        chars.clear();
+        chars.extend(tag.chars());
+        for i in 0..chars.len() {
+            let c = chars[i];
+            if !c.is_alphanumeric() {
+                prepared.push(' ');
+                continue;
+            }
+            if i > 0 && chars[i - 1].is_alphanumeric() {
+                let prev_upper = chars[i - 1].is_uppercase();
+                let next_lower = i + 1 < chars.len() && chars[i + 1].is_lowercase();
+                if (c.is_uppercase() && !prev_upper)
+                    || (c.is_uppercase() && prev_upper && next_lower)
+                {
+                    prepared.push(' ');
+                }
+            }
+            prepared.push(c);
+        }
+        for word in prepared.split_whitespace() {
+            let normalized = word.to_lowercase();
+            if normalized.chars().count() >= 3 && unique_tags.insert(normalized.clone()) {
+                result.push(normalized);
+            }
+        }
+    }
+    result
+}
 
 /// Truncate body to max chars for LLM enrichment.
 pub fn body_batch_normalize(body: &Option<String>) -> Option<String> {

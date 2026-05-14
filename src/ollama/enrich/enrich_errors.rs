@@ -1,51 +1,53 @@
 //! Audit enrichment prompt.
 //! Deep analysis: security flaws, performance issues, technical debt.
 
+use anyhow::Result;
+use vibe_ast::Language;
+
 use crate::models::file_language::FileLanguageModel;
-use crate::models::trait_base_model::TraitBaseModel;
-use crate::models::trait_file_model::TraitFileModel;
 use crate::ollama::client::OllamaClient;
 
-// @todo
 impl OllamaClient {
     /// Build prompt for bug and spelling error detection.
-    pub fn enrich_errors_prompt(files: &[FileLanguageModel]) -> String {
-        let template_files: Vec<String> = files
-            .iter()
-            .map(|f| {
-                format!(
-                    r#"    {{
-      "path": "{}",
-      "errors": []
-    }}"#,
-                    f.base_model().path()
-                )
-            })
-            .collect();
+    pub fn enrich_errors_prompt(file: &FileLanguageModel) -> Result<String> {
+        let data = serde_json::to_string(file).unwrap_or_default();
+        if file.node_language == Some(Language::Markdown) {
+            Ok(Self::enrich_errors_prompt_markdown(data))
+        } else {
+            Ok(Self::enrich_errors_prompt_code(data))
+        }
+    }
 
-        let template = format!(r#"{{"files": [\n{}\n]}}"#, template_files.join(",\n"));
-
+    /// Build prompt for bug and spelling error detection in code.
+    pub fn enrich_errors_prompt_code(data: String) -> String {
         format!(
-            r#"COPY this JSON EXACTLY, replacing only the placeholders.
+            r#"Return a JSON ARRAY OF STRINGS with bugs and errors found. Example: ["issue 1", "issue 2"]
 
-Find bugs and spelling errors ACTUALLY PRESENT in the code. Empty [] if none found — do NOT invent or guess.
+Analyze this code and list issues:
+- Unsafe calls: unwrap, expect, panic without error context
+- Incorrect error handling (swallowed errors, empty catch)
 
-Look for: null safety issues, division by zero, incorrect error handling, typos in comments and strings.
+RULES:
+- Report ONLY real problems you see in the code
+- Do NOT report what you didn't find ("None found", "No issues")
+- Return [] if code is clean
 
-Placeholders to replace:
-- "errors" array → list ONLY issues you can SEE in the provided code, or empty []
+FILE CONTENTS:
+{}
+"#,
+            data,
+        )
+    }
 
-STRICT RULES:
-- Keep ALL {} objects in the array
-- Keep ALL "path" values unchanged
-- Do NOT skip any object
-- Do NOT change JSON structure
-- Do NOT report issues you cannot see in the code
+    /// Build prompt for spelling and grammar error detection in markdown.
+    pub fn enrich_errors_prompt_markdown(data: String) -> String {
+        format!(
+            r#"You are a text editor. Find spelling and grammar errors in this text. Return a JSON ARRAY OF STRINGS with errors found. Return [] if text is clean.
 
-JSON TO COPY AND FILL:
-{}"#,
-            files.len(),
-            template
+FILE CONTENTS:
+{}
+"#,
+            data,
         )
     }
 
@@ -55,7 +57,7 @@ JSON TO COPY AND FILL:
         item: &serde_json::Value,
     ) -> FileLanguageModel {
         let mut model = original.clone();
-        model.analyze.errors = item["errors"]
+        model.analyze.errors = item
             .as_array()
             .map(|a| {
                 a.iter()

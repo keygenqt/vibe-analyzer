@@ -105,7 +105,7 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_batch(mode),
             code: self.code.format_batch(mode),
             knowledge: self.knowledge.format_batch(mode),
-            node_language: None,
+            node_language: self.node_language.clone(),
         }
     }
 }

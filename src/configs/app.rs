@@ -183,7 +183,6 @@ impl AppConfig {
                     "LLM enrichment batch settings for scan analyze.",
                     "",
                     "max_chunk_chars - Maximum characters per request batch",
-                    "max_chunk_files - Maximum files per request batch",
                     "",
                     "Enrichment features:",
                     "   meta   - Generate summary and tags for the file",

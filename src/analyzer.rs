@@ -98,16 +98,21 @@ pub async fn scan_analyze(
 
     // Enrich each project
     let mut enriched = Vec::new();
-    for project in projects {
+    for mut project in projects {
         let name = project.path.split('/').last().unwrap_or(&project.path);
         print_info!("Start enrichment source: {}", name.bold().blue());
         for mode in modes {
+            // Use smaller batch for non-Meta modes to avoid context overflow
+            let max_chunk_files = match mode {
+                AnalyzeMode::Meta => 5,
+                _ => 1,
+            };
             match analyze_project(
                 &project,
                 &cluster,
                 mode.clone(),
                 config.analyze.max_chunk_chars,
-                config.analyze.max_chunk_files,
+                max_chunk_files,
                 |mode, percent, current, total| {
                     print_progress!(
                         "Processing enrich {}... {:.1}% ({}/{})",
@@ -124,13 +129,27 @@ pub async fn scan_analyze(
             )
             .await
             {
-                Ok(analysis) => enriched.push(analysis),
+                Ok(analysis) => {
+                    // Keep first non-empty summary from any enrichment mode
+                    project.summary = analysis.summary.or(project.summary);
+                    // Merge enrichment results back into the same project
+                    for (file, enriched_file) in project.files.iter_mut().zip(analysis.files.iter())
+                    {
+                        match (file, enriched_file) {
+                            (FileModels::Language(lang), FileModels::Language(enriched_lang)) => {
+                                lang.analyze.merge(&enriched_lang.analyze);
+                            }
+                            _ => {}
+                        }
+                    }
+                }
                 Err(e) => {
                     print_newline!();
                     return Err(e);
                 }
             }
         }
+        enriched.push(project);
     }
     Ok(enriched)
 }
