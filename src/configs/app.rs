@@ -212,6 +212,7 @@ impl AppConfig {
                     "   headings - Markdown headings",
                     "   links - Markdown links",
                     "   code_blocks - Markdown code blocks",
+                    "   stats - Static analysis results (markers, warnings)",
                     "   body - Body content (functions, classes, headings, etc.)",
                 ],
             ),

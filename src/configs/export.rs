@@ -56,6 +56,8 @@ pub struct ExportIncludeConfig {
     pub links: bool,
     /// Include code blocks.
     pub code_blocks: bool,
+    /// Include static analysis results (markers, warnings).
+    pub stats: bool,
     /// Include body content (functions, classes, headings, etc.).
     pub body: bool,
 }
@@ -75,6 +77,7 @@ impl Default for ExportIncludeConfig {
             headings: true,
             links: true,
             code_blocks: true,
+            stats: false,
             body: false,
         }
     }

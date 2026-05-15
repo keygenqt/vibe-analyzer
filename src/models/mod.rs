@@ -7,6 +7,7 @@ pub mod file_language;
 pub mod file_language_analyze;
 pub mod file_language_code;
 pub mod file_language_knowledge;
+pub mod file_language_stats;
 pub mod file_models;
 pub mod file_text;
 pub mod lang_class;

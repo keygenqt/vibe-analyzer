@@ -65,7 +65,7 @@ rmcp = { version = "1.4.0", features = [
 rmcp-macros = "1.4.0"
 schemars = "1.2.1"
 async-trait = "0.1.89"
-vibe-ast = "0.0.8"
+vibe-ast = "0.0.12"
 vibe-fs = "0.0.3"
 
 [dev-dependencies]

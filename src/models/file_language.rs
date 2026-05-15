@@ -12,6 +12,7 @@ use crate::models::file_base::FileBaseModel;
 use crate::models::file_language_analyze::FileLanguageAnalyzeModel;
 use crate::models::file_language_code::FileLanguageCodeModel;
 use crate::models::file_language_knowledge::FileLanguageKnowledgeModel;
+use crate::models::file_language_stats::FileLanguageStatsModel;
 use crate::models::trait_file_model::TraitFileModel;
 use crate::models::trait_format_model::TraitFormatModel;
 
@@ -32,6 +33,9 @@ pub struct FileLanguageModel {
     /// Knowledge base structures.
     #[serde(flatten)]
     pub knowledge: FileLanguageKnowledgeModel,
+    /// Static analysis results from AST parsing (markers, warnings).
+    #[serde(flatten)]
+    pub stats: FileLanguageStatsModel,
     /// Detected programming or markup language.
     #[serde(skip)]
     pub node_language: Option<Language>,
@@ -61,6 +65,7 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_ast(),
             code: self.code.format_ast(),
             knowledge: self.knowledge.format_ast(),
+            stats: self.stats.format_ast(),
             node_language: None,
         }
     }
@@ -72,6 +77,7 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_analyze(),
             code: self.code.format_analyze(),
             knowledge: self.knowledge.format_analyze(),
+            stats: self.stats.format_ast(),
             node_language: None,
         }
     }
@@ -83,6 +89,7 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_index(),
             code: self.code.format_index(),
             knowledge: self.knowledge.format_index(),
+            stats: self.stats.format_ast(),
             node_language: None,
         }
     }
@@ -94,6 +101,7 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_tool(),
             code: self.code.format_tool(),
             knowledge: self.knowledge.format_tool(),
+            stats: self.stats.format_ast(),
             node_language: None,
         }
     }
@@ -105,6 +113,7 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_batch(mode),
             code: self.code.format_batch(mode),
             knowledge: self.knowledge.format_batch(mode),
+            stats: self.stats.format_ast(),
             node_language: self.node_language.clone(),
         }
     }
@@ -131,6 +140,12 @@ macro_rules! from_code_nodes {
                 tags: $nodes.tags,
                 // Summary filled later by LLM enrichment.
                 ..Default::default()
+            },
+            stats: FileLanguageStatsModel {
+                // Code markers from static analysis (TODO, FIXME, HACK, etc.)
+                markers: $nodes.markers,
+                // Warnings from static analysis (unwrap, panic, bare except, etc.)
+                warnings: $nodes.warnings,
             },
             node_language: Some(Language::$lang),
             // base, knowledge default to empty.
@@ -208,6 +223,10 @@ impl From<Nodes> for FileLanguageModel {
                 analyze: FileLanguageAnalyzeModel {
                     tags: n.tags,
                     ..Default::default()
+                },
+                stats: FileLanguageStatsModel {
+                    markers: n.markers,
+                    warnings: n.warnings,
                 },
                 node_language: Some(Language::Markdown),
                 ..Default::default()

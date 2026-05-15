@@ -10,6 +10,7 @@ use crate::export::formats::xml::XmlWriter;
 use crate::export::formats::yaml::YamlWriter;
 use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
+use crate::models::file_language_stats::FileLanguageStatsModel;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
 use crate::utils::app;
@@ -104,6 +105,9 @@ impl ExportModel {
                         }
                         if !config.include.code_blocks {
                             lang.knowledge.code_blocks = vec![];
+                        }
+                        if !config.include.stats {
+                            lang.stats = FileLanguageStatsModel::default();
                         }
                         if !config.include.body {
                             for func in &mut lang.code.functions {
