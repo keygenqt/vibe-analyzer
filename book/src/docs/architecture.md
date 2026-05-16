@@ -44,13 +44,14 @@ The Scanner handles initial source code processing:
 
 ### Analyzer
 
-The Analyzer enriches scanner results using LLM:
+The Analyzer enriches scanner results using LLM and static analysis:
 
+- **Static analysis** — finds code markers (TODO, FIXME, HACK) and warnings (unwrap, panic, bare except) across 14 languages
+- **LLM enrichment** — four modes: Meta (summaries), Debt (technical debt), Errors (bugs), Advice (refactoring)
 - **Prompt generation** — builds a request for each file containing the AST structure
 - **Request distribution** — with multiple Ollama hosts configured, files are pushed to a shared channel and workers compete for them (competing consumers). The fastest worker takes the next file, maximizing host utilization
 - **Batch processing** — files are grouped into batches limited by `max_chunk_chars` and `max_chunk_files`
 - **Controlled generation** — configurable parameters `temperature`, `seed`, `num_ctx`, `num_predict` for reproducible results
-- **Enrichment** — LLM adds a description and multilingual search tags to each file
 - **Project summarization** — a separate request generates a brief description of the entire source
 
 ### Indexer

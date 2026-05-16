@@ -1,43 +1,40 @@
 # LLM Enrichment
 
-After AST parsing, Vibe Analyzer can enrich results via Ollama: adding a description and search tags to each file, and a brief summary to the project based on the README.
+After AST parsing, Vibe Analyzer enriches results via Ollama across four analysis modes: Meta, Debt, Errors, and Advice.
 
 ## How It Works
 
 ```
-AST data → batching → Ollama request → description + 5 tags for each file
+AST data → static analysis → batching → Ollama request → enrichment results
 ```
 
-### 1. Project Summarization
+### 1. Static Analysis
 
-The README (if present) is sent to Ollama with the prompt "write 2-3 sentences about the project". The result is saved in `summary`.
+Before LLM processing, code is analyzed programmatically across 14 languages:
+
+- **Markers:** TODO, FIXME, HACK, and 18 other markers
+- **Warnings:** unsafe calls (unwrap, panic), swallowed exceptions, debug statements
+
+These are included in the prompt so the model can build on them.
 
 ### 2. File Enrichment
 
-**Batching.** Files are grouped into batches based on two config limits from the `analyze` section:
+**Batching.** Files are grouped into batches limited by `max_chunk_chars` (default 3000) from the `analyze` config section.
 
-- `max_chunk_chars` — maximum characters per request (default 3000)
-- `max_chunk_files` — maximum files per request (default 3)
+The prompt contains the AST structure: functions, classes, structs, and other elements. Which elements to include is controlled by `export.include` in config.
 
-The prompt does not contain the files themselves, but their AST: functions, classes, structs, and other elements. Which elements to include is controlled by the `scan` section in config.
+**Analysis modes:**
 
-**Prompt.** Ollama receives a JSON template:
+| Mode     | Description                                                           |
+| -------- | --------------------------------------------------------------------- |
+| `meta`   | Generate summary and search tags for each file                        |
+| `debt`   | Detect technical debt: code duplication, magic numbers, complex logic |
+| `errors` | Find bugs: unsafe calls, swallowed errors                             |
+| `advice` | Suggest refactoring, naming, and test improvements                    |
 
-```json
-{
-  "files": [
-    {
-      "path": "src/main.rs",
-      "description": "FILL_DESCRIPTION",
-      "tags": ["TAG1", "TAG2", "TAG3", "TAG4", "TAG5"]
-    }
-  ]
-}
-```
+**Prompt.** For Meta, Ollama receives a JSON template to fill. For Debt/Errors/Advice, the model returns a JSON array of issues found.
 
-The model must fill in `description` and exactly 5 tags while preserving the structure. The prompt strictly requires: don't skip files, don't change paths, copy the JSON as-is.
-
-**Response.** Ollama returns the completed JSON:
+**Response.** Example for Meta:
 
 ```json
 {
@@ -45,7 +42,7 @@ The model must fill in `description` and exactly 5 tags while preserving the str
     {
       "path": "src/main.rs",
       "description": "Main entry point for the CLI application",
-      "tags": ["entry-point", "cli", "argument-parsing", "rust", "binary"]
+      "tags": ["entry", "point", "cli", "argument", "parsing", "rust", "binary"]
     }
   ]
 }
@@ -53,60 +50,48 @@ The model must fill in `description` and exactly 5 tags while preserving the str
 
 ### 3. Parallel Processing
 
-If multiple Ollama hosts are configured, files are distributed among them:
+If multiple Ollama hosts are configured, files are distributed via competing consumers:
 
 - All hosts read from a single channel
 - The fastest one processes the most
-- If any host errors — all stop
-- At the end, per-host statistics are reported: how many files each processed
+- At the end, per-host statistics are reported
 
 ### 4. JSON Repair
 
-LLMs often corrupt JSON: add comments, wrap in markdown blocks, drop quotes. `clean_llm_json` fixes this:
-
-- Extracts JSON from blocks
-- Adds missing key quotes
-- Removes trailing commas
-- Balances unclosed braces
+LLMs often corrupt JSON: add comments, wrap in markdown blocks, drop quotes. `clean_llm_json` fixes this automatically.
 
 ### 5. Retries
 
-If Ollama returns fewer files than were in the batch — up to 5 retries with delay. If after 5 attempts it still doesn't match — an error with recommendations to reduce `max_chunk_chars` or switch models.
+If Ollama returns fewer files than were in the batch — up to 5 retries with delay. After 5 failures, an error is returned with recommendations.
 
 ## Generation Parameters
 
-The following are passed from each Ollama host config to the API request:
+Configured per Ollama host:
 
-- `temperature: 0.1` — low temperature for stable results
-- `seed: 42` — fixed seed for reproducibility
-- `num_ctx: 4096` — context window size
-- `num_predict: 2048` — maximum tokens in response
-- `timeout_secs: 60` — request timeout
-
-Batch limits (`max_chunk_chars`, `max_chunk_files`) are configured in the `analyze` section — see Batching above.
+| Parameter      | Default | Description                        |
+| -------------- | ------- | ---------------------------------- |
+| `temperature`  | `0.1`   | Low temperature for stable results |
+| `seed`         | `42`    | Fixed seed for reproducibility     |
+| `num_ctx`      | `4096`  | Context window size in tokens      |
+| `num_predict`  | `2048`  | Maximum tokens in response         |
+| `timeout_secs` | `60`    | Request timeout in seconds         |
 
 ## Model Warm-Up
 
-Before enrichment begins, for each Ollama host:
+Before enrichment, for each Ollama host:
 
-1. Availability check (`GET /`)
-2. Model presence check (`GET /api/tags`)
-3. Empty request to load the model into memory (`POST /api/generate` with empty prompt)
+1. Availability check
+2. Model presence check
+3. Empty request to load the model into memory
 
-## Enrichment Result
-
-After processing, each file receives `description` and 5 tags from the LLM, and the project receives a `summary` based on the README.
-
-### Exporting Results
-
-AST parsing and LLM enrichment results can be exported to a file for analysis, debugging, or use in other tools:
+## Exporting Results
 
 ```bash
 # AST with LLM enrichment
-vibe-analyzer scan analyze --target my-app
+vibe-analyzer analyze export -m meta,debt
 
-# With format and path specified
-vibe-analyzer scan analyze --target my-app --format json5 --output analysis.json5
+# Code only, JSON5 format
+vibe-analyzer analyze export -m errors -t code -f json5
 ```
 
 Supported export formats: JSON, JSON5, TOML, TOON, XML, YAML.

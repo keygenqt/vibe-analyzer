@@ -1,88 +1,56 @@
 # Supported Languages
 
-Vibe Analyzer supports AST parsing and LLM enrichment for 13 programming languages and file formats.
+Vibe Analyzer supports AST parsing, static analysis, and LLM enrichment for 14 languages.
 
 ## Full List
 
-| Language   | Extensions | AST | Enrichment | Parser             |
-| ---------- | ---------- | --- | ---------- | ------------------ |
-| Rust       | `.rs`      | ✅  | ✅         | `RustParser`       |
-| Python     | `.py`      | ✅  | ✅         | `PythonParser`     |
-| JavaScript | `.js`      | ✅  | ✅         | `JavaScriptParser` |
-| TypeScript | `.ts`      | ✅  | ✅         | `TypeScriptParser` |
-| Java       | `.java`    | ✅  | ✅         | `JavaParser`       |
-| Go         | `.go`      | ✅  | ✅         | `GoParser`         |
-| C#         | `.cs`      | ✅  | ✅         | `CSharpParser`     |
-| Kotlin     | `.kt`      | ✅  | ✅         | `KotlinParser`     |
-| Swift      | `.swift`   | ✅  | ✅         | `SwiftParser`      |
-| Dart       | `.dart`    | ✅  | ✅         | `DartParser`       |
-| Bash       | `.sh`      | ✅  | ✅         | `BashParser`       |
-| Batch      | `.bat`     | ✅  | ✅         | `BatchParser`      |
-| ArkTS      | `.ets`     | ✅  | ✅         | `ArkTsParser`      |
-| Markdown   | `.md`      | ✅  | ✅         | `MarkdownParser`   |
+| Language   | Extensions | AST | Static Analysis | Enrichment |
+| ---------- | ---------- | --- | --------------- | ---------- |
+| Rust       | `.rs`      | ✅  | ✅              | ✅         |
+| Python     | `.py`      | ✅  | ✅              | ✅         |
+| JavaScript | `.js`      | ✅  | ✅              | ✅         |
+| TypeScript | `.ts`      | ✅  | ✅              | ✅         |
+| Java       | `.java`    | ✅  | ✅              | ✅         |
+| Go         | `.go`      | ✅  | ✅              | ✅         |
+| C#         | `.cs`      | ✅  | ✅              | ✅         |
+| Kotlin     | `.kt`      | ✅  | ✅              | ✅         |
+| Swift      | `.swift`   | ✅  | ✅              | ✅         |
+| Dart       | `.dart`    | ✅  | ✅              | ✅         |
+| Bash       | `.sh`      | ✅  | ✅              | ✅         |
+| Batch      | `.bat`     | ✅  | ✅              | ✅         |
+| ArkTS      | `.ets`     | ✅  | ✅              | ✅         |
+| Markdown   | `.md`      | ✅  | ✅              | ✅         |
 
-> **Note:** Markdown is a special case. Headings, links, code blocks, and frontmatter metadata are extracted instead of programmatic constructs.
-> This allows Markdown files to be used as a knowledge base: documentation, guidelines, standards, project legends. They are searchable via `search_documentation` and `search_knowledge`.
+## Extracted Elements
 
-## Extracted Element Categories
+### Code
 
-### For All Programming Languages
+| Element           | Description                                            |
+| ----------------- | ------------------------------------------------------ |
+| `functions`       | Functions and methods with signatures and doc comments |
+| `classes`         | Class declarations                                     |
+| `structs`         | Struct and record declarations                         |
+| `enums`           | Enum declarations                                      |
+| `interfaces`      | Interface, trait, and protocol declarations            |
+| `variables`       | Module-level variables and constants                   |
+| `imports`         | Import statements and dependencies                     |
+| `header_comments` | File-level documentation comments                      |
 
-| Element           | Description                          | Example (Rust)                           |
-| ----------------- | ------------------------------------ | ---------------------------------------- |
-| `header_comments` | Module comment — file purpose        | `"Application configuration management"` |
-| `functions`       | Functions and methods                | `fn add(a: i32, b: i32) -> i32`          |
-| `classes`         | Classes                              | `class User`                             |
-| `structs`         | Structs and records                  | `struct Config`                          |
-| `enums`           | Enums                                | `enum Color`                             |
-| `interfaces`      | Interfaces, traits, protocols        | `trait Display`                          |
-| `variables`       | Module-level variables and constants | `const MAX_SIZE: usize`                  |
-| `imports`         | Imports and dependencies             | `use std::fs`                            |
+### Markdown
 
-### Markdown Only
+| Element       | Description                             |
+| ------------- | --------------------------------------- |
+| `headings`    | Headings with level, title, and preview |
+| `links`       | Links with text and URL                 |
+| `code_blocks` | Fenced code block languages             |
+| `frontmatter` | YAML frontmatter metadata               |
 
-| Element       | Description                            | Example                                                                        |
-| ------------- | -------------------------------------- | ------------------------------------------------------------------------------ |
-| `headings`    | Headings with level, text, and preview | `{ level: 1, title: "Vibe Analyzer", preview: "Universal knowledge base..." }` |
-| `links`       | Links                                  | `{ text: "documentation", url: "https://example.com/docs" }`                   |
-| `code_blocks` | Code block languages                   | `["bash", "rust"]`                                                             |
-| `frontmatter` | YAML metadata                          | `{ title: "...", tags: "...", author: "..." }`                                 |
+### Static Analysis
 
-## Element Support by Language
-
-| Language   | Functions | Classes | Structs | Enums | Interfaces | Variables | Imports |
-| ---------- | --------- | ------- | ------- | ----- | ---------- | --------- | ------- |
-| Rust       | ✅        | —       | ✅      | ✅    | ✅         | ✅        | ✅      |
-| Python     | ✅        | ✅      | —       | —     | —          | ✅        | ✅      |
-| JavaScript | ✅        | ✅      | —       | —     | —          | ✅        | ✅      |
-| TypeScript | ✅        | ✅      | ✅      | ✅    | ✅         | ✅        | ✅      |
-| Java       | ✅        | ✅      | —       | ✅    | ✅         | ✅        | ✅      |
-| Go         | ✅        | —       | ✅      | ✅    | —          | ✅        | ✅      |
-| C#         | ✅        | ✅      | ✅      | ✅    | —          | ✅        | ✅      |
-| Kotlin     | ✅        | ✅      | —       | ✅    | ✅         | ✅        | ✅      |
-| Swift      | ✅        | ✅      | ✅      | ✅    | ✅         | ✅        | ✅      |
-| Dart       | ✅        | ✅      | —       | ✅    | —          | ✅        | ✅      |
-| Bash       | ✅        | —       | —       | —     | —          | ✅        | ✅      |
-| Batch      | ✅        | —       | —       | —     | —          | ✅        | ✅      |
-| ArkTS      | ✅        | ✅      | ✅      | ✅    | ✅         | ✅        | ✅      |
-
-## Multilingual Search Tags
-
-Each extracted element receives tags in three languages with synonyms for better searchability.
-This allows searching for elements in Russian, English, or Chinese — regardless of the source code language.
-
-| Element Type     | EN                           | RU                        | ZH               |
-| ---------------- | ---------------------------- | ------------------------- | ---------------- |
-| Functions        | `functions`, `methods`       | `функции`, `методы`       | `函数`, `方法`   |
-| Classes          | `classes`, `types`           | `классы`, `типы`          | `类`, `类型`     |
-| Structs          | `structs`, `records`         | `структуры`, `записи`     | `结构体`, `记录` |
-| Enums            | `enums`                      | `перечисления`            | `枚举`           |
-| Interfaces       | `interfaces`                 | `интерфейсы`              | `接口`           |
-| Variables        | `variables`, `constants`     | `переменные`, `константы` | `变量`, `常量`   |
-| Imports          | `imports`, `dependencies`    | `импорты`, `зависимости`  | `导入`, `依赖`   |
-| Headings (MD)    | `headings`                   | `заголовки`               | `标题`           |
-| Code blocks (MD) | `code_blocks`, `code blocks` | `блоки кода`              | `代码块`         |
-| Links (MD)       | `links`                      | `ссылки`                  | `链接`           |
+| Element    | Description                                               |
+| ---------- | --------------------------------------------------------- |
+| `markers`  | Code markers: TODO, FIXME, HACK, XXX, and 17 more         |
+| `warnings` | Potential issues: unwrap, panic, empty catch, console.log |
 
 ## Doc Comment Formats
 
@@ -104,151 +72,13 @@ Vibe Analyzer extracts documentation from specially formatted comments. Regular 
 | Batch      | `::` before label             | `::` at script start            | `:: Module documentation for Batch testing` |
 | ArkTS      | `/** */`                      | `/** */` at file start          | `/** Async function example */`             |
 
-## AST Example
+## Multilingual Search
 
-**Source code (`sample.py`):**
-
-```py
-"""
-Module documentation for Python testing
-"""
-
-import os
-import sys
-from datetime import datetime
-from typing import List, Optional
-
-# Regular comment - ignored
-
-
-def add(a: int, b: int) -> int:
-    """Adds two numbers"""
-    return a + b
-
-
-def multiply(a: int, b: int) -> int:
-    """Multiplies two numbers"""
-    return a * b
-
-
-async def fetch_data(url: str) -> str:
-    """Async function example"""
-    return "data"
-
-
-class User:
-    """User class"""
-
-    def __init__(self, name: str, age: int):
-        """Constructor"""
-        self.name = name
-        self.age = age
-
-    def get_name(self) -> str:
-        """Get user name"""
-        return self.name
-
-
-class Config:
-    """Config class"""
-    debug: bool = False
-    max_size: int = 1024
-
-
-class Color:
-    """Color enum (using class constants)"""
-    RED = 1
-    GREEN = 2
-    BLUE = 3
-
-
-MAX_SIZE: int = 1024
-DEFAULT_TIMEOUT: int = 30
-
-APP_NAME: str = "vibe-analyzer"
-
-# Regular comment at the end - ignored
-```
-
-**Extracted AST:**
-
-```json
-{
-  "functions": [
-    {
-      "signature": "def add(a: int, b: int) -> int",
-      "comments": ["Adds two numbers"]
-    },
-    {
-      "signature": "def multiply(a: int, b: int) -> int",
-      "comments": ["Multiplies two numbers"]
-    },
-    {
-      "signature": "async def fetch_data(url: str) -> str",
-      "comments": ["Async function example"]
-    }
-  ],
-  "classes": [
-    {
-      "signature": "class User",
-      "comments": ["User class"]
-    },
-    {
-      "signature": "class Config",
-      "comments": ["Config class"]
-    },
-    {
-      "signature": "class Color",
-      "comments": ["Color enum (using class constants)"]
-    }
-  ],
-  "variables": [
-    {
-      "signature": "MAX_SIZE: int"
-    },
-    {
-      "signature": "DEFAULT_TIMEOUT: int"
-    },
-    {
-      "signature": "APP_NAME: str"
-    }
-  ],
-  "imports": ["os", "sys", "datetime", "typing"],
-  "header_comments": ["Module documentation for Python testing"],
-  "tags": [
-    "header_comments",
-    "imports",
-    "dependencies",
-    "импорты",
-    "зависимости",
-    "导入",
-    "依赖",
-    "variables",
-    "constants",
-    "переменные",
-    "константы",
-    "变量",
-    "常量",
-    "functions",
-    "methods",
-    "функции",
-    "методы",
-    "函数",
-    "方法",
-    "classes",
-    "types",
-    "классы",
-    "типы",
-    "类",
-    "类型"
-  ]
-}
-```
+Each element receives tags in EN, RU, and ZH for language-agnostic search.
 
 ## Limitations
 
-- **Maximum file size for AST parsing:** 10 MB (`MAX_AST_FILE_SIZE` constant)
-- **Default ignored directories:** `target`, `node_modules`, `__pycache__`, `.venv`, `venv`, `.git`, `.idea`
-- **Default ignored files:** `.DS_Store`, `Thumbs.db`, `*.hprof`, `*.log`
-- **Binary files:** detected by extension, name, and content analysis, excluded from parsing
-- **Nested elements:** methods inside classes are extracted as functions, variables inside functions/classes are not extracted
+- **Maximum file size:** 10 MB
+- **Ignored directories:** `target`, `node_modules`, `.git`, `.idea`, etc.
+- **Binary files:** excluded from parsing
+- **Nested elements:** methods inside classes extracted as functions; variables inside functions are not extracted

@@ -36,6 +36,20 @@
   background-clip: text;
 }
 
+.Body .version {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: var(--accent);
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+  border: 1px solid var(--border);
+  padding: 6px 14px;
+  border-radius: 20px;
+  box-sizing: border-box;
+  width: fit-content;
+  background: var(--bg-card);
+}
+
 .Body .subtitle {
   font-size: 20px;
   font-weight: 500;

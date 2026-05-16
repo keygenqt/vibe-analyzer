@@ -2,7 +2,7 @@
 
 ## What is Vibe Analyzer
 
-Vibe Analyzer is an Agentic RAG engine for codebases and knowledge bases. It extracts structure from source code via AST parsing, enriches it with LLM, and indexes everything into OpenSearch. AI assistants access knowledge through 11 MCP tools.
+Vibe Analyzer is a codebase analysis and Agentic RAG engine. It extracts structure from source code via AST parsing, enriches it with LLM, runs static analysis for 14 languages, and indexes everything into OpenSearch. AI assistants access knowledge through 11 MCP tools.
 
 ## The Problem with Traditional RAG
 
@@ -36,35 +36,23 @@ Query → AI model selects an MCP tool → Tool returns a structured response
 
 ## Key Features
 
-- 🌳 AST parsing for 13 programming languages
-- 💡 LLM enrichment: descriptions and search tags for each file
-- 📄 Export AST and AST+LLM to JSON, JSON5, TOML, TOON, XML, YAML
+- 🌳 AST parsing for 14 programming languages
+- 🔍 Static analysis: code markers (TODO, FIXME, HACK), warnings (unwrap, panic) across all languages
+- 💡 LLM enrichment: technical debt, bugs, refactoring suggestions, file summaries
+- 📄 Export AST and analysis results to JSON, JSON5, TOML, TOON, XML, YAML
 - 📝 Semantic and morphological search across code and documentation
 - ⚡ Incremental indexing (modified files only)
-- 📦 Self-contained tools (one call — complete response)
+- 📦 Self-contained MCP tools (one call — complete response)
 - 🗂️ Multilingual support (RU, EN, ZH)
 - 🦀 Built in Rust — fast and memory-efficient
 
-## Anti-Hallucination Protection
-
-To prevent AI models from making up parameters and tool names:
-
-- ✅ Soft parameter validation
-- 🛡️ Input parameter normalization
-- 📋 Optimized tool descriptions
-- 🏷️ 150+ aliases for tool names
-- 🌐 Automatic query language detection
-- 🧪 Full-cycle end-to-end tests
-- 📐 Tested on models from 3B parameters
-
 ## Who This Is For
 
-- **Development teams** — index your entire codebase, and AI assistants can answer questions about architecture, find functions, and explain module connections
-- **Developers under NDA** — the entire stack runs locally: OpenSearch, Ollama, MCP server. No data ever leaves to external APIs. Index proprietary code without risk of violating agreements
-- **Private projects** — models from 3B parameters run on your hardware. No one sees your code or your queries
+- **Development teams** — index your codebase, let AI assistants answer architecture questions
+- **Developers under NDA** — the entire stack runs locally: OpenSearch, Ollama, MCP server. No data ever leaves to external APIs
+- **Private projects** — models from 3B parameters run on your hardware
 - **Technical writers** — store documentation in Markdown files and search it in any language
 - **Open-source projects** — give contributors a quick way to understand the code
-- **Startups** — lower the entry barrier for new developers without cloud API costs
 
 ## What's Next
 
