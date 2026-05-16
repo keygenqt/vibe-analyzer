@@ -44,11 +44,15 @@ impl TraitFormatModel for LangFunctionModel {
     }
 
     fn format_index(&self) -> Self {
-        self.format_ast()
+        Self {
+            signature: self.signature.clone(),
+            comments: self.comments.clone(),
+            body: None,
+        }
     }
 
     fn format_tool(&self) -> Self {
-        self.format_ast()
+        self.format_index()
     }
 
     fn format_batch(&self, mode: AnalyzeMode) -> Self {

@@ -89,7 +89,7 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_index(),
             code: self.code.format_index(),
             knowledge: self.knowledge.format_index(),
-            stats: self.stats.format_ast(),
+            stats: FileLanguageStatsModel::default(),
             node_language: None,
         }
     }
@@ -101,7 +101,7 @@ impl TraitFormatModel for FileLanguageModel {
             analyze: self.analyze.format_tool(),
             code: self.code.format_tool(),
             knowledge: self.knowledge.format_tool(),
-            stats: self.stats.format_ast(),
+            stats: FileLanguageStatsModel::default(),
             node_language: None,
         }
     }
