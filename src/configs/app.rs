@@ -180,7 +180,8 @@ impl AppConfig {
             Json5::Commit(
                 "analyze",
                 vec![
-                    "LLM enrichment batch settings for scan analyze.",
+                    "Analysis settings for scan commands.",
+                    "When all features are disabled, only AST data is returned.",
                     "",
                     "max_chunk_chars - Maximum characters per request batch",
                     "",
@@ -212,7 +213,8 @@ impl AppConfig {
                     "   headings - Markdown headings",
                     "   links - Markdown links",
                     "   code_blocks - Markdown code blocks",
-                    "   stats - Static analysis results (markers, warnings)",
+                    "   markers - Markers from static analysis (TODO, FIXME, HACK, etc.)",
+                    "   warnings - Warnings from static analysis (unwrap, panic, bare except, etc.)",
                     "   body - Body content (functions, classes, headings, etc.)",
                 ],
             ),
@@ -230,7 +232,7 @@ impl AppConfig {
                     "num_predict - Maximum tokens to generate",
                 ],
             ),
-            Json5::Commit("sources", vec!["Knowledge sources to index"]),
+            Json5::Commit("sources", vec!["Sources to index"]),
         ];
         let json = json5::to_string(self)?;
         let content = utils::json5::add_commits(json, commits);
