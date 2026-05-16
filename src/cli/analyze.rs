@@ -10,6 +10,7 @@ use crate::configs::app::AppConfig;
 use crate::exit_error;
 use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
+use crate::export::options::ExportType;
 use crate::export::writer;
 use crate::export::writer::ExportModel;
 use crate::indexer::scan_index;
@@ -25,7 +26,7 @@ pub enum AnalyzeAction {
     /// Index scan results to OpenSearch.
     Index {
         /// Target source (all if not specified)
-        #[arg(long, short = 't')]
+        #[arg(long)]
         target: Option<String>,
 
         /// Fast mode: skip LLM enrichment, index structure only
@@ -39,13 +40,17 @@ pub enum AnalyzeAction {
 
     /// Export analyze results to file.
     Export {
+        /// Target source (all if not specified)
+        #[arg(long)]
+        target: Option<String>,
+
         /// Analysis mode
         #[arg(long, short = 'm', value_delimiter = ',')]
         mode: Option<Vec<AnalyzeMode>>,
 
-        /// Target source (all if not specified)
-        #[arg(long, short = 't')]
-        target: Option<String>,
+        /// Filter export by file type (code, markdown, text, binary).
+        #[arg(long, short = 't', value_delimiter = ',')]
+        r#type: Option<Vec<ExportType>>,
 
         /// Export format
         #[arg(long, short = 'f')]
@@ -92,12 +97,14 @@ pub async fn run(action: AnalyzeAction) {
             };
         }
         AnalyzeAction::Export {
-            mode,
             target,
+            mode,
+            r#type,
             format,
             path,
             output,
         } => {
+            // Prepare export parameters
             let output = match path::resolve_file_path(output) {
                 Ok(o) => o,
                 Err(e) => exit_error!("{}", e),
@@ -110,22 +117,38 @@ pub async fn run(action: AnalyzeAction) {
                 None => config.analyze.include.list(),
                 Some(modes) => modes,
             };
+            let types = match r#type.clone() {
+                None => config.export.types.list(),
+                Some(types) => types,
+            };
+            // Check for conflicting settings: LLM enrichment enabled but code/markdown excluded
+            let has_llm = modes.iter().any(|m| *m != AnalyzeMode::Ast);
+            if has_llm
+                && !(types.contains(&ExportType::Code) || types.contains(&ExportType::Markdown))
+            {
+                exit_error!(
+                    "LLM enrichment requires Code or Markdown files, but both are excluded."
+                );
+            }
+            // Run analysis based on selected modes
             let projects = if modes == vec![AnalyzeMode::Ast] {
                 scan_ast(&config, target, path, true).await
             } else {
                 scan_analyze(&config, target, path, &modes, true).await
             };
+            // Handle analysis errors
             let projects = match projects {
                 Ok(result) => result,
                 Err(e) => exit_error!("{}", e),
             };
+            // Export analysis results to file
             if !projects.is_empty() {
                 print_info!("Saving file...");
-                let options = ExportOptions::new(format, output);
+                let options = ExportOptions::new(format, types, output);
                 let export_model = if modes == vec![AnalyzeMode::Ast] {
-                    ExportModel::new_ast(&config.export, projects)
+                    ExportModel::new_ast(&options, &config.export, projects)
                 } else {
-                    ExportModel::new_analyze(&config.export, projects)
+                    ExportModel::new_analyze(&options, &config.export, projects)
                 };
                 match writer::export(export_model, &options, &config.export) {
                     Ok(path) => {

@@ -10,6 +10,7 @@ use crate::export::formats::xml::XmlWriter;
 use crate::export::formats::yaml::YamlWriter;
 use crate::export::options::ExportFormat;
 use crate::export::options::ExportOptions;
+use crate::export::options::ExportType;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
 use crate::utils::app;
@@ -21,6 +22,7 @@ use serde::Serialize;
 use std::collections::HashMap;
 use std::path::Path;
 use std::path::PathBuf;
+use vibe_ast::Language;
 
 /// Container for multiple source analyses (batch JSON export)
 #[derive(Serialize)]
@@ -33,43 +35,65 @@ pub struct ExportModel {
 
 impl ExportModel {
     /// Creates export with AST-only formatting, filtered by scan config.
-    pub fn new_ast(config: &ExportConfig, projects: Vec<ProjectModel>) -> Self {
-        let scan = config.clone();
+    pub fn new_ast(
+        options: &ExportOptions,
+        config: &ExportConfig,
+        projects: Vec<ProjectModel>,
+    ) -> Self {
+        let config = config.clone();
         ExportModel {
             indexed_at: Local::now().to_rfc3339(),
             projects: projects
                 .into_iter()
-                .map(|p| Self::filter_by_config(&scan, p))
-                .map(|p| ProjectModel {
-                    files: FileModels::format_ast(p.files),
-                    ..p
+                .map(|p| Self::filter_by_config(options, &config, p))
+                .map(|mut p| {
+                    p.files = FileModels::format_ast(p.files);
+                    p.stats = Some(ProjectModel::compute_stats(&p.files));
+                    p
                 })
                 .collect(),
         }
     }
 
     /// Creates export with AST + enrichment formatting, filtered by scan config.
-    pub fn new_analyze(config: &ExportConfig, projects: Vec<ProjectModel>) -> Self {
-        let scan = config.clone();
+    pub fn new_analyze(
+        options: &ExportOptions,
+        config: &ExportConfig,
+        projects: Vec<ProjectModel>,
+    ) -> Self {
+        let config = config.clone();
         ExportModel {
             indexed_at: Local::now().to_rfc3339(),
             projects: projects
                 .into_iter()
-                .map(|p| Self::filter_by_config(&scan, p))
-                .map(|p| ProjectModel {
-                    files: FileModels::format_analyze(p.files),
-                    ..p
+                .map(|p| Self::filter_by_config(options, &config, p))
+                .map(|mut p| {
+                    p.files = FileModels::format_ast(p.files);
+                    p.stats = Some(ProjectModel::compute_stats(&p.files));
+                    p
                 })
                 .collect(),
         }
     }
 
     /// Filter project files based on scan config.
-    fn filter_by_config(config: &ExportConfig, project: ProjectModel) -> ProjectModel {
+    fn filter_by_config(
+        options: &ExportOptions,
+        config: &ExportConfig,
+        project: ProjectModel,
+    ) -> ProjectModel {
         ProjectModel {
             files: project
                 .files
                 .into_iter()
+                .filter(|f| match f {
+                    FileModels::Language(m) if m.node_language == Some(Language::Markdown) => {
+                        options.types.contains(&ExportType::Markdown)
+                    }
+                    FileModels::Language(_) => options.types.contains(&ExportType::Code),
+                    FileModels::Text(_) => options.types.contains(&ExportType::Text),
+                    FileModels::Binary(_) => options.types.contains(&ExportType::Binary),
+                })
                 .map(|f| match f {
                     FileModels::Language(mut lang) => {
                         if !config.include.imports {

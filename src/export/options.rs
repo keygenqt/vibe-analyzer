@@ -22,6 +22,19 @@ pub enum ExportFormat {
     Toml,
 }
 
+/// File types for export filtering.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, ValueEnum)]
+pub enum ExportType {
+    /// Source code files with AST parsing (Rust, Python, JS, etc.).
+    Code,
+    /// Markdown documentation files.
+    Markdown,
+    /// Text files without AST parser (txt, logs, etc.).
+    Text,
+    /// Binary files (images, archives, etc.).
+    Binary,
+}
+
 impl ExportFormat {
     /// Returns the file extension for this format (without the dot).
     pub fn extension(&self) -> &'static str {
@@ -54,14 +67,23 @@ impl ExportFormat {
 pub struct ExportOptions {
     /// Output format (JSON, JSON5, TOON, XML, YAML, TOML).
     pub format: Option<ExportFormat>,
-
+    /// File types to include in export (empty = all types from config).
+    pub types: Vec<ExportType>,
     /// Custom output path. If None, uses default Downloads directory.
     pub output: Option<PathBuf>,
 }
 
 impl ExportOptions {
-    /// Creates a new ExportOptions instance with the specified format and output path.
-    pub fn new(format: Option<ExportFormat>, output: Option<PathBuf>) -> Self {
-        Self { format, output }
+    /// Creates a new ExportOptions instance.
+    pub fn new(
+        format: Option<ExportFormat>,
+        types: Vec<ExportType>,
+        output: Option<PathBuf>,
+    ) -> Self {
+        Self {
+            format,
+            types,
+            output,
+        }
     }
 }

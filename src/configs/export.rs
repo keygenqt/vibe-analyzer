@@ -7,6 +7,7 @@ use serde::Deserialize;
 use serde::Serialize;
 
 use crate::export::options::ExportFormat;
+use crate::export::options::ExportType;
 
 /// Export settings for scan commands.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -15,6 +16,8 @@ pub struct ExportConfig {
     pub format: String,
     /// Default output directory.
     pub output_dir: PathBuf,
+    /// File types to include in export.
+    pub types: ExportTypesConfig,
     /// AST elements to include in export.
     pub include: ExportIncludeConfig,
 }
@@ -24,8 +27,53 @@ impl Default for ExportConfig {
         Self {
             format: ExportFormat::Json.extension().to_string(),
             output_dir: dirs::download_dir().expect("Failed to get downloads directory"),
+            types: ExportTypesConfig::default(),
             include: ExportIncludeConfig::default(),
         }
+    }
+}
+
+/// File types to include in export output.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ExportTypesConfig {
+    /// Include code files (Rust, Python, JS, etc.).
+    pub code: bool,
+    /// Include markdown files.
+    pub markdown: bool,
+    /// Include text files (configs, toml, yaml, etc.).
+    pub text: bool,
+    /// Include binary files (images, etc.).
+    pub binary: bool,
+}
+
+impl Default for ExportTypesConfig {
+    fn default() -> Self {
+        Self {
+            code: true,
+            markdown: true,
+            text: true,
+            binary: true,
+        }
+    }
+}
+
+impl ExportTypesConfig {
+    /// Returns list of enabled export file types.
+    pub fn list(&self) -> Vec<ExportType> {
+        let mut types = vec![];
+        if self.code {
+            types.push(ExportType::Code);
+        }
+        if self.markdown {
+            types.push(ExportType::Markdown);
+        }
+        if self.text {
+            types.push(ExportType::Text);
+        }
+        if self.binary {
+            types.push(ExportType::Binary);
+        }
+        types
     }
 }
 

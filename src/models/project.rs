@@ -112,7 +112,7 @@ impl ProjectModel {
     }
 
     /// Compute aggregated statistics from file list.
-    fn compute_stats(files: &[FileModels]) -> StatsModel {
+    pub fn compute_stats(files: &[FileModels]) -> StatsModel {
         let total_files = files.len();
         let mut text_files = 0;
         let mut binary_files = 0;
