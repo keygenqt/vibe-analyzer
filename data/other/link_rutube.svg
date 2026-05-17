@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 48" width="220" height="48">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#c084fc"/>
+      <stop offset="100%" style="stop-color:#7c3aed"/>
+    </linearGradient>
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect x="0" y="0" width="220" height="48" rx="10" fill="url(#grad)" filter="url(#shadow)"/>
+
+  <g transform="translate(32, 24)">
+    <circle cx="0" cy="0" r="11" fill="none" stroke="#fff" stroke-width="1.8"/>
+    <polygon points="-4,-7 -4,7 6.5,0" fill="#fff"/>
+  </g>
+
+  <text x="60" y="29" font-family="Arial, Helvetica, sans-serif" font-size="15" font-weight="bold" fill="#ffffff" letter-spacing="0.3">Watch on RuTube</text>
+</svg>

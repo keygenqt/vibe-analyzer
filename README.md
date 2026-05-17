@@ -15,6 +15,8 @@ Vibe Analyzer returns structured results via tools, keeping context as clean as 
 
 ## Preview
 
+[![preview](data/other/link_rutube.svg)](https://rutube.ru/video/e77bbdccdd48fbbc077af1f6bbcc5416/)
+
 ![preview](data/preview/preview-webui.png)
 
 ## Features
