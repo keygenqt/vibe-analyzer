@@ -6,5 +6,6 @@ pub mod log;
 pub mod params;
 pub mod responses;
 pub mod router;
+pub mod serve;
 pub mod server;
 pub mod tools;

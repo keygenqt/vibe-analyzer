@@ -12,14 +12,14 @@ The file is created automatically with default settings the first time any CLI c
 
 ## Configuration Structure
 
-The configuration consists of these sections: `version`, `log_level`, `opensearch`, `mcp`, `analyze`, `export`, `ollama`, and `sources`.
+The configuration consists of these sections: `version`, `log_level`, `opensearch`, `mcp`, `analyze`, `export`, `cluster`, and `sources`.
 
 ### Full Example with Comments
 
 ```json
 {
   // Configuration version (do not modify)
-  "version": "0.0.3",
+  "version": "0.0.5",
 
   // Log level: cli, error, warn, info, debug, trace
   "log_level": "cli",
@@ -31,7 +31,7 @@ The configuration consists of these sections: `version`, `log_level`, `opensearc
 
   // MCP server
   "mcp": {
-    "host": "0.0.0.0",
+    "host": "127.0.0.1",
     "port": 9020,
     "protocol": "latest"
   },
@@ -76,16 +76,30 @@ The configuration consists of these sections: `version`, `log_level`, `opensearc
     }
   },
 
-  // Ollama LLM servers
-  "ollama": [
+  // LLM cluster nodes (local and cloud models)
+  "cluster": [
     {
+      "provider": "ollama",
       "host": "http://localhost:11434",
       "model": "qwen2.5-coder:3b-instruct",
       "timeout_secs": 60,
       "temperature": 0.1,
       "seed": 42,
       "num_ctx": 4096,
-      "num_predict": 2048
+      "num_predict": 2048,
+      "parallel": 1
+    },
+    {
+      "provider": "deepseek",
+      "host": "https://api.deepseek.com/v1",
+      "model": "deepseek-v4-flash",
+      "api_key": "sk-...",
+      "timeout_secs": 120,
+      "temperature": 0.1,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 2048,
+      "parallel": 2
     }
   ],
 
@@ -99,7 +113,9 @@ The configuration consists of these sections: `version`, `log_level`, `opensearc
 ### version
 
 ```json
-version: '0.0.3'
+{
+  "version": "0.0.5"
+}
 ```
 
 Configuration file version. **Do not modify manually** — updated automatically during config migration between versions.
@@ -107,7 +123,9 @@ Configuration file version. **Do not modify manually** — updated automatically
 ### log_level
 
 ```json
-log_level: 'cli'
+{
+  "log_level": "cli"
+}
 ```
 
 Application log level. Supported values: `cli`, `error`, `warn`, `info`, `debug`, `trace`. The `cli` level disables tracing output for clean command-line output.
@@ -115,8 +133,10 @@ Application log level. Supported values: `cli`, `error`, `warn`, `info`, `debug`
 ### opensearch
 
 ```json
-opensearch: {
-  "host": "http://localhost:9200",
+{
+  "opensearch": {
+    "host": "http://localhost:9200"
+  }
 }
 ```
 
@@ -127,10 +147,12 @@ opensearch: {
 ### mcp
 
 ```json
-mcp: {
-  "host": "0.0.0.0",
-  "port": 9020,
-  "protocol": "latest"
+{
+  "mcp": {
+    "host": "127.0.0.1",
+    "port": 9020,
+    "protocol": "latest"
+  }
 }
 ```
 
@@ -143,13 +165,15 @@ mcp: {
 ### analyze
 
 ```json
-analyze: {
-  "max_chunk_chars": 3000,
-  "include": {
-    "meta": false,
-    "debt": false,
-    "advice": false,
-    "errors": false
+{
+  "analyze": {
+    "max_chunk_chars": 3000,
+    "include": {
+      "meta": false,
+      "debt": false,
+      "advice": false,
+      "errors": false
+    }
   }
 }
 ```
@@ -172,30 +196,31 @@ When all features are disabled, only AST data is returned.
 ### export
 
 ```json
-export: {
-  "format": "json5",
-  "output_dir": "/Users/keygenqt/Downloads",
-  "types": {
-    "code": true,
-    "markdown": true,
-    "text": true,
-    "binary": true
-  },
-  "include": {
-    "imports": true,
-    "functions": true,
-    "variables": true,
-    // ... (see full example above)
-    "markers": false,
-    "warnings": false,
-    "body": false
+{
+  "export": {
+    "format": "json",
+    "output_dir": "/Users/keygenqt/Downloads",
+    "types": {
+      "code": true,
+      "markdown": true,
+      "text": true,
+      "binary": true
+    },
+    "include": {
+      "imports": true,
+      "functions": true,
+      "variables": true,
+      "markers": false,
+      "warnings": false,
+      "body": false
+    }
   }
 }
 ```
 
 | Parameter    | Type   | Default       | Description                                                           |
 | ------------ | ------ | ------------- | --------------------------------------------------------------------- |
-| `format`     | string | `json5`       | Default export format: `json`, `json5`, `toml`, `toon`, `xml`, `yaml` |
+| `format`     | string | `json`        | Default export format: `json`, `json5`, `toml`, `toon`, `xml`, `yaml` |
 | `output_dir` | string | `~/Downloads` | Default output directory for exported files                           |
 
 **File types (`types`):**
@@ -227,40 +252,47 @@ export: {
 | `warnings`        | Static analysis warnings (unwrap, panic)    |
 | `body`            | Body content (functions, classes, headings) |
 
-### ollama
+### cluster
 
 ```json
-ollama: [
-  {
-    "host": "http://localhost:11434",
-    "model": "qwen2.5-coder:3b-instruct",
-    "timeout_secs": 60,
-    "temperature": 0.1,
-    "seed": 42,
-    "num_ctx": 4096,
-    "num_predict": 2048
-  }
-]
+{
+  "cluster": [
+    {
+      "provider": "ollama",
+      "host": "http://localhost:11434",
+      "model": "qwen2.5-coder:3b-instruct",
+      "timeout_secs": 60,
+      "temperature": 0.1,
+      "seed": 42,
+      "num_ctx": 4096,
+      "num_predict": 2048,
+      "parallel": 1
+    }
+  ]
+}
 ```
 
 | Parameter      | Type    | Default                     | Description                                                  |
 | -------------- | ------- | --------------------------- | ------------------------------------------------------------ |
-| `host`         | string  | `http://localhost:11434`    | Ollama API endpoint                                          |
-| `model`        | string  | `qwen2.5-coder:3b-instruct` | Model name. Must be pre-loaded via `ollama pull`             |
+| `provider`     | string  | `ollama`                    | Provider type: `ollama`, `deepseek`, `qwen`                  |
+| `host`         | string  | `http://localhost:11434`    | API endpoint URL                                             |
+| `model`        | string  | `qwen2.5-coder:3b-instruct` | Model name. Ollama: pre-loaded via `ollama pull`             |
 | `timeout_secs` | integer | `60`                        | Request timeout in seconds                                   |
 | `temperature`  | float   | `0.1`                       | Generation temperature (0.0 — deterministic, 1.0 — creative) |
 | `seed`         | integer | `42`                        | Random seed for reproducible results                         |
 | `num_ctx`      | integer | `4096`                      | Context window size in tokens                                |
 | `num_predict`  | integer | `2048`                      | Maximum tokens in response                                   |
+| `api_key`      | string  | (none)                      | API key for cloud providers (not needed for Ollama)          |
+| `parallel`     | integer | `1`                         | Number of parallel workers for this provider                 |
 
-Multiple hosts can be specified for load distribution via competing consumers.
+Multiple nodes can be specified for load distribution across local and cloud models.
 
 ### sources
 
 ```json
-sources: [
-  "/Users/keygenqt/Documents/Gitcode/Projects/vibe-analyzer",
-]
+{
+  "sources": ["/Users/keygenqt/Documents/Gitcode/Projects/vibe-analyzer"]
+}
 ```
 
 | Parameter | Type             | Default | Description                       |

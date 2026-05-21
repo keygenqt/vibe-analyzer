@@ -1,27 +1,28 @@
 //! Core analyzer that orchestrates scanning and LLM enrichment.
-//! Coordinates file batching and parallel Ollama API calls.
+//! Coordinates file batching and parallel cluster API calls.
 
+use std::collections::HashMap;
 use std::path::PathBuf;
-use std::sync::Arc;
-use std::sync::atomic::AtomicBool;
-use std::sync::atomic::AtomicUsize;
-use std::sync::atomic::Ordering;
 
 use anyhow::Result;
 use clap::ValueEnum;
 use colored::Colorize;
-use futures::StreamExt;
-use tokio::sync::Mutex;
-use tokio::sync::mpsc;
+use serde_json::Value;
+use vibe_ast::Language;
+use vibe_cluster::Cluster;
+use vibe_cluster::ConnectionParams;
+use vibe_cluster::Prompt;
+use vibe_cluster::Provider;
 
 use crate::configs::app::AppConfig;
+use crate::enrich::DefaultEnrich;
+use crate::enrich::EnrichPrompt;
 use crate::models::file_language::FileLanguageModel;
 use crate::models::file_models::FileModels;
 use crate::models::project::ProjectModel;
 use crate::models::trait_base_model::TraitBaseModel;
 use crate::models::trait_file_model::TraitFileModel;
 use crate::models::trait_format_model::TraitFormatModel;
-use crate::ollama::cluster::OllamaCluster;
 use crate::print_info;
 use crate::print_newline;
 use crate::print_progress;
@@ -58,9 +59,14 @@ impl AnalyzeMode {
 
 /// Debug info for worker statistics.
 struct WorkerStats {
-    model: String,
-    host: String,
-    files_processed: Arc<AtomicUsize>,
+    /// Host URL (e.g. "http://localhost:11434").
+    pub host: String,
+    /// Model name (e.g. "qwen2.5-coder:3b-instruct").
+    pub model: String,
+    /// Provider type (e.g. "Ollama").
+    pub provider: String,
+    /// Number of files processed by this worker.
+    pub files_processed: usize,
 }
 
 /// Scan and enrich sources with LLM-powered analysis.
@@ -68,24 +74,41 @@ pub async fn scan_analyze(
     config: &AppConfig,
     target: Option<String>,
     path: Option<PathBuf>,
-    modes: &Vec<AnalyzeMode>,
+    modes: &[AnalyzeMode],
     force: bool,
 ) -> Result<Vec<ProjectModel>> {
-    let cluster = OllamaCluster::new(&config.ollama);
-    if cluster.is_empty() {
-        anyhow::bail!("Ollama hosts not configured. Add to ~/.vibe-analyzer/config.json");
-    }
-
-    // Check all Ollama servers are ready
-    cluster
-        .is_ready(|current, total| {
-            print_progress!("Checking Ollama server {}/{}", current, total);
-            if total == current {
-                print_newline!();
-            }
+    // Build cluster from config
+    let connections: Vec<ConnectionParams> = config
+        .cluster
+        .iter()
+        .map(|c| {
+            let provider = match c.provider.as_str() {
+                "ollama" => Provider::Ollama,
+                "deepseek" => Provider::DeepSeek,
+                "qwen" => Provider::Qwen,
+                other => anyhow::bail!("Unknown provider: {}", other),
+            };
+            Ok(ConnectionParams {
+                provider,
+                host: c.host.clone(),
+                model: c.model.clone(),
+                temperature: Some(c.temperature),
+                seed: Some(c.seed),
+                num_ctx: Some(c.num_ctx),
+                num_predict: Some(c.num_predict),
+                timeout_secs: Some(c.timeout_secs),
+                api_key: c.api_key.clone(),
+                parallel: c.parallel,
+            })
         })
-        .await?;
-    print_success!("All {} Ollama servers ready", cluster.len());
+        .collect::<Result<Vec<_>>>()?;
+
+    let cluster = Cluster::new(connections.clone())?;
+
+    // Check all servers are ready
+    print_info!("Checking cluster nodes...");
+    cluster.is_available().await?;
+    print_success!("All {} cluster nodes ready", connections.len());
 
     // Scan sources
     let projects = scanner::scan_ast(config, target, path, force).await?;
@@ -101,22 +124,18 @@ pub async fn scan_analyze(
     for mut project in projects {
         let name = project.path.split('/').last().unwrap_or(&project.path);
         print_info!("Start enrichment source: {}", name.bold().blue());
+
         for mode in modes {
-            // Use smaller batch for non-Meta modes to avoid context overflow
-            let max_chunk_files = match mode {
-                AnalyzeMode::Meta => 5,
-                _ => 1,
-            };
+            print_info!("Preparing {} enrichment...", mode.name());
             match analyze_project(
                 &project,
                 &cluster,
-                mode.clone(),
+                *mode,
                 config.analyze.max_chunk_chars,
-                max_chunk_files,
-                |mode, percent, current, total| {
+                |m, percent, current, total| {
                     print_progress!(
                         "Processing enrich {}... {:.1}% ({}/{})",
-                        mode.name(),
+                        m.name(),
                         percent,
                         current,
                         total
@@ -125,23 +144,22 @@ pub async fn scan_analyze(
                         print_newline!();
                     }
                 },
-                |message| print_info!("{}", message),
+                |stats| {
+                    for s in stats {
+                        print_info!(
+                            "[{}] Host {} ({}) processed: {} files",
+                            s.provider,
+                            s.host,
+                            s.model,
+                            s.files_processed
+                        );
+                    }
+                },
             )
             .await
             {
                 Ok(analysis) => {
-                    // Keep first non-empty summary from any enrichment mode
-                    project.summary = analysis.summary.or(project.summary);
-                    // Merge enrichment results back into the same project
-                    for (file, enriched_file) in project.files.iter_mut().zip(analysis.files.iter())
-                    {
-                        match (file, enriched_file) {
-                            (FileModels::Language(lang), FileModels::Language(enriched_lang)) => {
-                                lang.analyze.merge(&enriched_lang.analyze);
-                            }
-                            _ => {}
-                        }
-                    }
+                    project = analysis;
                 }
                 Err(e) => {
                     print_newline!();
@@ -154,17 +172,19 @@ pub async fn scan_analyze(
     Ok(enriched)
 }
 
-/// Analyze a project with LLM-powered enrichment using parallel workers.
+/// Analyze a project with LLM-powered enrichment using vibe-cluster.
 async fn analyze_project(
     project: &ProjectModel,
-    cluster: &OllamaCluster,
+    cluster: &Cluster,
     mode: AnalyzeMode,
     max_chunk_chars: usize,
-    max_chunk_files: usize,
     on_progress: fn(AnalyzeMode, usize, usize, usize),
-    on_done: fn(String),
+    on_done: fn(Vec<WorkerStats>),
 ) -> Result<ProjectModel> {
-    // Collect only language files for enrichment
+    if mode == AnalyzeMode::Ast {
+        anyhow::bail!("AST mode does not use LLM enrichment");
+    }
+
     let language_files: Vec<FileLanguageModel> = project
         .files
         .iter()
@@ -174,170 +194,169 @@ async fn analyze_project(
         })
         .collect();
 
-    let total = language_files.len();
-    if total == 0 {
+    let total_files = language_files.len();
+    if total_files == 0 {
         return Ok(project.clone());
     }
 
-    // Generate project summary from README
+    // Summary
     let summary = if let Some(readme) = &project.readme {
-        cluster.next().summary(&readme.content).await.ok()
+        cluster
+            .call(Prompt::new(format!(
+                "Summarize this README in 2-3 sentences.\n\nLANGUAGE: English only.\n\n{}",
+                readme.content
+            )))
+            .await
+            .ok()
+            .and_then(|r| r.text)
     } else {
         None
     };
 
-    let num_workers = cluster.len();
-    let (tx, rx) = mpsc::channel::<Arc<FileLanguageModel>>(num_workers * 2);
-    let shared_rx = Arc::new(Mutex::new(rx));
-    let error_flag = Arc::new(AtomicBool::new(false));
+    // Build prompts
+    let mut vibe_prompts: Vec<Prompt> = Vec::new();
 
-    let mut handles = Vec::with_capacity(num_workers);
-    let mut abort_handles = Vec::new();
-    let mut worker_stats: Vec<WorkerStats> = Vec::with_capacity(num_workers);
+    if mode == AnalyzeMode::Meta {
+        let mut chunk: Vec<FileLanguageModel> = Vec::new();
+        let mut formatted_chunk: Vec<FileLanguageModel> = Vec::new();
+        let mut chunk_chars = 0;
 
-    for worker_id in 0..num_workers {
-        let client = cluster.clients[worker_id].clone();
-        let rx = shared_rx.clone();
-        let config = client.config.clone();
-        let files_processed = Arc::new(AtomicUsize::new(0));
-        let files_processed_clone = files_processed.clone();
-        let error_flag_clone = error_flag.clone();
+        fn get_key(chunk: &Vec<FileLanguageModel>) -> String {
+            chunk
+                .iter()
+                .map(|f| f.base_model().path().to_string())
+                .collect::<Vec<_>>()
+                .join(",")
+        }
 
-        worker_stats.push(WorkerStats {
-            model: config.model.clone(),
-            host: config.host.clone(),
-            files_processed,
-        });
+        for file in &language_files {
+            let formatted = file.format_batch(mode);
+            let file_size = serde_json::to_string(&formatted)
+                .map(|s| s.len())
+                .unwrap_or(0);
 
-        let handle = tokio::spawn(async move {
-            let mut batch_chars = 0usize;
-            let mut batch: Vec<FileLanguageModel> = Vec::new();
-            let mut results: Vec<FileLanguageModel> = Vec::new();
-
-            loop {
-                if error_flag_clone.load(Ordering::Relaxed) {
-                    return Ok(vec![]);
+            if file_size > max_chunk_chars {
+                if !chunk.is_empty() {
+                    let text = DefaultEnrich::build_prompt(&formatted_chunk, mode)?;
+                    vibe_prompts.push(Prompt::new_with_key(text, get_key(&chunk)));
+                    chunk = Vec::new();
+                    formatted_chunk = Vec::new();
+                    chunk_chars = 0;
                 }
+                let text = DefaultEnrich::build_prompt(&[formatted.clone()], mode)?;
+                let key = file.base_model().path().to_string();
+                vibe_prompts.push(Prompt::new_with_key(text, key));
+                continue;
+            }
 
-                let file_opt = {
-                    let mut rx_guard = rx.lock().await;
-                    rx_guard.recv().await
-                };
+            if chunk_chars + file_size > max_chunk_chars && !chunk.is_empty() {
+                let text = DefaultEnrich::build_prompt(&formatted_chunk, mode)?;
+                vibe_prompts.push(Prompt::new_with_key(text, get_key(&chunk)));
+                chunk = Vec::new();
+                formatted_chunk = Vec::new();
+                chunk_chars = 0;
+            }
 
-                let file_size = file_opt.as_ref().map_or(0, |f| {
-                    serde_json::to_string(f).map(|s| s.len()).unwrap_or(0)
+            chunk_chars += file_size;
+            chunk.push(file.clone());
+            formatted_chunk.push(formatted);
+        }
+
+        if !chunk.is_empty() {
+            let text = DefaultEnrich::build_prompt(&formatted_chunk, mode)?;
+            vibe_prompts.push(Prompt::new_with_key(text, get_key(&chunk)));
+        }
+    } else {
+        for file in &language_files {
+            // Debt mode is code-only, skip markdown
+            if mode == AnalyzeMode::Debt && file.node_language == Some(Language::Markdown) {
+                continue;
+            }
+            let formatted = file.format_batch(mode);
+            let text = DefaultEnrich::build_prompt(&[formatted], mode)?;
+            let key = file.base_model().path().to_string();
+            vibe_prompts.push(Prompt::new_with_key(text, key));
+        }
+    }
+
+    // Execute batch via cluster
+    let results = cluster
+        .batch_call(
+            &vibe_prompts,
+            move |_result, done_prompts, total_prompts| {
+                let percent = (done_prompts as f64 / total_prompts as f64 * 100.0) as usize;
+                on_progress(mode, percent, done_prompts, total_prompts);
+            },
+        )
+        .await?;
+
+    // Parse results — match by key and collect stats
+    let mut stats: Vec<WorkerStats> = Vec::new();
+    let mut enriched_files: Vec<FileLanguageModel> = Vec::new();
+    for result in &results {
+        if let (Some(text), Some(key)) = (&result.text, &result.prompt.key) {
+            let paths: Vec<&str> = key.split(',').collect();
+
+            // Match by key
+            let matching: Vec<FileLanguageModel> = language_files
+                .iter()
+                .filter(|f| paths.iter().any(|p| *p == f.base_model().path()))
+                .cloned()
+                .collect();
+
+            if !matching.is_empty() {
+                if let Ok(json) = serde_json::from_str::<Value>(text) {
+                    match DefaultEnrich::parse_response(&matching, &json, mode) {
+                        Ok(files) => enriched_files.extend(files),
+                        Err(e) => println!("Parse error: {}", e),
+                    }
+                }
+            }
+
+            // Merge stats: find existing entry or push new
+            if let Some(existing) = stats
+                .iter_mut()
+                .find(|s| s.host == result.host && s.model == result.model)
+            {
+                existing.files_processed += paths.len();
+            } else {
+                stats.push(WorkerStats {
+                    host: result.host.clone(),
+                    model: result.model.clone(),
+                    provider: format!("{:?}", result.provider),
+                    files_processed: paths.len(),
                 });
-
-                let is_last = file_opt.is_none();
-                let is_full = !is_last
-                    && (batch_chars + file_size > max_chunk_chars
-                        || batch.len() >= max_chunk_files);
-                let should_flush = !batch.is_empty() && (is_last || is_full);
-
-                if should_flush {
-                    match client.enrich_model(mode, &batch).await {
-                        Ok(enriched) => {
-                            files_processed_clone.fetch_add(batch.len(), Ordering::Relaxed);
-                            results.extend(enriched);
-                            batch.clear();
-                            batch_chars = 0;
-                        }
-                        Err(e) => {
-                            error_flag_clone.store(true, Ordering::Relaxed);
-                            return Err(e);
-                        }
-                    }
-                }
-
-                match file_opt {
-                    Some(file) => {
-                        batch_chars += file_size;
-                        batch.push((*file).clone());
-                    }
-                    None => break,
-                }
-            }
-            Ok::<_, anyhow::Error>(results)
-        });
-        abort_handles.push(handle.abort_handle());
-        handles.push(handle);
-    }
-
-    // Send files to workers
-    let tx = tx;
-    let error_flag_send = error_flag.clone();
-    tokio::spawn(async move {
-        let mut sent = 0;
-        for file in language_files {
-            if error_flag_send.load(Ordering::Relaxed) {
-                break;
-            }
-            if tx.send(Arc::new(file.format_batch(mode))).await.is_err() {
-                break;
-            }
-            sent += 1;
-            let percent = sent as f64 / total as f64 * 100.0;
-            on_progress(mode, percent as usize, sent, total);
-        }
-    });
-
-    // Collect enriched files
-    let mut enriched_files: Vec<FileLanguageModel> = Vec::with_capacity(total);
-    let mut queue = handles
-        .into_iter()
-        .collect::<futures::stream::FuturesUnordered<_>>();
-    while let Some(worker_result) = queue.next().await {
-        match worker_result {
-            Ok(Ok(files)) => enriched_files.extend(files),
-            Ok(Err(e)) => {
-                for h in &abort_handles {
-                    h.abort();
-                }
-                return Err(e);
-            }
-            Err(e) => {
-                for h in &abort_handles {
-                    h.abort();
-                }
-                return Err(anyhow::anyhow!("Worker panicked: {}", e));
             }
         }
     }
 
-    // Merge enriched files back into project
+    let enriched_map: HashMap<String, &FileLanguageModel> = enriched_files
+        .iter()
+        .map(|f| (f.base_model().path().to_string(), f))
+        .collect();
+
     let mut result = project.clone();
     result.summary = summary;
 
     for file in &mut result.files {
         if let FileModels::Language(lang) = file {
-            if let Some(enriched) = enriched_files
-                .iter()
-                .find(|e| e.base_model().path() == lang.base_model().path())
-            {
+            if let Some(enriched) = enriched_map.get(lang.base_model().path()) {
                 lang.analyze.merge(&enriched.analyze);
             }
         }
     }
 
-    // Report worker stats
-    if num_workers > 1 {
-        let total_processed: usize = worker_stats
-            .iter()
-            .map(|s| s.files_processed.load(Ordering::Relaxed))
-            .sum();
-        for stat in &worker_stats {
-            let processed = stat.files_processed.load(Ordering::Relaxed);
-            let pct = if total_processed > 0 {
-                (processed as f64 / total_processed as f64) * 100.0
-            } else {
-                0.0
-            };
-            on_done(format!(
-                "Host {} ({}) processed: {} files ({:.1}%)",
-                stat.host, stat.model, processed, pct
-            ));
-        }
-    }
+    // Sort stats: most files first, then by host, then by model
+    stats.sort_by(|a, b| {
+        b.files_processed
+            .cmp(&a.files_processed)
+            .then(a.host.cmp(&b.host))
+            .then(a.model.cmp(&b.model))
+    });
 
+    // Report stats
+    on_done(stats);
+
+    // Return enriched project
     Ok(result)
 }

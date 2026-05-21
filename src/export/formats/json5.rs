@@ -8,6 +8,7 @@ use std::path::Path;
 
 use crate::export::writer::ExportModel;
 use crate::export::writer::ExportWriter;
+use crate::models::file_models::FileModels;
 
 /// JSON5 export writer implementing the ExportWriter trait.
 pub struct Json5Writer;
@@ -16,6 +17,13 @@ impl ExportWriter for Json5Writer {
     /// Exports source analyses to a human-readable JSON5 file.
     fn export(&self, model: &ExportModel, output_path: &Path) -> Result<()> {
         let content = json5::to_string(model)?;
+        fs::write(output_path, content)?;
+        Ok(())
+    }
+
+    /// Exports a single file model to a human-readable JSON5 file.
+    fn export_file(&self, source: &FileModels, output_path: &Path) -> Result<()> {
+        let content = json5::to_string(source)?;
         fs::write(output_path, content)?;
         Ok(())
     }

@@ -40,6 +40,7 @@ pub async fn run_server(
     port: Option<u16>,
     workdir: Option<PathBuf>,
     protocol: Option<String>,
+    on_start: fn(pid: u32, host: &str, port: u16, protocol: &str),
 ) -> anyhow::Result<()> {
     let config = AppConfig::load()?;
     let mcp_config = config.mcp.clone();
@@ -113,6 +114,16 @@ pub async fn run_server(
         protocol_version.as_str()
     );
 
+    // Emit start server
+    on_start(
+        std::process::id(),
+        &host_str,
+        port_val,
+        &protocol_version_str,
+    );
+
+    // Start
     axum::serve(listener, service).await?;
+
     Ok(())
 }

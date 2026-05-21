@@ -1,14 +1,16 @@
-//! Review enrichment prompt.
-//! Surface-level review: bugs, spelling, refactoring suggestions.
+//! Technical debt enrichment prompt and response parsing.
+//! Detects code duplication, magic numbers, complex logic, and unsafe calls.
 
 use anyhow::Result;
+use serde_json::Value;
 
 use crate::models::file_language::FileLanguageModel;
-use crate::ollama::client::OllamaClient;
 
-impl OllamaClient {
+pub struct DebtPrompt;
+
+impl DebtPrompt {
     /// Build prompt for technical debt detection.
-    pub fn enrich_debt_prompt(file: &FileLanguageModel) -> Result<String> {
+    pub fn build(file: &FileLanguageModel) -> Result<String> {
         let data = serde_json::to_string(file).unwrap_or_default();
 
         Ok(format!(
@@ -23,6 +25,7 @@ Analyze this code and list technical debt:
 - Unsafe calls: unwrap, expect, panic without error context
 
 RULES:
+- Language: English only.
 - Report ONLY real problems you see in the code
 - Do NOT report what you didn't find ("None found", "No issues")
 - Return [] if code is clean
@@ -35,10 +38,7 @@ FILE CONTENTS:
     }
 
     /// Parse technical debt response into model.
-    pub fn enrich_debt_parse(
-        original: &FileLanguageModel,
-        item: &serde_json::Value,
-    ) -> FileLanguageModel {
+    pub fn parse(original: &FileLanguageModel, item: &Value) -> FileLanguageModel {
         let mut model = original.clone();
         model.analyze.debt = item
             .as_array()

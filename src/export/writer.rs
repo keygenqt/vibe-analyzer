@@ -68,7 +68,7 @@ impl ExportModel {
                 .into_iter()
                 .map(|p| Self::filter_by_config(options, &config, p))
                 .map(|mut p| {
-                    p.files = FileModels::format_ast(p.files);
+                    p.files = FileModels::format_analyze(p.files);
                     p.stats = Some(ProjectModel::compute_stats(&p.files));
                     p
                 })
@@ -170,6 +170,9 @@ impl ExportModel {
 pub trait ExportWriter: Send + Sync {
     /// Exports source analyses to the specified file path.
     fn export(&self, sources: &ExportModel, output_path: &Path) -> Result<()>;
+
+    /// Exports a single file model to the specified file path.
+    fn export_file(&self, source: &FileModels, output_path: &Path) -> Result<()>;
 }
 
 /// Registry of all available export writers, indexed by format type.
@@ -219,6 +222,10 @@ pub fn export(
             .map_err(|e| anyhow::anyhow!("Error path for save output: {}", e))?,
         None => get_default_export(&format, &config.output_dir)?,
     };
-    writer.export(&model, &output_path)?;
+    if model.projects.len() == 1 && model.projects[0].files.len() == 1 {
+        writer.export_file(&model.projects[0].files[0], &output_path)?;
+    } else {
+        writer.export(&model, &output_path)?;
+    }
     Ok(output_path)
 }

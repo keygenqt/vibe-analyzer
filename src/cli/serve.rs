@@ -7,6 +7,9 @@ use clap::Subcommand;
 
 use crate::exit_error;
 use crate::mcp;
+use crate::mcp::serve::ServeMcp;
+use crate::print_info;
+use crate::print_success;
 use crate::print_warning;
 
 /// MCP server management commands.
@@ -31,8 +34,12 @@ pub enum ServeAction {
         protocol: Option<String>,
     },
 
-    /// Stop running MCP server.
-    Stop,
+    /// Stop running MCP server(s).
+    Stop {
+        /// Stop only the server on this port. If not specified, stops all.
+        #[arg(long)]
+        port: Option<u16>,
+    },
 
     /// Show MCP server status.
     Status,
@@ -47,15 +54,49 @@ pub async fn run(action: ServeAction) {
             workdir,
             protocol,
         } => {
-            if let Err(e) = mcp::server::run_server(host, port, workdir, protocol).await {
+            if let Err(e) = mcp::server::run_server(
+                host,
+                port,
+                workdir,
+                protocol,
+                |pid, host, port, protocol| {
+                    let server = ServeMcp::new(pid, host, port, protocol);
+                    server.save().ok();
+                },
+            )
+            .await
+            {
                 exit_error!("Failed to start MCP server: {}", e);
             }
         }
-        ServeAction::Stop => {
-            print_warning!("serve stop is not yet implemented");
+        ServeAction::Stop { port } => {
+            let servers = ServeMcp::read().unwrap_or_default();
+            for server in &servers {
+                if port.is_none() || Some(server.port) == port {
+                    server.stop().ok();
+                }
+            }
+            print_success!("MCP server(s) stopped");
         }
-        ServeAction::Status => {
-            print_warning!("serve status is not yet implemented");
-        }
+        ServeAction::Status => match ServeMcp::read() {
+            Ok(servers) => {
+                if servers.is_empty() {
+                    print_info!("No MCP servers running");
+                } else {
+                    print_info!("MCP servers running:");
+                    for s in servers {
+                        print_info!(
+                            "  PID: {}  Host: {}  Port: {}  Protocol: {}  Uptime: {}",
+                            s.pid,
+                            s.host,
+                            s.port,
+                            s.protocol,
+                            s.load_time()
+                        );
+                    }
+                }
+            }
+            Err(e) => print_warning!("Failed to read server stats: {}", e),
+        },
     }
 }

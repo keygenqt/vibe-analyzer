@@ -1,19 +1,21 @@
-//! Metadata enrichment prompt.
+//! Metadata enrichment prompt and response parsing.
 //! Generates summary and tags for search indexing.
 
 use anyhow::Result;
 use serde::Serialize;
+use serde_json::Value;
 
 use crate::models::file_language::FileLanguageModel;
 use crate::models::trait_base_model::TraitBaseModel;
 use crate::models::trait_file_model::TraitFileModel;
-use crate::ollama::client::OllamaClient;
 use crate::utils::normalize::tags_normalize;
 
-impl OllamaClient {
+pub struct MetaPrompt;
+
+impl MetaPrompt {
     /// Build prompt for metadata enrichment: summary and tags.
-    pub fn enrich_meta_prompt(files: &[FileLanguageModel]) -> Result<String> {
-        // Template for JSON structure that model must fill
+    /// Accepts multiple files to batch into one prompt.
+    pub fn build(files: &[FileLanguageModel]) -> Result<String> {
         #[derive(Serialize)]
         struct DataPrompt<'a> {
             #[serde(rename = "PATH")]
@@ -24,7 +26,6 @@ impl OllamaClient {
             tags: Vec<&'a str>,
         }
 
-        // Build template with placeholder values
         let template_prompt = serde_json::to_string(
             &files
                 .iter()
@@ -46,6 +47,9 @@ Use data field for analysis. Based on it fill:
 - DESCRIPTION — 2-3 sentences about the file
 - TAGS — 3-5 keywords (words only, not sentences)
 
+RULES:
+- Language: English only.
+
 JSON TO COPY AND FILL:
 {}
 
@@ -56,22 +60,30 @@ FILE CONTENTS:
         ))
     }
 
-    /// Parse Metadata enrichment response into model.
-    pub fn enrich_meta_parse(
-        original: &FileLanguageModel,
-        item: &serde_json::Value,
-    ) -> FileLanguageModel {
-        let mut model = original.clone();
-        model.analyze.summary = item["DESCRIPTION"].as_str().map(|s| s.to_string());
-        let llm_tags: Vec<String> = item["TAGS"]
-            .as_array()
-            .map(|a| {
-                a.iter()
-                    .filter_map(|v| v.as_str().map(String::from))
-                    .collect()
+    /// Parse metadata enrichment response into models.
+    pub fn parse(originals: &[FileLanguageModel], item: &Value) -> Vec<FileLanguageModel> {
+        let items = item.as_array().map(|a| a.as_slice()).unwrap_or(&[]);
+        originals
+            .iter()
+            .map(|original| {
+                let mut model = original.clone();
+                if let Some(matched) = items
+                    .iter()
+                    .find(|i| i["PATH"].as_str() == Some(&original.base_model().path()))
+                {
+                    model.analyze.summary = matched["DESCRIPTION"].as_str().map(|s| s.to_string());
+                    let llm_tags: Vec<String> = matched["TAGS"]
+                        .as_array()
+                        .map(|a| {
+                            a.iter()
+                                .filter_map(|v| v.as_str().map(String::from))
+                                .collect()
+                        })
+                        .unwrap_or_default();
+                    model.analyze.tags.extend(tags_normalize(llm_tags));
+                }
+                model
             })
-            .unwrap_or_default();
-        model.analyze.tags.extend(tags_normalize(llm_tags));
-        model
+            .collect()
     }
 }

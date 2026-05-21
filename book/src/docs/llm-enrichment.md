@@ -1,11 +1,11 @@
 # LLM Enrichment
 
-After AST parsing, Vibe Analyzer enriches results via Ollama across four analysis modes: Meta, Debt, Errors, and Advice.
+After AST parsing, Vibe Analyzer enriches results via vibe-cluster across multiple providers in four analysis modes: Meta, Debt, Errors, and Advice.
 
 ## How It Works
 
 ```
-AST data → static analysis → batching → Ollama request → enrichment results
+AST data → static analysis → batching → LLM request → enrichment results
 ```
 
 ### 1. Static Analysis
@@ -32,7 +32,7 @@ The prompt contains the AST structure: functions, classes, structs, and other el
 | `errors` | Find bugs: unsafe calls, swallowed errors                             |
 | `advice` | Suggest refactoring, naming, and test improvements                    |
 
-**Prompt.** For Meta, Ollama receives a JSON template to fill. For Debt/Errors/Advice, the model returns a JSON array of issues found.
+**Prompt.** For Meta, the model receives a JSON template to fill. For Debt/Errors/Advice, the model returns a JSON array of issues found.
 
 **Response.** Example for Meta:
 
@@ -50,11 +50,12 @@ The prompt contains the AST structure: functions, classes, structs, and other el
 
 ### 3. Parallel Processing
 
-If multiple Ollama hosts are configured, files are distributed via competing consumers:
+If multiple cluster nodes are configured, prompts are distributed via vibe-cluster:
 
-- All hosts read from a single channel
-- The fastest one processes the most
-- At the end, per-host statistics are reported
+- Local models (Ollama) get priority over cloud providers
+- Nodes process prompts in parallel via atomic work-stealing
+- Configurable `parallel` parameter for multiple workers per provider
+- At the end, per-node statistics are reported
 
 ### 4. JSON Repair
 
@@ -62,11 +63,11 @@ LLMs often corrupt JSON: add comments, wrap in markdown blocks, drop quotes. `cl
 
 ### 5. Retries
 
-If Ollama returns fewer files than were in the batch — up to 5 retries with delay. After 5 failures, an error is returned with recommendations.
+If a node returns fewer results than expected — automatic retries with delay. After all retries are exhausted, the error is recorded in the result.
 
 ## Generation Parameters
 
-Configured per Ollama host:
+Configured per cluster node:
 
 | Parameter      | Default | Description                        |
 | -------------- | ------- | ---------------------------------- |
@@ -78,11 +79,10 @@ Configured per Ollama host:
 
 ## Model Warm-Up
 
-Before enrichment, for each Ollama host:
+Before enrichment, for each cluster node:
 
 1. Availability check
-2. Model presence check
-3. Empty request to load the model into memory
+2. For Ollama nodes: model presence check and warm-up request to load the model into memory
 
 ## Exporting Results
 

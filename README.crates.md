@@ -22,6 +22,9 @@ Vibe Analyzer returns structured results via tools, keeping context as clean as 
 - 🌳 AST parsing for 14 languages
 - 🔍 Static analysis: code markers (TODO, FIXME, HACK), warnings (unwrap, panic)
 - 💡 LLM enrichment: technical debt, bugs, refactoring suggestions, file summaries
+- 🖥️ Multi-node LLM cluster — distribute enrichment across local and cloud models
+- 🔄 Automatic load balancing between cluster nodes
+- 🌐 Multi-provider support: Ollama, DeepSeek, Qwen
 - 📄 Export AST and analysis results to JSON, JSON5, TOML, TOON, XML, YAML
 - 📝 Semantic and morphological search across code and knowledge base
 - ⚡ Incremental indexing
@@ -95,7 +98,7 @@ cargo install vibe-analyzer
 vibe-analyzer source add <path>
 
 # 3. Edit config (~/.vibe-analyzer/config.json5)
-#    Set OpenSearch host and Ollama model
+#    Set OpenSearch host and cluster nodes
 
 # 4. Export analysis (AST + LLM enrichment)
 vibe-analyzer analyze export -m meta,debt,errors -f json5
@@ -129,5 +132,5 @@ vibe-analyzer serve start                           # Start MCP server
 ## Dependencies
 
 - OpenSearch
-- Ollama (for LLM enrichment)
+- Ollama, DeepSeek, or Qwen (for LLM enrichment)
 - libssl-dev

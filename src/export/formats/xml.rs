@@ -9,6 +9,7 @@ use xml::writer::EmitterConfig;
 
 use crate::export::writer::ExportModel;
 use crate::export::writer::ExportWriter;
+use crate::models::file_models::FileModels;
 
 /// XML export writer implementing the ExportWriter trait.
 pub struct XmlWriter;
@@ -39,6 +40,14 @@ impl ExportWriter for XmlWriter {
     /// Exports source analyses to a pretty-printed XML file.
     fn export(&self, model: &ExportModel, output_path: &Path) -> Result<()> {
         let compact = to_string(model)?;
+        let content = Self::pretty_print(&compact)?;
+        fs::write(output_path, content)?;
+        Ok(())
+    }
+
+    /// Exports a single file model to a pretty-printed XML file.
+    fn export_file(&self, source: &FileModels, output_path: &Path) -> Result<()> {
+        let compact = to_string(source)?;
         let content = Self::pretty_print(&compact)?;
         fs::write(output_path, content)?;
         Ok(())

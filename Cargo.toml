@@ -1,6 +1,6 @@
 [package]
 name = "vibe-analyzer"
-version = "0.0.4"
+version = "0.0.5"
 edition = "2024"
 license = "Apache-2.0"
 description = "Agentic RAG engine for code and knowledge bases. AST extraction, LLM enrichment, OpenSearch indexing."
@@ -67,6 +67,7 @@ schemars = "1.2.1"
 async-trait = "0.1.89"
 vibe-ast = "0.0.12"
 vibe-fs = "0.0.3"
+vibe-cluster = "0.0.2"
 
 [dev-dependencies]
 vibe-tests = "0.0.1"

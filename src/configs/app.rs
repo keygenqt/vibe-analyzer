@@ -9,6 +9,7 @@ use std::path::PathBuf;
 use std::sync::OnceLock;
 
 use crate::configs::analyze::AnalyzeConfig;
+use crate::configs::cluster::ClusterConfig;
 use crate::configs::export::ExportConfig;
 use crate::configs::log_level::LogLevel;
 use crate::configs::mcp::McpConfig;
@@ -19,7 +20,6 @@ use crate::utils::constants;
 use crate::utils::json5::Json5;
 use crate::utils::path::{self};
 
-use super::ollama::OllamaConfig;
 use super::opensearch::OpenSearchConfig;
 
 /// Global config path override.
@@ -40,8 +40,8 @@ pub struct AppConfig {
     pub analyze: AnalyzeConfig,
     /// Export settings.
     pub export: ExportConfig,
-    /// Ollama LLM servers.
-    pub ollama: Vec<OllamaConfig>,
+    /// LLM cluster nodes (local and cloud models).
+    pub cluster: Vec<ClusterConfig>,
     /// Knowledge sources to index.
     pub sources: Vec<PathBuf>,
 }
@@ -56,7 +56,7 @@ impl Default for AppConfig {
             mcp: McpConfig::default(),
             analyze: AnalyzeConfig::default(),
             export: ExportConfig::default(),
-            ollama: vec![OllamaConfig::default()],
+            cluster: vec![ClusterConfig::default()],
             sources: vec![],
         }
     }
@@ -112,7 +112,9 @@ impl AppConfig {
             let content = fs::read_to_string(&config_path)?;
             let mut config: AppConfig = match json5::from_str(&content) {
                 Ok(config) => config,
-                Err(_) => {
+                Err(e) => {
+                    println!("{:?}", e);
+
                     return Err(anyhow::anyhow!(
                         "Failed to parse config file (possibly from older version).\nDelete {} and run again to create a new one.",
                         config_path.display()
@@ -225,17 +227,20 @@ impl AppConfig {
                 ],
             ),
             Json5::Commit(
-                "ollama",
+                "cluster",
                 vec![
-                    "Ollama LLM servers",
+                    "LLM cluster nodes (local and cloud models)",
                     "",
-                    "host - API endpoint (default: http://localhost:11434)",
+                    "provider - Provider type: ollama, deepseek, qwen",
+                    "host - API endpoint (default: http://localhost:11434 for Ollama)",
                     "model - LLM model name",
                     "timeout_secs - Request timeout in seconds",
                     "temperature - Sampling temperature (0.0 - 1.0)",
                     "seed - Random seed for reproducibility",
                     "num_ctx - Context window size",
                     "num_predict - Maximum tokens to generate",
+                    "api_key - API key for cloud providers (not needed for Ollama)",
+                    "parallel - Number of parallel connections to this provider (default 1)",
                 ],
             ),
             Json5::Commit("sources", vec!["Sources to index"]),

@@ -39,6 +39,8 @@ Query → AI model selects an MCP tool → Tool returns a structured response
 - 🌳 AST parsing for 14 programming languages
 - 🔍 Static analysis: code markers (TODO, FIXME, HACK), warnings (unwrap, panic) across all languages
 - 💡 LLM enrichment: technical debt, bugs, refactoring suggestions, file summaries
+- 🖥️ Multi-node LLM cluster — distribute enrichment across local and cloud models
+- 🌐 Multi-provider support: Ollama, DeepSeek, Qwen
 - 📄 Export AST and analysis results to JSON, JSON5, TOML, TOON, XML, YAML
 - 📝 Semantic and morphological search across code and documentation
 - ⚡ Incremental indexing (modified files only)

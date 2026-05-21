@@ -36,11 +36,15 @@ pub async fn scan_ast(
     let mut projects = Vec::new();
     for source in sources {
         let name = source.file_name().unwrap().to_string_lossy();
-
-        print_info!("Start scan source: {}", name.bold().blue());
-
         let canonical_path = dunce::canonicalize(&source)?;
-        let files_full = vibe_fs::scan(&canonical_path, force)?;
+
+        let files_full = if source.is_file() {
+            vec![source.clone()]
+        } else {
+            print_info!("Start scan source: {}", name.bold().blue());
+            vibe_fs::scan(&canonical_path, force)?
+        };
+
         let total = files_full.len();
 
         if total == 0 {

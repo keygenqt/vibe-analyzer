@@ -49,8 +49,8 @@ The Analyzer enriches scanner results using LLM and static analysis:
 - **Static analysis** — finds code markers (TODO, FIXME, HACK) and warnings (unwrap, panic, bare except) across 14 languages
 - **LLM enrichment** — four modes: Meta (summaries), Debt (technical debt), Errors (bugs), Advice (refactoring)
 - **Prompt generation** — builds a request for each file containing the AST structure
-- **Request distribution** — with multiple Ollama hosts configured, files are pushed to a shared channel and workers compete for them (competing consumers). The fastest worker takes the next file, maximizing host utilization
-- **Batch processing** — files are grouped into batches limited by `max_chunk_chars` and `max_chunk_files`
+- **Request distribution** — with multiple cluster nodes configured, prompts are distributed across workers via vibe-cluster. Local models (Ollama) get priority, with automatic load balancing across all nodes
+- **Batch processing** — files are grouped into batches limited by `max_chunk_chars` (Meta mode). Other modes process one file per prompt
 - **Controlled generation** — configurable parameters `temperature`, `seed`, `num_ctx`, `num_predict` for reproducible results
 - **Project summarization** — a separate request generates a brief description of the entire source
 
@@ -117,20 +117,23 @@ One document per file: full contents. The `content` field is not indexed for sea
 
 One document per text file. Contains AST (functions, classes, imports, etc.), file metadata, and multilingual search tags. The `description` and `tags` fields are added after LLM enrichment.
 
-## Ollama Clustering
+## LLM Cluster
 
-When multiple Ollama hosts are configured, Vibe Analyzer distributes files via competing consumers:
+Vibe Analyzer uses [vibe-cluster](https://gitcode.com/keygenqt_vz/vibe-cluster) for distributing enrichment prompts across multiple LLM providers:
 
-- All workers read from a single shared channel
-- The fastest worker takes the next file
-- This maximizes utilization of all hosts
-- If any host fails, all workers stop
-- At the end, per-host statistics are reported: how many files each host processed
+- **Multi-provider** — supports Ollama (local), DeepSeek, and Qwen (cloud) simultaneously
+- **Load balancing** — prompts are distributed across all available nodes via atomic work-stealing
+- **Local-first priority** — local Ollama models get prompts before cloud providers for faster response
+- **Parallel connections** — configurable `parallel` parameter for multiple workers per provider
+- **Automatic retry** — network errors and server failures trigger automatic retries
+- **Exclusive mode** — eject and reload models between prompts for clean context
+- **Per-node statistics** — after enrichment, reports how many files each node processed
 
 This approach allows:
 
-- **Faster enrichment** through parallel processing on multiple GPUs/servers
-- **Scaling** by adding more hosts to the configuration
+- **Faster enrichment** through parallel processing on multiple GPUs and cloud APIs
+- **Cost optimization** — local models handle most work, cloud used only when needed
+- **Scaling** — add more nodes to the cluster configuration as needed
 
 ## Anti-Hallucination Protection
 

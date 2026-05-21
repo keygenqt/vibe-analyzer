@@ -56,7 +56,7 @@ pub enum AnalyzeAction {
         #[arg(long, short = 'f')]
         format: Option<ExportFormat>,
 
-        /// Source path
+        /// Source file or directory path
         #[arg(long, short = 'p')]
         path: Option<PathBuf>,
 
@@ -109,9 +109,12 @@ pub async fn run(action: AnalyzeAction) {
                 Ok(o) => o,
                 Err(e) => exit_error!("{}", e),
             };
-            let path = match path::resolve_dir_path(path) {
+            let path = match path::resolve_dir_path(path.clone()) {
                 Ok(o) => o,
-                Err(e) => exit_error!("{}", e),
+                Err(_) => match path::resolve_file_path(path) {
+                    Ok(o) => o,
+                    Err(e) => exit_error!("{}", e),
+                },
             };
             let modes = match mode.clone() {
                 None => config.analyze.include.list(),

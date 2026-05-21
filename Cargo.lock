@@ -3242,7 +3242,7 @@ checksum = "0b928f33d975fc6ad9f86c8f283853ad26bdd5b10b7f1542aa2fa15e2289105a"
 
 [[package]]
 name = "vibe-analyzer"
-version = "0.0.4"
+version = "0.0.5"
 dependencies = [
  "anyhow",
  "askalono",
@@ -3282,6 +3282,7 @@ dependencies = [
  "tracing-subscriber",
  "uuid",
  "vibe-ast",
+ "vibe-cluster",
  "vibe-fs",
  "vibe-tests",
  "walkdir",
@@ -3314,6 +3315,26 @@ dependencies = [
  "tree-sitter-rust",
  "tree-sitter-swift",
  "tree-sitter-typescript",
+]
+
+[[package]]
+name = "vibe-cluster"
+version = "0.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92ff328d6ac5bd91cde994f5a3f844e23d27c4b06dea05744fc6badf1b9a614b"
+dependencies = [
+ "async-trait",
+ "futures",
+ "futures-util",
+ "once_cell",
+ "regex",
+ "reqwest 0.12.28",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
 ]
 
 [[package]]

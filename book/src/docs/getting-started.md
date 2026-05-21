@@ -3,7 +3,7 @@
 ## Prerequisites
 
 - **OpenSearch** — storage and search for indexed data
-- **Ollama** — running LLMs for code enrichment
+- **LLM provider** — Ollama (local), DeepSeek, or Qwen for code enrichment
 
 Both can be run locally via Docker.
 
